@@ -1,0 +1,25 @@
+.button::after {
+    position: absolute;
+    content: "";
+    background: #ffffff;
+    height: 155px;
+    left: -75px;
+    opacity: 0.2;
+    top: -50px;
+    -webkit-transform: rotate(35deg);
+    transform: rotate(35deg);
+    -webkit-transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+    transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+    width: 50px;
+    z-index: 1;
+}
+
+.button:hover::after {
+    left: 120%;
+    -webkit-transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+    transition: all 550ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.button:hover {
+    color: #ffffff;
+}

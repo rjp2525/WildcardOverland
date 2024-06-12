@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "fonts/geared_slab";
+
+@layer base {
+    a {
+        @apply transition-all duration-300 ease-in-out;
+    }
+}
+
+@import "components/button";
+@import "components/header-nav";
