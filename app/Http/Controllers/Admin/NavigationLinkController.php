@@ -98,10 +98,15 @@ class NavigationLinkController extends Controller
     protected function formOptions(?NavigationLink $current): array
     {
         return [
-            'routeNames' => collect(array_keys(Route::getRoutes()->getRoutesByName()))
-                ->reject(fn (string $name) => str_starts_with($name, 'admin.')
-                    || str_starts_with($name, 'filament.')
-                    || str_starts_with($name, 'livewire'))
+            /*
+             * Only routes a nav link can actually point at: public, reachable
+             * by GET, and needing no parameters the link cannot supply.
+             */
+            'routeNames' => collect(Route::getRoutes()->getRoutesByName())
+                ->reject(fn ($route, string $name) => str_starts_with($name, 'admin.')
+                    || ! in_array('GET', $route->methods(), true)
+                    || $route->parameterNames() !== [])
+                ->keys()
                 ->sort()
                 ->values(),
             'parents' => NavigationLink::query()

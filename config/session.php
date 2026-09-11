@@ -220,10 +220,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | Laravel 13's skeleton defaults this to "json" to harden against PHP
-    | deserialization gadget chain attacks. It is pinned to "php" here so the
-    | upgrade does not invalidate every active session. Livewire/Filament can
-    | place objects in the session, so verify the admin panel before switching
-    | this to "json".
+    | deserialization gadget chain attacks. It stays on "php" only so that
+    | changing it does not sign everyone out; the original reason to keep it
+    | (Livewire/Filament placing objects in the session) is gone now that the
+    | admin is plain Inertia. Switching to "json" is safe whenever a one-off
+    | re-login is acceptable.
     |
     */
 
