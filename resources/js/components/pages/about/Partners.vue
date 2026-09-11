@@ -1,37 +1,38 @@
 <script setup lang="ts">
-import { Vue3Marquee } from 'vue3-marquee';
+import { Vue3Marquee } from 'vue3-marquee'
 
-const sponsors = [
-  {
-    name: 'Katadyn Switzerland',
-    url: 'https://www.katadyngroup.com/us/en/brands/Katadyn~b4906/overview',
-    logo: new URL('@img/partners/katadyn.png', import.meta.url).href
-  },
-  {
-    name: 'Oru Designs USA',
-    url: 'https://www.orudesignsusa.com/',
-    logo: new URL('@img/partners/oru.png', import.meta.url).href
-  },
-  {
-    name: 'TriPine',
-    url: 'https://tripine.com/',
-    logo: new URL('@img/partners/tripine.png', import.meta.url).href
-  },
-];
+export interface Partner {
+  name: string
+  url: string | null
+  logo: string
+  width: number | null
+  height: number | null
+}
+
+defineProps<{ partners: Partner[] }>()
 </script>
 
 <template>
-  <div class="container py-8">
+  <div v-if="partners.length" class="container py-8">
     <Vue3Marquee>
-      <a
-        v-for="sponsor in sponsors"
-        :key="sponsor.name"
-        :href="sponsor.url"
-        target="_blank"
+      <component
+        :is="partner.url ? 'a' : 'span'"
+        v-for="partner in partners"
+        :key="partner.name"
+        :href="partner.url ?? undefined"
+        :target="partner.url ? '_blank' : undefined"
+        :rel="partner.url ? 'noopener noreferrer' : undefined"
         class="px-8"
       >
-        <img height="60" width="100%" :src="sponsor.logo" :alt="sponsor.name" />
-      </a>
+        <img
+          :src="partner.logo"
+          :alt="partner.name"
+          height="60"
+          width="100%"
+          loading="lazy"
+          decoding="async"
+        >
+      </component>
     </Vue3Marquee>
   </div>
 </template>

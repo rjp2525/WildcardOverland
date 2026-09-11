@@ -3,12 +3,18 @@ import { ref } from 'vue';
 import { SunMedium, Moon } from 'lucide-vue-next';
 
 const darkMode = ref(false);
-if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-  document.documentElement.classList.add('dark')
-  localStorage.setItem("theme", 'dark');
-} else {
-  document.documentElement.classList.remove('dark')
-  localStorage.setItem("theme", 'light');
+
+// Guarded rather than moved into onMounted: setup also runs on the server,
+// where these globals are absent, but on the client this must still apply the
+// theme before paint to avoid a flash of the wrong one.
+if (typeof window !== 'undefined') {
+  if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark')
+    localStorage.setItem("theme", 'dark');
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem("theme", 'light');
+  }
 }
 
 const toggleDarkMode = () => {

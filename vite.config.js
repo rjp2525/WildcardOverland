@@ -6,6 +6,12 @@ import vue from "@vitejs/plugin-vue";
 import svgLoader from "vite-svg-loader";
 
 export default defineConfig({
+    ssr: {
+        // These ship an ESM build via `module` but a UMD file via `main`.
+        // Externalised, Node picks `main` and the default import fails during
+        // SSR, so let Vite bundle them instead.
+        noExternal: ["vue-countup-v3", "vue3-marquee"],
+    },
     resolve: {
         alias: {
             "@": path.resolve(import.meta.dirname, "./resources/js"),

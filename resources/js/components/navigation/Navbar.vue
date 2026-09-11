@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -23,8 +23,10 @@ import { DarkModeToggle } from "@/components/dark-mode";
 
 const mobileNavigationOpen = ref<boolean>(false);
 
-window.addEventListener('scroll', (event) => {
-  event.preventDefault();
+// Registered on mount rather than during setup: setup also runs on the
+// server, where `window` does not exist, and the listener needs removing
+// when the component goes away.
+const onScroll = () => {
   const navbar = document.getElementById("navbar");
   if (!navbar) {
       return;
@@ -37,7 +39,14 @@ window.addEventListener('scroll', (event) => {
   } else {
       navbar.classList.remove("is-sticky");
   }
+};
+
+onMounted(() => {
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
 });
+
+onBeforeUnmount(() => window.removeEventListener("scroll", onScroll));
 </script>
 
 <template>
