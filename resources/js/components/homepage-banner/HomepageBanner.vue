@@ -14,11 +14,16 @@ import { Button } from '@/components/ui/button'
           <Button variant="outline" class="w-full md:w-auto">
             Browse The Camp Recipes
           </Button>
-          <Button class="w-full md:w-fit">
-            Read about My Latest Trip
+          <Button class="w-full md:w-fit" as-child>
+            <Link href="#test">
+              Read about My Latest Trip
+            </Link>
           </Button>
         </div>
       </div>
     </div>
+  </div>
+  <div id="test">
+    <div class="py-80"></div>
   </div>
 </template>
