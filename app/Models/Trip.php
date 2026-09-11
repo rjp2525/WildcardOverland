@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Observers\TripObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -51,5 +52,17 @@ class Trip extends Model
         return ! $this->is_draft
             && $this->published_at !== null
             && $this->published_at->isPast();
+    }
+
+    /**
+     * The query-side counterpart of isPublished(): live on the public site.
+     *
+     * @param  Builder<Trip>  $query
+     */
+    public function scopePublished(Builder $query): void
+    {
+        $query->where('is_draft', false)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
     }
 }

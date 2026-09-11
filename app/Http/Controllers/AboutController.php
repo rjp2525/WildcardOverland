@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Models\Trip;
 use App\Models\VehicleModification;
 use App\Support\AssetUrl;
 use Illuminate\Http\Request;
@@ -14,9 +15,28 @@ class AboutController extends Controller
     public function __invoke(Request $request): Response
     {
         return Inertia::render('About', [
+            'stats' => $this->stats(),
             'partners' => $this->partners(),
             'timeline' => $this->timeline(),
         ]);
+    }
+
+    /**
+     * Counters backed by real records. Both derive from the same published
+     * set, so the trip count and the nights total stay consistent with each
+     * other - and with what a visitor could actually browse.
+     *
+     * The remaining figures in the Statistics component (miles, photos,
+     * states, friends) have no source yet and stay hard-coded there.
+     *
+     * @return array<string, int>
+     */
+    protected function stats(): array
+    {
+        return [
+            'trips' => Trip::published()->count(),
+            'nights' => (int) Trip::published()->sum('calculated_nights'),
+        ];
     }
 
     /**

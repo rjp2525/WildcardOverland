@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Brand;
 use App\Models\File;
 use App\Models\Image;
+use App\Models\Trip;
 use App\Models\VehicleModification;
 use App\Support\AssetUrl;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -158,6 +159,63 @@ class AboutPageTest extends TestCase
 
         $response->assertInertia(fn ($page) => $page->missing('timeline.0.cost'));
         $response->assertDontSee('124999');
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function trip(string $name, array $attributes = []): Trip
+    {
+        return Trip::create([
+            'name' => $name,
+            'slug' => str($name)->slug()->value(),
+            'is_draft' => false,
+            'published_at' => now()->subDay(),
+            ...$attributes,
+        ]);
+    }
+
+    public function test_the_counters_come_from_published_trips(): void
+    {
+        $this->trip('One', ['start_date' => '2026-03-01', 'end_date' => '2026-03-05']);
+        $this->trip('Two', ['start_date' => '2026-04-01', 'end_date' => '2026-04-03']);
+
+        $this->get(route('about'))
+            ->assertInertia(fn ($page) => $page
+                ->where('stats.trips', 2)
+                // TripObserver derives 4 + 2 nights from those date ranges.
+                ->where('stats.nights', 6));
+    }
+
+    public function test_drafts_and_future_posts_are_excluded_from_the_counters(): void
+    {
+        $this->trip('Live', ['start_date' => '2026-03-01', 'end_date' => '2026-03-05']);
+        $this->trip('Draft', ['is_draft' => true, 'start_date' => '2026-03-01', 'end_date' => '2026-03-09']);
+        $this->trip('Scheduled', ['published_at' => now()->addWeek(), 'start_date' => '2026-03-01', 'end_date' => '2026-03-09']);
+        $this->trip('Never published', ['published_at' => null, 'start_date' => '2026-03-01', 'end_date' => '2026-03-09']);
+
+        $this->get(route('about'))
+            ->assertInertia(fn ($page) => $page
+                ->where('stats.trips', 1)
+                ->where('stats.nights', 4));
+    }
+
+    public function test_deleted_trips_do_not_count(): void
+    {
+        $this->trip('Gone', ['start_date' => '2026-03-01', 'end_date' => '2026-03-05'])->delete();
+
+        $this->get(route('about'))
+            ->assertInertia(fn ($page) => $page
+                ->where('stats.trips', 0)
+                ->where('stats.nights', 0));
+    }
+
+    public function test_the_counters_are_zero_rather_than_null_when_empty(): void
+    {
+        $this->get(route('about'))
+            ->assertInertia(fn ($page) => $page
+                ->where('stats.trips', 0)
+                ->where('stats.nights', 0));
     }
 
     public function test_the_page_renders_with_no_data_at_all(): void
