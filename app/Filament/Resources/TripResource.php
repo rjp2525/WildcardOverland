@@ -2,36 +2,34 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
+use App\Filament\Resources\TripResource\Pages;
 use App\Models\Trip;
-use Filament\Tables;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
+use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\{
     DatePicker,
     DateTimePicker,
     RichEditor,
-    TextInput,
-    Toggle,
-    Section,
-    Select
+    Select,
+    TextInput
 };
-use Illuminate\Database\Eloquent\Builder;
-use App\Filament\Resources\TripResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\TripResource\RelationManagers;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
 
 class TripResource extends Resource
 {
     protected static ?string $model = Trip::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 TextInput::make('name')->autofocus()->required(),
                 TextInput::make('headline'),
                 RichEditor::make('summary'),
@@ -39,7 +37,7 @@ class TripResource extends Resource
                 DatePicker::make('start_date'),
                 DatePicker::make('end_date'),
                 Section::make('Publishing')
-                    ->schema([
+                    ->components([
                         Select::make('status')
                             ->options([
                                 'draft' => 'Draft',
@@ -49,7 +47,7 @@ class TripResource extends Resource
                             ->required(),
                         DateTimePicker::make('published_at'),
                     ]),
-                ]);
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -61,12 +59,12 @@ class TripResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
+            ->recordActions([
+                EditAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

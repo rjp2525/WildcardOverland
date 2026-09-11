@@ -26,6 +26,9 @@ const mobileNavigationOpen = ref<boolean>(false);
 window.addEventListener('scroll', (event) => {
   event.preventDefault();
   const navbar = document.getElementById("navbar");
+  if (!navbar) {
+      return;
+  }
   if (
       document.body.scrollTop >= 50 ||
       document.documentElement.scrollTop >= 50

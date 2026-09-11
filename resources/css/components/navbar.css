@@ -18,7 +18,7 @@
     }
 
     &.is-sticky {
-        @apply bg-white/70 backdrop-blur-md shadow dark:bg-dark/80;
+        @apply bg-white/70 backdrop-blur-md shadow-sm dark:bg-dark/80;
 
         .navbar-nav .nav-link {
             @apply text-black dark:text-white/70;

@@ -5,7 +5,7 @@ window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 
 document.addEventListener("DOMContentLoaded", function () {
     // Function to smoothly scroll into view
-    function ScrollIntoView(elem) {
+    function ScrollIntoView(elem: string) {
         let ele = document.querySelector(elem);
         if (ele) {
             ele.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -16,10 +16,12 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll('a[href^="#"]').forEach((link) => {
         link.addEventListener("click", function (event) {
             event.preventDefault();
-            console.log("clicked");
-            const hash = this.getAttribute("href");
+            const hash = link.getAttribute("href");
+            if (!hash) {
+                return;
+            }
             ScrollIntoView(hash);
-            history.pushState(null, null, hash); // Update URL without jumping
+            history.pushState(null, "", hash); // Update URL without jumping
         });
     });
 

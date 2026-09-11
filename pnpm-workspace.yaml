@@ -1,0 +1,8 @@
+# pnpm >=10 blocks dependency build scripts unless they are allowlisted.
+# vue-demi's postinstall writes the Vue 3 shim that reka-ui's floating
+# positioning (@floating-ui/vue) relies on.
+allowBuilds:
+  vue-demi: true
+minimumReleaseAgeExclude:
+  - '@inertiajs/core@3.7.1'
+  - '@inertiajs/vue3@3.7.1'

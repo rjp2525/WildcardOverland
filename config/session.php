@@ -214,4 +214,19 @@ return [
 
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Session Serialization
+    |--------------------------------------------------------------------------
+    |
+    | Laravel 13's skeleton defaults this to "json" to harden against PHP
+    | deserialization gadget chain attacks. It is pinned to "php" here so the
+    | upgrade does not invalidate every active session. Livewire/Filament can
+    | place objects in the session, so verify the admin panel before switching
+    | this to "json".
+    |
+    */
+
+    'serialization' => env('SESSION_SERIALIZATION', 'php'),
+
 ];

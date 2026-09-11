@@ -4,6 +4,7 @@ import { createInertiaApp } from "@inertiajs/vue3";
 import createServer from "@inertiajs/vue3/server";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy";
+import type { Config as ZiggyConfig } from "../../vendor/tightenco/ziggy";
 import { MainLayout } from "./layouts";
 import { Head, Link } from "@inertiajs/vue3";
 
@@ -27,11 +28,15 @@ createServer((page) =>
             return page;
         },
         setup({ App, props, plugin }) {
+            // Inertia types page props as Record<string, unknown>, so the
+            // Ziggy config shared from the server needs an explicit type.
+            const ziggy = page.props.ziggy as ZiggyConfig & { location: string };
+
             return createSSRApp({ render: () => h(App, props) })
                 .use(plugin)
                 .use(ZiggyVue, {
-                    ...page.props.ziggy,
-                    location: new URL(page.props.ziggy.location),
+                    ...ziggy,
+                    location: new URL(ziggy.location),
                 })
                 .component("Head", Head)
                 .component("Link", Link);

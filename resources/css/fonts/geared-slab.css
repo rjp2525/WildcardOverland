@@ -1,33 +1,37 @@
 @layer base {
-    // Thin
+    /* Thin */
     @font-face {
         font-family: "Geared Slab";
         font-weight: 100;
-        src: url(/fonts/gearedslab-light.woff2) format("woff2"),
+        src:
+            url(/fonts/gearedslab-light.woff2) format("woff2"),
             url(/fonts/gearedslab-light.woff) format("woff");
     }
 
-    // Normal
+    /* Normal */
     @font-face {
         font-family: "Geared Slab";
         font-weight: 400;
-        src: url(/fonts/gearedslab.woff2) format("woff2"),
+        src:
+            url(/fonts/gearedslab.woff2) format("woff2"),
             url(/fonts/gearedslab.woff) format("woff");
     }
 
-    // Bold
+    /* Bold */
     @font-face {
         font-family: "Geared Slab";
         font-weight: 700;
-        src: url(/fonts/gearedslab-bold.woff2) format("woff2"),
+        src:
+            url(/fonts/gearedslab-bold.woff2) format("woff2"),
             url(/fonts/gearedslab-bold.woff) format("woff");
     }
 
-    // Extra bold
+    /* Extra bold */
     @font-face {
         font-family: "Geared Slab";
         font-weight: 800;
-        src: url(/fonts/gearedslab-extrabold.woff2) format("woff2"),
+        src:
+            url(/fonts/gearedslab-extrabold.woff2) format("woff2"),
             url(/fonts/gearedslab-extrabold.woff) format("woff");
     }
 }

@@ -1,0 +1,99 @@
+/*
+ * Plain CSS `@import` must precede every other rule, so all imports are
+ * hoisted here (Sass allowed them to be interleaved).
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@import "./fonts/geared-slab.css";
+@import "./components/button.css";
+@import "./components/header-nav.css";
+@import "./components/navbar.css";
+@import "./components/separators.css";
+
+/*
+ * Dark mode is toggled by a `dark` class on <html> (Tailwind v3 `darkMode: ["class"]`).
+ */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Ported from tailwind.config.js `theme.extend`. In v4 `@theme` extends the
+ * default theme, so the stock palette/scales remain available.
+ */
+@theme {
+    --color-brand: #e85a2f;
+    /* Hex equivalent of the truck's paint code. */
+    --color-dark: #3b3f42;
+    --color-black: #212121;
+
+    --font-brand: "Geared Slab", ui-serif, Georgia, serif;
+
+    /*
+     * v4 renamed the shadow scale: v3 `shadow-sm` is now `shadow-xs` and v3
+     * `shadow` (DEFAULT) is now `shadow-sm`. The values below are the v3 ones
+     * shifted into their new names, so rendered output is unchanged.
+     */
+    --shadow-xs: 0 2px 4px 0 rgb(60 72 88 / 0.15);
+    --shadow-sm: 0 0 3px rgb(60 72 88 / 0.15);
+    --shadow-md: 0 5px 13px rgb(60 72 88 / 0.2);
+    --shadow-lg: 0 10px 25px -3px rgb(60 72 88 / 0.15);
+    --shadow-xl:
+        0 20px 25px -5px rgb(60 72 88 / 0.1), 0 8px 10px -6px rgb(60 72 88 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(60 72 88 / 0.25);
+    --inset-shadow-sm: inset 0 2px 4px 0 rgb(60 72 88 / 0.05);
+}
+
+/*
+ * v4 removed the `container` config (center/padding/screens), so the v3
+ * behaviour is rebuilt by hand: full-width with a 1rem gutter, gutter removed
+ * from `lg` up, capped at 1400px from `2xl` up.
+ */
+/*
+ * Mirrors the exact CSS Tailwind v3 produced from the old `theme.container`
+ * config. Because that config set `screens: { '2xl': '1400px' }`, the v3
+ * container plugin emitted only a single breakpoint, and the `lg`/`xl`
+ * padding keys were never applied - the gutter stayed at 1rem all the way up
+ * to 1400px. v4 instead emits a max-width at every default breakpoint, so
+ * those are neutralised with `max-width: none` and the one cap reapplied.
+ */
+@utility container {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: 1rem;
+    max-width: none;
+
+    @media (width >= 1400px) {
+        max-width: 1400px;
+        padding-inline: 0;
+    }
+}
+
+/* Ported from `theme.extend.backgroundImage`. */
+@utility bg-landing {
+    background-image: url("@img/homepage-banner-bg.jpg");
+}
+
+@utility bg-page-header {
+    background-image: url("@img/page-banner-bg.jpg");
+}
+
+@utility bg-brand-radial-gradient {
+    background-image: radial-gradient(
+        at bottom left,
+        var(--color-brand) 0%,
+        transparent 70%
+    );
+}
+
+/* Ported from `theme.extend.transitionProperty`. */
+@utility transition-gradient-custom {
+    transition-property: background, border-radius, opacity;
+    transition-timing-function: var(--default-transition-timing-function);
+    transition-duration: var(--default-transition-duration);
+}
+
+@layer base {
+    a {
+        @apply transition-all duration-300 ease-in-out;
+    }
+}

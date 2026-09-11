@@ -8,13 +8,13 @@ if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && w
   localStorage.setItem("theme", 'dark');
 } else {
   document.documentElement.classList.remove('dark')
-  localStorage.setItem("theme", null);
+  localStorage.setItem("theme", 'light');
 }
 
 const toggleDarkMode = () => {
   if (document.documentElement.classList.contains('dark')) {
     document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", null);
+    localStorage.setItem("theme", 'light');
   } else {
     document.documentElement.classList.add("dark");
     localStorage.setItem("theme", 'dark');

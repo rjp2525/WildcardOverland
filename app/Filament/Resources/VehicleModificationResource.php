@@ -3,31 +3,29 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\VehicleModificationResource\Pages;
-use App\Filament\Resources\VehicleModificationResource\RelationManagers;
 use App\Models\VehicleModification;
-use Filament\Forms;
+use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Pelmered\FilamentMoneyField\Forms\Components\MoneyInput;
 
 class VehicleModificationResource extends Resource
 {
     protected static ?string $model = VehicleModification::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 /**
                  * name
                  * vendor
@@ -45,7 +43,22 @@ class VehicleModificationResource extends Resource
                 TextInput::make('description'),
                 DatePicker::make('purchase_date'),
                 DatePicker::make('install_date'),
-                MoneyInput::make('cost'),
+                /**
+                 * `cost` is stored as an integer number of minor units (cents)
+                 * but is entered and displayed in major units (dollars).
+                 */
+                TextInput::make('cost')
+                    ->numeric()
+                    ->inputMode('decimal')
+                    ->step(0.01)
+                    ->minValue(0)
+                    ->prefix('$')
+                    ->formatStateUsing(fn (?int $state): ?string => filled($state)
+                        ? number_format($state / 100, 2, '.', '')
+                        : null)
+                    ->dehydrateStateUsing(fn (?string $state): ?int => filled($state)
+                        ? (int) round(((float) $state) * 100)
+                        : null),
                 TextInput::make('url')
                     ->url(),
                 Toggle::make('shown_on_timeline')
@@ -62,12 +75,12 @@ class VehicleModificationResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
+            ->recordActions([
+                EditAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

@@ -2,28 +2,29 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
-        "filament/filament": "^3.2",
-        "ibrahimbougaoua/filament-sort-order": "^1.1",
-        "inertiajs/inertia-laravel": "^1.2",
-        "laravel/framework": "^11.9",
-        "laravel/tinker": "^2.9",
-        "league/flysystem-aws-s3-v3": "^3.0",
-        "league/glide": "^2.3",
-        "league/glide-symfony": "^2.0",
-        "pelmered/filament-money-field": "^1.3",
-        "tightenco/ziggy": "^2.2"
+        "php": "^8.3",
+        "filament/filament": "^5.8",
+        "inertiajs/inertia-laravel": "^3.3",
+        "laravel/framework": "^13.31",
+        "laravel/tinker": "^3.0",
+        "league/flysystem-aws-s3-v3": "^3.29",
+        "league/glide": "^3.2",
+        "league/glide-symfony": "^2.1",
+        "tightenco/ziggy": "^2.6"
     },
     "require-dev": {
-        "fakerphp/faker": "^1.23",
-        "laravel/pint": "^1.13",
-        "laravel/sail": "^1.26",
+        "fakerphp/faker": "^1.24",
+        "laravel/pint": "^1.18",
+        "laravel/sail": "^1.67",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.0",
-        "phpunit/phpunit": "^11.0.1"
+        "nunomaduro/collision": "^8.9",
+        "phpunit/phpunit": "^12.0"
     },
     "autoload": {
         "psr-4": {

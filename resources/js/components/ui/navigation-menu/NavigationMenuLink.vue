@@ -5,7 +5,7 @@ import {
   type NavigationMenuLinkEmits,
   type NavigationMenuLinkProps,
   useForwardPropsEmits,
-} from 'radix-vue'
+} from 'reka-ui'
 import { navigationMenuTriggerStyle } from '.'
 import { cn } from '@/lib/utils'
 
