@@ -19,7 +19,11 @@ createInertiaApp({
         );
 
         page.then((module) => {
-            module.default.layout = module.default.layout || MainLayout;
+            // `layout: null` is meaningful - admin pages opt out of the
+            // public chrome - so only default when nothing was declared.
+            if (module.default.layout === undefined) {
+                module.default.layout = MainLayout;
+            }
         });
 
         return page;

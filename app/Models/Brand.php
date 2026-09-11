@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Brand extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'logo_image_id',
@@ -19,13 +21,11 @@ class Brand extends Model
     ];
 
     protected $with = [
-        'logo.file'
+        'logo.file',
     ];
 
     public function logo(): BelongsTo
     {
         return $this->belongsTo(Image::class, 'logo_image_id');
     }
-
-    // attribute to get logo file path?
 }

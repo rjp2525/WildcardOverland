@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Image extends Model
 {
@@ -16,12 +16,21 @@ class Image extends Model
         'file_id',
         'width',
         'height',
-        'private', // boolean, indexed
+        'private',
     ];
 
-    public function brand(): ?HasOne
+    protected function casts(): array
     {
-        return $this->hasOne(Brand::class, 'logo_file_id');
+        return [
+            'width' => 'integer',
+            'height' => 'integer',
+            'private' => 'boolean',
+        ];
+    }
+
+    public function brand(): HasOne
+    {
+        return $this->hasOne(Brand::class, 'logo_image_id');
     }
 
     public function file(): BelongsTo

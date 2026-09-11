@@ -1,4 +1,3 @@
-import { PageProps as InertiaPageProps } from "@inertiajs/core";
 import { AxiosInstance } from "axios";
 import ziggyRoute, {
     Config as ZiggyConfig,
@@ -27,5 +26,7 @@ declare module "vue" {
 }
 
 declare module "@inertiajs/core" {
-    interface PageProps extends InertiaPageProps, AppPageProps {}
+    // Augmenting with AppPageProps only. Extending InertiaPageProps here as
+    // well would be self-referential, which silently defeats the merge.
+    interface PageProps extends AppPageProps {}
 }

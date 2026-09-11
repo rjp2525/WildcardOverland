@@ -24,7 +24,8 @@ class AssetController extends Controller
     {
         $this->server = ServerFactory::create([
             'response' => new SymfonyResponseFactory(app('request')),
-            'source' => Storage::disk('s3')->getDriver(),
+            // Must match config('assets.disk'), which is where uploads land.
+            'source' => Storage::disk(config('assets.disk'))->getDriver(),
             'cache' => Storage::disk('local')->getDriver(),
             'cache_path_prefix' => '.glide-cache/',
             'base_url' => 'assets',
