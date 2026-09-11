@@ -5,6 +5,7 @@ import { Infinity } from 'lucide-vue-next';
 export interface AboutStats {
   trips: number;
   nights: number;
+  photos: number;
 }
 
 defineProps<{ stats: AboutStats }>();
@@ -44,13 +45,11 @@ const countUpOptions = (delay: number) => ({
           </span>
           <span class="text-sm font-bold">friends made</span>
         </div>
-        <!-- Not data-backed yet: Image::count() would count every uploaded
-             asset, including logos, not photographs taken. -->
         <div class="flex flex-col justify-center p-4 space-y-1 !border-l-0 sm:!border-l">
           <span class="font-extrabold text-4xl">
-            <count-up :start-val="0" :end-val="3115" :options="countUpOptions(400)" />
+            <count-up :start-val="0" :end-val="stats.photos" :options="countUpOptions(400)" />
           </span>
-          <span class="text-sm font-bold">photos</span>
+          <span class="text-sm font-bold">{{ stats.photos === 1 ? 'photo' : 'photos' }}</span>
         </div>
         <!-- Not data-backed yet: campsites carry coordinates but no state. -->
         <div class="flex flex-col justify-center p-4 space-y-1">

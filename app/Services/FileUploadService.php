@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ImageType;
 use App\Models\File;
 use App\Models\Image;
 use Illuminate\Http\UploadedFile;
@@ -18,8 +19,12 @@ class FileUploadService
      * Files are de-duplicated on their SHA-256: uploading the same bytes twice
      * returns the existing record rather than writing to the disk again.
      */
-    public function store(UploadedFile $upload, string $type = 'content', ?string $name = null): File
-    {
+    public function store(
+        UploadedFile $upload,
+        string $type = 'content',
+        ?string $name = null,
+        ImageType $imageType = ImageType::Photo,
+    ): File {
         $hash = hash_file('sha256', $upload->getRealPath());
 
         if ($existing = File::where('hash', $hash)->first()) {
@@ -36,7 +41,7 @@ class FileUploadService
             ['visibility' => 'private'],
         );
 
-        return DB::transaction(function () use ($upload, $hash, $disk, $extension, $storedPath, $type, $name): File {
+        return DB::transaction(function () use ($upload, $hash, $disk, $extension, $storedPath, $type, $name, $imageType): File {
             $file = File::create([
                 'name' => $name ?: pathinfo($upload->getClientOriginalName(), PATHINFO_FILENAME),
                 'original_filename' => $upload->getClientOriginalName(),
@@ -54,6 +59,7 @@ class FileUploadService
 
                 Image::create([
                     'name' => $file->name,
+                    'type' => $imageType,
                     'file_id' => $file->id,
                     'width' => $width,
                     'height' => $height,

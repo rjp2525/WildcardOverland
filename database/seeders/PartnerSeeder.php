@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ImageType;
 use App\Models\Brand;
 use App\Services\FileUploadService;
 use Illuminate\Database\Seeder;
@@ -52,6 +53,7 @@ class PartnerSeeder extends Seeder
                 new UploadedFile($source, $partner['logo'], 'image/png', null, true),
                 type: 'static',
                 name: $partner['name'].' logo',
+                imageType: ImageType::Logo,
             );
 
             Brand::updateOrCreate(

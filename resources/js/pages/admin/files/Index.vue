@@ -27,6 +27,7 @@ interface FileRow {
   readable_size: string
   is_image: boolean
   image_id: number | null
+  image_type: string | null
   created_at: string | null
 }
 
@@ -34,6 +35,7 @@ const props = defineProps<{
   files: Paginated<FileRow>
   filters: { search: string | null; sort: string; direction: string }
   maxUploadKb: number
+  imageTypes: Array<{ value: string; label: string }>
 }>()
 
 const columns: Column[] = [
@@ -46,9 +48,11 @@ const columns: Column[] = [
 const fileInput = ref<HTMLInputElement | null>(null)
 const dragging = ref(false)
 
-const form = useForm<{ file: File | null; type: string }>({
+const form = useForm<{ file: File | null; type: string; image_type: string }>({
   file: null,
   type: 'content',
+  // Only applied when the upload turns out to be an image.
+  image_type: 'photo',
 })
 
 function upload(selected: File | null) {
@@ -112,17 +116,26 @@ const maxMb = Math.round(props.maxUploadKb / 1024)
           >
         </div>
 
-        <Field label="Type" for="type" hint="“static” files are site assets; “content” files are editorial.">
-          <Select
-            id="type"
-            v-model="form.type"
-            class="max-w-xs"
-            :options="[
-              { value: 'content', label: 'Content' },
-              { value: 'static', label: 'Static' },
-            ]"
-          />
-        </Field>
+        <div class="grid gap-5 sm:grid-cols-2">
+          <Field label="File type" for="type" hint="“static” files are site assets; “content” files are editorial.">
+            <Select
+              id="type"
+              v-model="form.type"
+              :options="[
+                { value: 'content', label: 'Content' },
+                { value: 'static', label: 'Static' },
+              ]"
+            />
+          </Field>
+
+          <Field
+            label="Image type"
+            for="image_type"
+            hint="Only photographs are counted in the site statistics."
+          >
+            <Select id="image_type" v-model="form.image_type" :options="imageTypes" />
+          </Field>
+        </div>
       </div>
     </Card>
 
@@ -148,6 +161,9 @@ const maxMb = Math.round(props.maxUploadKb / 1024)
 
       <template #cell:mime="{ row }">
         <code class="rounded bg-zinc-100 px-1.5 py-0.5 text-xs dark:bg-zinc-800">{{ row.mime }}</code>
+        <span v-if="row.image_type" class="ml-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          {{ row.image_type }}
+        </span>
       </template>
 
       <template #actions="{ row }">

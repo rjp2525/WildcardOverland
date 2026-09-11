@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\ImageType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ImageRequest extends FormRequest
 {
@@ -18,6 +20,7 @@ class ImageRequest extends FormRequest
     {
         return [
             'name' => ['nullable', 'string', 'max:255'],
+            'type' => ['required', Rule::enum(ImageType::class)],
             'private' => ['boolean'],
         ];
     }

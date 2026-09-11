@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ImageType;
 use App\Models\Brand;
 use App\Models\File;
 use App\Models\Image;
@@ -49,6 +50,7 @@ class AboutPageTest extends TestCase
 
         $image = Image::create([
             'name' => $name,
+            'type' => ImageType::Logo,
             'file_id' => $file->id,
             'width' => 120,
             'height' => 60,
@@ -216,6 +218,58 @@ class AboutPageTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->where('stats.trips', 0)
                 ->where('stats.nights', 0));
+    }
+
+    protected function image(string $name, ImageType $type, bool $private = false): Image
+    {
+        $file = File::create([
+            'name' => $name,
+            'original_filename' => "{$name}.png",
+            'original_extension' => 'png',
+            'mime' => 'image/png',
+            'hash' => hash('sha256', $name),
+            'type' => 'content',
+            'size' => 512,
+            'stored_path' => "uploads/{$name}.png",
+            'disk' => 'assets-test',
+        ]);
+
+        return Image::create([
+            'name' => $name,
+            'type' => $type,
+            'file_id' => $file->id,
+            'private' => $private,
+        ]);
+    }
+
+    public function test_the_photo_counter_only_counts_photographs(): void
+    {
+        $this->image('sunset', ImageType::Photo);
+        $this->image('camp', ImageType::Photo);
+        $this->image('partner-mark', ImageType::Logo);
+        $this->image('divider', ImageType::Graphic);
+
+        $this->get(route('about'))
+            ->assertInertia(fn ($page) => $page->where('stats.photos', 2));
+    }
+
+    public function test_private_photographs_are_not_counted(): void
+    {
+        $this->image('public-shot', ImageType::Photo);
+        $this->image('private-shot', ImageType::Photo, private: true);
+
+        $this->get(route('about'))
+            ->assertInertia(fn ($page) => $page->where('stats.photos', 1));
+    }
+
+    public function test_a_seeded_partner_logo_does_not_inflate_the_photo_count(): void
+    {
+        $this->brandWithLogo('katadyn');
+
+        $this->get(route('about'))
+            ->assertInertia(fn ($page) => $page
+                ->has('partners', 1)
+                ->where('stats.photos', 0));
     }
 
     public function test_the_page_renders_with_no_data_at_all(): void

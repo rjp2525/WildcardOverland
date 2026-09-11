@@ -7,6 +7,7 @@ import Button from '@/components/admin/ui/Button.vue'
 import Card from '@/components/admin/ui/Card.vue'
 import Field from '@/components/admin/ui/Field.vue'
 import Input from '@/components/admin/ui/Input.vue'
+import Select from '@/components/admin/ui/Select.vue'
 import Switch from '@/components/admin/ui/Switch.vue'
 import { useRoute } from '@/lib/route'
 
@@ -17,16 +18,21 @@ defineOptions({ layout: AdminLayout })
 interface ImagePayload {
   id: number
   name: string | null
+  type: string
   width: number | null
   height: number | null
   private: boolean
   file: { id: string; original_filename: string; mime: string; readable_size: string } | null
 }
 
-const props = defineProps<{ image: ImagePayload }>()
+const props = defineProps<{
+  image: ImagePayload
+  imageTypes: Array<{ value: string; label: string }>
+}>()
 
 const form = useForm({
   name: props.image.name ?? '',
+  type: props.image.type,
   private: props.image.private,
 })
 
@@ -51,6 +57,16 @@ function submit() {
       <div class="space-y-5">
         <Field label="Name" for="name" :error="form.errors.name">
           <Input id="name" v-model="form.name" :invalid="!!form.errors.name" />
+        </Field>
+
+        <Field
+          label="Type"
+          for="type"
+          :error="form.errors.type"
+          hint="Only photographs are counted in the site statistics."
+          required
+        >
+          <Select id="type" v-model="form.type" :options="imageTypes" :invalid="!!form.errors.type" />
         </Field>
 
         <Switch

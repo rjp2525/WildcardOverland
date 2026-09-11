@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\ImageType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +15,7 @@ class Image extends Model
 
     protected $fillable = [
         'name',
+        'type',
         'file_id',
         'width',
         'height',
@@ -22,10 +25,21 @@ class Image extends Model
     protected function casts(): array
     {
         return [
+            'type' => ImageType::class,
             'width' => 'integer',
             'height' => 'integer',
             'private' => 'boolean',
         ];
+    }
+
+    /**
+     * Photographs that are publicly visible - what the About page counts.
+     *
+     * @param  Builder<Image>  $query
+     */
+    public function scopePublicPhotos(Builder $query): void
+    {
+        $query->where('type', ImageType::Photo)->where('private', false);
     }
 
     public function brand(): HasOne

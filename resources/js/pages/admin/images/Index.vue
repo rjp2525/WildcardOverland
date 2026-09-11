@@ -13,6 +13,8 @@ defineOptions({ layout: AdminLayout })
 interface ImageRow {
   id: number
   name: string | null
+  type: string
+  type_label: string
   width: number | null
   height: number | null
   private: boolean
@@ -26,6 +28,7 @@ defineProps<{
 
 const columns: Column[] = [
   { key: 'name', label: 'Name', sortable: true },
+  { key: 'type', label: 'Type', sortable: true },
   { key: 'width', label: 'Dimensions', sortable: true },
   { key: 'file', label: 'File' },
   { key: 'private', label: 'Visibility' },
@@ -56,6 +59,12 @@ const columns: Column[] = [
       >
         {{ row.name ?? `Image #${row.id}` }}
       </Link>
+    </template>
+
+    <template #cell:type="{ row }">
+      <span class="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+        {{ row.type_label }}
+      </span>
     </template>
 
     <template #cell:width="{ row }">

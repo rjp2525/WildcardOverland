@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\ImageType;
 use App\Models\File;
 use App\Models\Image;
 use App\Models\User;
@@ -43,6 +44,51 @@ class FileUploadTest extends TestCase
         $this->assertSame($file->id, $image->file_id);
         $this->assertSame(120, $image->width);
         $this->assertSame(60, $image->height);
+    }
+
+    public function test_an_upload_records_the_chosen_image_type(): void
+    {
+        $this->post(route('admin.files.store'), [
+            'file' => UploadedFile::fake()->image('mark.png'),
+            'image_type' => ImageType::Logo->value,
+        ])->assertRedirect();
+
+        $this->assertSame(ImageType::Logo, Image::sole()->type);
+    }
+
+    public function test_uploads_default_to_photographs(): void
+    {
+        $this->post(route('admin.files.store'), [
+            'file' => UploadedFile::fake()->image('sunset.png'),
+        ])->assertRedirect();
+
+        $this->assertSame(ImageType::Photo, Image::sole()->type);
+    }
+
+    public function test_an_unknown_image_type_is_rejected(): void
+    {
+        $this->post(route('admin.files.store'), [
+            'file' => UploadedFile::fake()->image('sunset.png'),
+            'image_type' => 'banana',
+        ])->assertSessionHasErrors('image_type');
+
+        $this->assertSame(0, File::count());
+    }
+
+    public function test_an_image_type_can_be_changed_afterwards(): void
+    {
+        $this->post(route('admin.files.store'), [
+            'file' => UploadedFile::fake()->image('mark.png'),
+        ]);
+
+        $image = Image::sole();
+
+        $this->put(route('admin.images.update', $image), [
+            'name' => 'Partner mark',
+            'type' => ImageType::Logo->value,
+        ])->assertRedirect();
+
+        $this->assertSame(ImageType::Logo, $image->fresh()->type);
     }
 
     public function test_a_non_image_does_not_create_an_image_record(): void

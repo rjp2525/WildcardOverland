@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ImageType;
 use App\Http\Controllers\Controller;
 use App\Models\File;
 use App\Services\FileUploadService;
 use App\Support\AdminTable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,10 +32,12 @@ class FileController extends Controller
                 'readable_size' => $file->readable_size,
                 'is_image' => $file->isImage(),
                 'image_id' => $file->image?->id,
+                'image_type' => $file->image?->type?->value,
                 'created_at' => $file->created_at?->toDateTimeString(),
             ]),
             'filters' => $table->state(),
             'maxUploadKb' => config('assets.max_upload_kb'),
+            'imageTypes' => ImageType::options(),
         ]);
     }
 
@@ -42,6 +46,7 @@ class FileController extends Controller
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:'.config('assets.max_upload_kb')],
             'type' => ['nullable', 'string', 'in:content,static'],
+            'image_type' => ['nullable', 'string', Rule::enum(ImageType::class)],
             'name' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -49,6 +54,9 @@ class FileController extends Controller
             $request->file('file'),
             $validated['type'] ?? 'content',
             $validated['name'] ?? null,
+            isset($validated['image_type'])
+                ? ImageType::from($validated['image_type'])
+                : ImageType::Photo,
         );
 
         return back()->with('success', "Uploaded \"{$file->name}\".");

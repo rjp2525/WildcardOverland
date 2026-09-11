@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ImageType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ImageRequest;
 use App\Models\Image;
@@ -17,11 +18,12 @@ class ImageController extends Controller
     {
         $table = AdminTable::for(Image::query()->with('file'), $request)
             ->searchable(['name'])
-            ->sortable(['name', 'width', 'height', 'created_at']);
+            ->sortable(['name', 'type', 'width', 'height', 'created_at']);
 
         return Inertia::render('admin/images/Index', [
             'images' => $table->paginate()->through(fn (Image $image) => $this->present($image)),
             'filters' => $table->state(),
+            'imageTypes' => ImageType::options(),
         ]);
     }
 
@@ -29,6 +31,7 @@ class ImageController extends Controller
     {
         return Inertia::render('admin/images/Edit', [
             'image' => $this->present($image->load('file')),
+            'imageTypes' => ImageType::options(),
         ]);
     }
 
@@ -58,6 +61,8 @@ class ImageController extends Controller
         return [
             'id' => $image->id,
             'name' => $image->name,
+            'type' => $image->type?->value,
+            'type_label' => $image->type?->label(),
             'width' => $image->width,
             'height' => $image->height,
             'private' => $image->private,
