@@ -1,7 +1,47 @@
 <script setup lang="ts">
+import { Head } from '@inertiajs/vue3';
 import { HomepageBanner } from '@/components/homepage-banner';
+import {
+  CampsiteMap,
+  GalleryStrip,
+  LatestRecipes,
+  LatestTrips,
+  RigTeaser,
+} from '@/components/homepage';
+import { Statistics, Partners } from '@/components/pages/about';
+import type { AboutStats } from '@/components/pages/about/Statistics.vue';
+import type { Partner } from '@/components/pages/about/Partners.vue';
+import type { TripCardData } from '@/components/cards/TripCard.vue';
+import type { RecipeCardData } from '@/components/cards/RecipeCard.vue';
+import type { GalleryImage } from '@/components/homepage/GalleryStrip.vue';
+import type { Modification } from '@/components/homepage/RigTeaser.vue';
+import type { CampsitePoint } from '@/components/homepage/CampsiteMap.vue';
+
+defineProps<{
+  latestTrip: { name: string; url: string } | null;
+  hasRecipes: boolean;
+  trips: TripCardData[];
+  recipes: RecipeCardData[];
+  gallery: GalleryImage[];
+  modifications: Modification[];
+  campsites: CampsitePoint[];
+  stats: AboutStats;
+  partners: Partner[];
+}>();
 </script>
 
 <template>
-  <HomepageBanner />
+  <Head title="Wildcard Overland" />
+
+  <HomepageBanner :latest-trip="latestTrip" :has-recipes="hasRecipes" />
+
+  <div id="below-the-fold">
+    <Statistics :stats="stats" />
+    <LatestTrips :trips="trips" />
+    <GalleryStrip :images="gallery" />
+    <RigTeaser :modifications="modifications" />
+    <LatestRecipes :recipes="recipes" />
+    <CampsiteMap :campsites="campsites" />
+    <Partners :partners="partners" />
+  </div>
 </template>

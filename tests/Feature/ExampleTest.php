@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    // The homepage reads trips, recipes and images, so it needs a schema.
+    use RefreshDatabase;
+
     /**
      * A basic test example.
      */
