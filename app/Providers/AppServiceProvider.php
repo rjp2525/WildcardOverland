@@ -33,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
             'social' => array_filter(config('site.social')),
             'email' => config('site.email'),
             'since' => config('site.since'),
+            'notesShortcut' => array_filter(config('site.notes_shortcut')),
         ]);
 
         /*

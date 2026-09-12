@@ -12,6 +12,8 @@ export interface SiteMeta {
     social: Record<string, string>;
     email: string | null;
     since: number;
+    /** Present only when a Notes shortcut has been configured. */
+    notesShortcut?: { name?: string; install?: string };
 }
 
 /**
