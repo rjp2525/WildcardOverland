@@ -10,14 +10,18 @@ const props = defineProps<{
 
 /*
  * Two ways out, because they suit different places. On a phone the share
- * sheet drops it straight into Notes or Reminders. On a laptop there is no
- * share sheet worth using, so it goes to the clipboard.
+ * sheet drops it into Notes or Reminders. On a laptop there is no share
+ * sheet worth using, so it goes to the clipboard.
  *
- * The clipboard write carries two flavours. The HTML one is a list of
- * checkbox items, which is what a notes app needs to paste something you
- * can tick off rather than a wall of text. The plain text fallback uses the
- * markdown checkbox syntax, which is the closest thing to a portable
- * checklist for anything that only takes text.
+ * The plain text is bare lines, deliberately. Apple Notes has no
+ * text-to-checklist conversion of any kind: not markdown, not HTML on the
+ * clipboard, not through the share sheet. Only the Shortcuts app can build
+ * a real checklist, through an action of its own. So `- [ ]` does not
+ * become a tick box there, it just sits in the note as three characters of
+ * rubbish in front of every line. Bare lines are what Notes turns into a
+ * checklist in one go once they are selected, which is the actual workflow.
+ *
+ * The clipboard also carries an HTML list, for the editors that do read one.
  */
 const canShare = ref(false)
 const state = ref<'idle' | 'copied' | 'failed'>('idle')
@@ -32,12 +36,11 @@ const title = () => `${props.name} shopping list`
 const escape = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-const asText = () =>
-  `${title()}\n\n${props.items.map((item) => `- [ ] ${item}`).join('\n')}`
+const asText = () => `${title()}\n\n${props.items.join('\n')}`
 
 const asHtml = () =>
   `<h1>${escape(title())}</h1><ul>${props.items
-    .map((item) => `<li><input type="checkbox"> ${escape(item)}</li>`)
+    .map((item) => `<li>${escape(item)}</li>`)
     .join('')}</ul>`
 
 function flash(next: 'copied' | 'failed') {
@@ -110,8 +113,8 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
       Your browser would not let go of the clipboard. Select the list and copy it by hand.
     </p>
     <p v-else class="mt-2 text-xs text-slate-500 dark:text-white/50">
-      Pastes as a checklist. In Notes on a phone, hit the format button and pick
-      checklist if it comes through flat.
+      One item per line. Notes will not tick-box it on its own, so select the
+      lines once it lands and tap the checklist button.
     </p>
   </div>
 </template>
