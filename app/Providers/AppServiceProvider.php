@@ -6,6 +6,7 @@ use App\Image\Transformations\OgCard;
 use App\Services\OgCardRenderer;
 use Illuminate\Support\Facades\Image;
 use Illuminate\Support\ServiceProvider;
+use Inertia\Inertia;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +23,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        /*
+         * Shared from here rather than from the Inertia middleware, because
+         * the middleware does not run when an error response is rendered and
+         * the footer is on those pages too. None of it depends on the
+         * request, so a provider is where it belongs anyway.
+         */
+        Inertia::share('site', fn () => [
+            'social' => array_filter(config('site.social')),
+            'email' => config('site.email'),
+            'since' => config('site.since'),
+        ]);
+
         /*
          * Link cards are drawn through the same image pipeline as every other
          * derivative, so they get the same driver handling and caching. The

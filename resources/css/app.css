@@ -70,11 +70,11 @@
 
 /* Ported from `theme.extend.backgroundImage`. */
 @utility bg-landing {
-    background-image: url("@img/homepage-banner-bg.jpg");
+    background-image: url("@img/night-camp.jpg");
 }
 
 @utility bg-page-header {
-    background-image: url("@img/page-banner-bg.jpg");
+    background-image: url("@img/night-camp-strip.jpg");
 }
 
 @utility bg-brand-radial-gradient {

@@ -62,7 +62,7 @@ class OgCardController extends Controller
     {
         $image = $source !== null
             ? Image::fromStorage($source, config('assets.disk'))
-            : Image::fromPath(resource_path('img/homepage-banner-bg.jpg'));
+            : Image::fromPath(resource_path('img/night-camp-card.jpg'));
 
         return $image
             ->transform(new OgCard($title, $eyebrow, hasPhoto: true))

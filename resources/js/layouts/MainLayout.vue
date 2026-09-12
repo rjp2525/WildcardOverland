@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { Navbar } from '@/components/navigation';
+import { Footer, Navbar } from '@/components/navigation';
 </script>
 
 <template>
-  <Navbar />
-  <slot />
+  <!-- min-h-screen with the footer pushed down, so a short page still has it
+       sitting at the bottom of the window rather than halfway up. -->
+  <div class="flex min-h-screen flex-col">
+    <Navbar />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <Footer />
+  </div>
 </template>
