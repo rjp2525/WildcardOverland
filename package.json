@@ -31,6 +31,7 @@
         "vue3-marquee": "^4.2.2"
     },
     "devDependencies": {
+        "@inertiajs/core": "^3.7.1",
         "@tailwindcss/vite": "^4.3.3",
         "@types/leaflet": "^1.9.22",
         "@vitejs/plugin-vue": "^6.0.8",

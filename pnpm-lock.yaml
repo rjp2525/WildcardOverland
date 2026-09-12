@@ -221,6 +221,9 @@ importers:
         specifier: ^4.2.2
         version: 4.2.2(vue@3.5.42(typescript@6.0.3))
     devDependencies:
+      '@inertiajs/core':
+        specifier: ^3.7.1
+        version: 3.7.1(axios@1.20.0(debug@4.4.3))
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.0(jiti@2.7.0))

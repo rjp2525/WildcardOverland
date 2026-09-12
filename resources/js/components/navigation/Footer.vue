@@ -4,9 +4,10 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { ArrowUp } from 'lucide-vue-next'
 import { HorizontalLogo } from '@/components/icon'
 import { useRoute } from '@/lib/route'
+import type { PageProps } from '@/types/PageProps'
 
 const route = useRoute()
-const page = usePage<{ site?: { social: Record<string, string>; email: string | null; since: number } }>()
+const page = usePage<PageProps>()
 
 const site = computed(() => page.props.site)
 const year = new Date().getFullYear()
