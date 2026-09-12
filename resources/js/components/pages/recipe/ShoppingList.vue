@@ -48,18 +48,25 @@ const escape = (value: string) =>
 
 const asText = () => `${title()}\n\n${props.items.join('\n')}`
 
+/**
+ * Same content without the blank line. The shortcut splits on newlines and
+ * appends one checklist item per line, so an empty line becomes an empty
+ * tick box in the note.
+ */
+const asShortcutText = () => [title(), ...props.items].join('\n')
+
 const asHtml = () =>
   `<h1>${escape(title())}</h1><ul>${props.items
     .map((item) => `<li>${escape(item)}</li>`)
     .join('')}</ul>`
 
-/** The shortcut gets the title on the first line and an item on each one after. */
+/** The shortcut gets the title on the first line and an item on every line after. */
 const shortcutUrl = computed(
   () =>
     'shortcuts://run-shortcut?name=' +
     encodeURIComponent(shortcut.value.name ?? '') +
     '&input=text&text=' +
-    encodeURIComponent(asText()),
+    encodeURIComponent(asShortcutText()),
 )
 
 function flash(next: 'copied' | 'failed') {
