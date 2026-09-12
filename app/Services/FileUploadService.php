@@ -7,8 +7,10 @@ use App\Models\File;
 use App\Models\Image;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 
 class FileUploadService
 {
@@ -28,7 +30,16 @@ class FileUploadService
         $hash = hash_file('sha256', $upload->getRealPath());
 
         if ($existing = File::where('hash', $hash)->first()) {
-            return $existing;
+            /*
+             * A row on its own is not enough: it has to point at bytes that
+             * are actually on the disk being served from. The two drift apart
+             * - the disk changes, an object is removed - and a row without
+             * its object still signs perfectly valid URLs for something that
+             * is not there, which reaches the browser as a bare 404.
+             */
+            return $this->isReadable($existing)
+                ? $existing
+                : $this->restore($existing, $upload);
         }
 
         $disk = config('assets.disk');
@@ -69,6 +80,61 @@ class FileUploadService
 
             return $file;
         });
+    }
+
+    /**
+     * Whether a record's bytes can actually be read from the disk that
+     * AssetController serves from.
+     */
+    protected function isReadable(File $file): bool
+    {
+        $disk = config('assets.disk');
+
+        if ($file->disk !== $disk) {
+            return false;
+        }
+
+        try {
+            return Storage::disk($disk)->exists($file->stored_path);
+        } catch (Throwable $e) {
+            // A misconfigured disk is not a reason to lose the record.
+            Log::warning('Could not check an asset on its disk', [
+                'file' => $file->id,
+                'disk' => $disk,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Put a known file's bytes back on the current disk.
+     *
+     * The path is regenerated rather than reused: Glide caches derivatives
+     * under the source path, so writing new bytes to the old one would keep
+     * serving whatever had already been cached against it.
+     */
+    protected function restore(File $file, UploadedFile $upload): File
+    {
+        $disk = config('assets.disk');
+        $storedPath = trim((string) config('assets.upload_path'), '/')
+            .'/'.Str::uuid()->toString()
+            .'.'.$file->original_extension;
+
+        Storage::disk($disk)->put(
+            $storedPath,
+            file_get_contents($upload->getRealPath()),
+            ['visibility' => 'private'],
+        );
+
+        $file->update([
+            'disk' => $disk,
+            'stored_path' => $storedPath,
+            'size' => $upload->getSize(),
+        ]);
+
+        return $file;
     }
 
     public function delete(File $file): void
