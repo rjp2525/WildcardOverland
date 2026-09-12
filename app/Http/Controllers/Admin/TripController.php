@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\TripRequest;
 use App\Models\Image;
+use App\Models\Recipe;
 use App\Models\Trip;
 use App\Support\AdminTable;
 use Illuminate\Http\RedirectResponse;
@@ -60,16 +61,21 @@ class TripController extends Controller
                     'value' => $image->id,
                     'label' => $image->name ?: "Image #{$image->id}",
                 ]),
+            'recipeOptions' => Recipe::query()
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (Recipe $recipe) => ['value' => $recipe->id, 'label' => $recipe->name]),
         ];
     }
 
     public function store(TripRequest $request): RedirectResponse
     {
         $trip = DB::transaction(function () use ($request): Trip {
-            $trip = Trip::create($request->safe()->except(['campsites', 'images']));
+            $trip = Trip::create($request->safe()->except(['campsites', 'images', 'recipes']));
 
             $this->syncCampsites($trip, $request->validated('campsites', []));
             $this->syncImages($trip, $request->validated('images', []));
+            $this->syncRecipes($trip, $request->validated('recipes', []));
 
             return $trip;
         });
@@ -101,6 +107,9 @@ class TripController extends Controller
                     'label' => $image->name ?: "Image #{$image->id}",
                     'caption' => $image->pivot->caption,
                 ]),
+                'recipes' => $trip->recipes->map(fn ($recipe) => [
+                    'id' => $recipe->id,
+                ]),
                 'campsites' => $trip->campsites->map(fn ($campsite) => [
                     'id' => $campsite->id,
                     'name' => $campsite->name,
@@ -117,10 +126,11 @@ class TripController extends Controller
     public function update(TripRequest $request, Trip $trip): RedirectResponse
     {
         DB::transaction(function () use ($request, $trip): void {
-            $trip->update($request->safe()->except(['campsites', 'images']));
+            $trip->update($request->safe()->except(['campsites', 'images', 'recipes']));
 
             $this->syncCampsites($trip, $request->validated('campsites', []));
             $this->syncImages($trip, $request->validated('images', []));
+            $this->syncRecipes($trip, $request->validated('recipes', []));
         });
 
         return back()->with('success', 'Trip updated.');
@@ -133,6 +143,21 @@ class TripController extends Controller
         return redirect()
             ->route('admin.trips.index')
             ->with('success', "Trip \"{$trip->name}\" deleted.");
+    }
+
+    /**
+     * Replace the recipes cooked on this trip, keeping the submitted order.
+     *
+     * @param  array<int, array<string, mixed>>  $recipes
+     */
+    protected function syncRecipes(Trip $trip, array $recipes): void
+    {
+        $trip->recipes()->sync(
+            collect($recipes)
+                ->values()
+                ->mapWithKeys(fn (array $row, int $order) => [$row['id'] => ['order' => $order]])
+                ->all(),
+        );
     }
 
     /**

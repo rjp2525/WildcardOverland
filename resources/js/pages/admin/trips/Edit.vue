@@ -26,6 +26,10 @@ interface CampsiteRow {
   notes: string | null
 }
 
+interface RecipeRow {
+  id: number | null
+}
+
 interface GalleryRow {
   id: number | null
   label?: string
@@ -39,6 +43,7 @@ interface TripPayload {
   headline: string | null
   hero_image_id: number | null
   images: GalleryRow[]
+  recipes: RecipeRow[]
   summary: string | null
   content: string | null
   start_date: string | null
@@ -53,6 +58,7 @@ interface TripPayload {
 const props = defineProps<{
   trip: TripPayload | null
   images: Array<{ value: number; label: string }>
+  recipeOptions: Array<{ value: number; label: string }>
 }>()
 
 const isEdit = !!props.trip
@@ -63,6 +69,7 @@ const form = useForm({
   headline: props.trip?.headline ?? '',
   hero_image_id: props.trip?.hero_image_id ?? null,
   images: (props.trip?.images ?? []) as GalleryRow[],
+  recipes: (props.trip?.recipes ?? []) as RecipeRow[],
   summary: props.trip?.summary ?? null,
   content: props.trip?.content ?? null,
   start_date: props.trip?.start_date ?? '',
@@ -211,6 +218,21 @@ function campsiteError(index: number, field: string): string | undefined {
               <Input v-model="row.caption" placeholder="Optional caption" />
             </Field>
           </div>
+        </template>
+      </Repeater>
+    </Card>
+
+    <Card title="Recipes" description="What you cooked out there; shown at the bottom of the trip page.">
+      <Repeater
+        v-model="form.recipes"
+        item-label="Recipe"
+        :new-row="(): RecipeRow => ({ id: null })"
+        empty-message="No recipes linked to this trip."
+      >
+        <template #row="{ row, index }">
+          <Field label="Recipe" :error="err(`recipes.${index}.id`)" required>
+            <Select v-model="row.id" :options="recipeOptions" placeholder="Choose a recipe…" />
+          </Field>
         </template>
       </Repeater>
     </Card>

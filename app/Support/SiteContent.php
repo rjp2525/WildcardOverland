@@ -115,8 +115,11 @@ class SiteContent
     }
 
     /**
-     * Campsites from published trips, for the map. Only points that actually
-     * have coordinates are returned.
+     * Campsites from published trips, for the map.
+     *
+     * Positions run through LocationAccess, so a public visitor gets fuzzed
+     * pins rather than exact ones - otherwise the map would hand out the very
+     * coordinates the trip page withholds.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -130,14 +133,65 @@ class SiteContent
             ->orderBy('trip_id')
             ->orderBy('order')
             ->get()
-            ->map(fn (Campsite $campsite) => [
-                'name' => $campsite->name,
-                'nights' => $campsite->nights,
-                'lat' => (float) $campsite->latitude,
-                'lng' => (float) $campsite->longitude,
-                'trip' => $campsite->trip?->name,
-                'url' => $campsite->trip ? route('trips.show', $campsite->trip->slug) : null,
-            ])
+            ->map(function (Campsite $campsite) {
+                $position = LocationAccess::position($campsite);
+
+                return [
+                    'name' => $campsite->name,
+                    'nights' => $campsite->nights,
+                    'lat' => $position['lat'],
+                    'lng' => $position['lng'],
+                    'precise' => $position['precise'],
+                    'state' => $campsite->state,
+                    'trip' => $campsite->trip?->name,
+                    'url' => $campsite->trip ? route('trips.show', $campsite->trip->slug) : null,
+                ];
+            })
             ->all();
+    }
+
+    /**
+     * Where the map should open: the tightest box around the densest cluster
+     * of campsites, rather than everything at once. Trips spanning Oregon to
+     * Baja would otherwise frame the whole continent.
+     *
+     * @param  array<int, array<string, mixed>>  $points
+     * @return array{south: float, west: float, north: float, east: float}|null
+     */
+    public static function mapFocus(array $points): ?array
+    {
+        if ($points === []) {
+            return null;
+        }
+
+        // Degrees; roughly a day's drive, so one region reads as one cluster.
+        $radius = 6.0;
+
+        $best = [];
+
+        foreach ($points as $centre) {
+            $cluster = array_values(array_filter(
+                $points,
+                fn (array $p) => abs($p['lat'] - $centre['lat']) <= $radius
+                    && abs($p['lng'] - $centre['lng']) <= $radius,
+            ));
+
+            if (count($cluster) > count($best)) {
+                $best = $cluster;
+            }
+        }
+
+        $lats = array_column($best, 'lat');
+        $lngs = array_column($best, 'lng');
+
+        // A little breathing room so pins are not against the edge.
+        $pad = 0.4;
+
+        return [
+            'south' => min($lats) - $pad,
+            'west' => min($lngs) - $pad,
+            'north' => max($lats) + $pad,
+            'east' => max($lngs) + $pad,
+        ];
     }
 }

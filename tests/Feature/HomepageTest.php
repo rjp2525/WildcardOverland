@@ -134,7 +134,9 @@ class HomepageTest extends TestCase
                 ->has('campsites', 1)
                 ->where('campsites.0.name', 'With coords')
                 ->where('campsites.0.trip', 'Baja')
-                ->where('campsites.0.lat', 29.8));
+                // The pin itself is fuzzed for a guest; LocationPrivacyTest
+                // covers how far, and for whom.
+                ->where('campsites.0.precise', false));
     }
 
     public function test_the_rig_teaser_is_limited_and_ordered(): void

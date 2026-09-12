@@ -47,7 +47,8 @@ class HomepageController extends Controller
 
             'gallery' => SiteContent::gallery(),
             'modifications' => SiteContent::timeline(limit: 4),
-            'campsites' => SiteContent::campsitePoints(),
+            'campsites' => $campsites = SiteContent::campsitePoints(),
+            'mapFocus' => SiteContent::mapFocus($campsites),
             'stats' => SiteContent::stats(),
             'partners' => SiteContent::partners(),
         ]);

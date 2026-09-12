@@ -15,7 +15,7 @@ import type { TripCardData } from '@/components/cards/TripCard.vue';
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue';
 import type { GalleryImage } from '@/components/homepage/GalleryStrip.vue';
 import type { Modification } from '@/components/homepage/RigTeaser.vue';
-import type { CampsitePoint } from '@/components/homepage/CampsiteMap.vue';
+import type { CampsitePoint, MapFocus } from '@/components/homepage/CampsiteMap.vue';
 
 defineProps<{
   latestTrip: { name: string; url: string } | null;
@@ -25,6 +25,7 @@ defineProps<{
   gallery: GalleryImage[];
   modifications: Modification[];
   campsites: CampsitePoint[];
+  mapFocus: MapFocus | null;
   stats: AboutStats;
   partners: Partner[];
 }>();
@@ -41,7 +42,7 @@ defineProps<{
     <GalleryStrip :images="gallery" />
     <RigTeaser :modifications="modifications" />
     <LatestRecipes :recipes="recipes" />
-    <CampsiteMap :campsites="campsites" />
+    <CampsiteMap :campsites="campsites" :focus="mapFocus" />
     <Partners :partners="partners" />
   </div>
 </template>

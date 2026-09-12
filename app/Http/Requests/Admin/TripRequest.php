@@ -31,6 +31,8 @@ class TripRequest extends FormRequest
             'images' => ['array'],
             'images.*.id' => ['required', 'integer', 'exists:images,id'],
             'images.*.caption' => ['nullable', 'string', 'max:255'],
+            'recipes' => ['array'],
+            'recipes.*.id' => ['required', 'integer', 'exists:recipes,id'],
             'summary' => ['nullable', 'string'],
             'content' => ['nullable', 'string'],
             'start_date' => ['nullable', 'date'],

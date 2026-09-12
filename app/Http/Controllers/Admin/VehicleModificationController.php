@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\BuildLayer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\VehicleModificationRequest;
 use App\Models\VehicleModification;
@@ -38,7 +39,10 @@ class VehicleModificationController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('admin/vehicle-modifications/Edit', ['modification' => null]);
+        return Inertia::render('admin/vehicle-modifications/Edit', [
+            'modification' => null,
+            'buildLayers' => BuildLayer::options(),
+        ]);
     }
 
     public function store(VehicleModificationRequest $request): RedirectResponse
@@ -65,8 +69,13 @@ class VehicleModificationController extends Controller
                     ? null
                     : number_format($vehicleModification->cost / 100, 2, '.', ''),
                 'url' => $vehicleModification->url,
+                'affiliate_url' => $vehicleModification->affiliate_url,
+                'hotspot_x' => $vehicleModification->hotspot_x,
+                'hotspot_y' => $vehicleModification->hotspot_y,
+                'build_layer' => $vehicleModification->build_layer?->value,
                 'shown_on_timeline' => (bool) $vehicleModification->shown_on_timeline,
             ],
+            'buildLayers' => BuildLayer::options(),
         ]);
     }
 

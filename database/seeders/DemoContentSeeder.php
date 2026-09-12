@@ -36,6 +36,7 @@ class DemoContentSeeder extends Seeder
 
         $this->seedTrips($images);
         $this->seedRecipes($images);
+        $this->linkRecipesToTrips();
         $this->seedModifications();
         $this->seedGallery($images);
 
@@ -171,6 +172,32 @@ class DemoContentSeeder extends Seeder
         $this->command?->info('Seeded '.count(DemoContent::recipes()).' recipes.');
     }
 
+    /**
+     * Recipes are seeded after trips, so the pairing happens once both exist.
+     * Matching on name keeps DemoContent readable; slugs live in the seeder.
+     */
+    protected function linkRecipesToTrips(): void
+    {
+        $recipes = Recipe::pluck('id', 'name');
+
+        foreach (DemoContent::trips() as $data) {
+            $trip = Trip::where('name', $data['name'])->first();
+
+            if ($trip === null) {
+                continue;
+            }
+
+            $trip->recipes()->sync(
+                collect($data['recipes'] ?? [])
+                    ->map(fn (string $name) => $recipes[$name] ?? null)
+                    ->filter()
+                    ->values()
+                    ->mapWithKeys(fn (int $id, int $order) => [$id => ['order' => $order]])
+                    ->all(),
+            );
+        }
+    }
+
     protected function seedModifications(): void
     {
         foreach (DemoContent::modifications() as $data) {
@@ -182,6 +209,9 @@ class DemoContentSeeder extends Seeder
                     'install_date' => $data['install_date'],
                     'cost' => $data['cost'],
                     'url' => $data['url'] ?? null,
+                    'build_layer' => $data['layer'] ?? null,
+                    'hotspot_x' => $data['hotspot'][0] ?? null,
+                    'hotspot_y' => $data['hotspot'][1] ?? null,
                     'shown_on_timeline' => $data['timeline'],
                 ],
             );

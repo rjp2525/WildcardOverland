@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
-import { MapPin, Moon } from 'lucide-vue-next'
-import { TripCard } from '@/components/cards'
+import { Lock, MapPin, Moon } from 'lucide-vue-next'
+import { RecipeCard, TripCard } from '@/components/cards'
 import type { TripCardData } from '@/components/cards/TripCard.vue'
+import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
 
 interface GalleryImage {
   url: string
@@ -14,8 +15,9 @@ interface Campsite {
   name: string
   nights: number | null
   notes: string | null
-  latitude: number | null
-  longitude: number | null
+  state: string | null
+  /** Null unless the viewer is entitled to precise locations. */
+  coordinates: { lat: number; lng: number } | null
 }
 
 defineProps<{
@@ -29,6 +31,8 @@ defineProps<{
     hero: { url: string; alt: string } | null
     gallery: GalleryImage[]
     campsites: Campsite[]
+    hasHiddenLocations: boolean
+    recipes: RecipeCardData[]
   }
   more: TripCardData[]
 }>()
@@ -133,9 +137,12 @@ defineProps<{
           <p v-if="camp.notes" class="mt-1 text-sm text-slate-600 dark:text-white/70">
             {{ camp.notes }}
           </p>
+          <p v-if="camp.state" class="mt-1 text-xs text-slate-500 dark:text-white/50">
+            {{ camp.state }}
+          </p>
           <a
-            v-if="camp.latitude !== null && camp.longitude !== null"
-            :href="`https://www.openstreetmap.org/?mlat=${camp.latitude}&mlon=${camp.longitude}#map=12/${camp.latitude}/${camp.longitude}`"
+            v-if="camp.coordinates"
+            :href="`https://www.openstreetmap.org/?mlat=${camp.coordinates.lat}&mlon=${camp.coordinates.lng}#map=12/${camp.coordinates.lat}/${camp.coordinates.lng}`"
             target="_blank"
             rel="noopener noreferrer"
             class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
@@ -144,8 +151,37 @@ defineProps<{
           </a>
         </li>
       </ol>
+
+      <!-- Exact locations are the members-only part; the sites themselves are not. -->
+      <div
+        v-if="trip.hasHiddenLocations"
+        class="mt-4 rounded-lg border border-dashed border-brand/40 bg-brand/5 p-4"
+      >
+        <p class="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-brand">
+          <Lock class="h-3.5 w-3.5" /> Members only
+        </p>
+        <p class="mt-1.5 text-sm text-slate-600 dark:text-white/70">
+          Exact coordinates and GPX downloads for these campsites are part of a
+          membership — it keeps the quiet spots quiet.
+        </p>
+      </div>
     </aside>
   </div>
+
+  <section
+    v-if="trip.recipes.length"
+    class="border-t border-slate-200 py-12 dark:border-white/10"
+  >
+    <div class="container">
+      <h2 class="mb-2 text-2xl font-extrabold uppercase text-brand">Cooked on this trip</h2>
+      <p class="mb-6 text-slate-600 dark:text-white/70">
+        What came out of the skillet along the way.
+      </p>
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <RecipeCard v-for="recipe in trip.recipes" :key="recipe.slug" :recipe="recipe" />
+      </div>
+    </div>
+  </section>
 
   <section v-if="more.length" class="border-t border-slate-200 py-12 dark:border-white/10">
     <div class="container">

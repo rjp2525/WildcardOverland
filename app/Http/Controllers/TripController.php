@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Trip;
 use App\Support\ImagePresenter;
+use App\Support\LocationAccess;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,7 +30,14 @@ class TripController extends Controller
     {
         abort_unless($trip->isPublished(), 404);
 
-        $trip->load(['heroImage.file', 'images.file', 'campsites']);
+        $trip->load([
+            'heroImage.file',
+            'images.file',
+            'campsites',
+            // Constrained, not just eager loaded: a recipe still in draft is
+            // not public, and linking to it from here would 404.
+            'recipes' => fn ($query) => $query->published()->with('heroImage.file'),
+        ]);
 
         return Inertia::render('trips/Show', [
             'trip' => [
@@ -58,13 +66,30 @@ class TripController extends Controller
                     })
                     ->filter()
                     ->values(),
+                /*
+                 * Campsites are always listed; their coordinates are not.
+                 * Nothing precise reaches the payload unless the viewer is
+                 * entitled to it - hiding it in the template would still ship
+                 * it in the page source.
+                 */
                 'campsites' => $trip->campsites->map(fn ($campsite) => [
                     'name' => $campsite->name,
                     'nights' => $campsite->nights,
                     'notes' => $campsite->notes,
-                    'latitude' => $campsite->latitude === null ? null : (float) $campsite->latitude,
-                    'longitude' => $campsite->longitude === null ? null : (float) $campsite->longitude,
+                    'state' => $campsite->state,
+                    'coordinates' => $campsite->hasCoordinates() && LocationAccess::granted()
+                        ? [
+                            'lat' => (float) $campsite->latitude,
+                            'lng' => (float) $campsite->longitude,
+                        ]
+                        : null,
                 ]),
+                'hasHiddenLocations' => $trip->campsites
+                    ->contains(fn ($campsite) => $campsite->hasCoordinates())
+                    && ! LocationAccess::granted(),
+                'recipes' => $trip->recipes->map(
+                    fn ($recipe) => RecipeController::cardFor($recipe),
+                ),
             ],
             'more' => Trip::published()
                 ->whereKeyNot($trip->id)

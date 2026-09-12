@@ -28,6 +28,7 @@ const links = [
   { label: "Home", routeName: "homepage", match: (c: string) => c === "Homepage" },
   { label: "Trips", routeName: "trips.index", match: (c: string) => c.startsWith("trips/") },
   { label: "Recipes", routeName: "recipes.index", match: (c: string) => c.startsWith("recipes/") },
+  { label: "The Rig", routeName: "rig", match: (c: string) => c === "Rig" },
   { label: "About", routeName: "about", match: (c: string) => c === "About" },
 ];
 

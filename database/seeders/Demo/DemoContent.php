@@ -27,6 +27,7 @@ class DemoContent
             [
                 'slug' => 'alvord-desert-crossing',
                 'name' => 'Alvord Desert Crossing',
+                'recipes' => ['Dutch Oven Chili', 'Cowboy Coffee'],
                 'headline' => 'Three days on a dry lake bed in south-east Oregon',
                 'miles' => 412,
                 'start_date' => '2025-05-09',
@@ -42,6 +43,7 @@ class DemoContent
             [
                 'slug' => 'mojave-road',
                 'name' => 'Mojave Road',
+                'recipes' => ['Foil Packet Trout', 'Skillet Cornbread'],
                 'headline' => 'The full 140 miles, east to west',
                 'miles' => 296,
                 'start_date' => '2025-03-14',
@@ -58,6 +60,7 @@ class DemoContent
             [
                 'slug' => 'white-rim-trail',
                 'name' => 'White Rim Trail',
+                'recipes' => ['Camp Breakfast Hash', 'Overnight Oats'],
                 'headline' => 'A hundred miles of shelf road under Island in the Sky',
                 'miles' => 188,
                 'start_date' => '2025-09-22',
@@ -73,6 +76,7 @@ class DemoContent
             [
                 'slug' => 'alpine-loop',
                 'name' => 'Alpine Loop',
+                'recipes' => ['Dutch Oven Chili', 'Skillet Cornbread', 'Cowboy Coffee'],
                 'headline' => 'Over Cinnamon and Engineer in the same day',
                 'miles' => 164,
                 'start_date' => '2025-07-18',
@@ -88,6 +92,7 @@ class DemoContent
             [
                 'slug' => 'mogollon-rim',
                 'name' => 'Mogollon Rim',
+                'recipes' => ['Camp Breakfast Hash'],
                 'headline' => 'Pines, and a two-thousand-foot edge to camp on',
                 'miles' => 137,
                 'start_date' => '2025-06-06',
@@ -102,6 +107,7 @@ class DemoContent
             [
                 'slug' => 'baja-peninsula',
                 'name' => 'Baja Peninsula',
+                'recipes' => ['Foil Packet Trout', 'Overnight Oats', 'Cowboy Coffee'],
                 'headline' => 'Nine days down to Bahía Concepción and back',
                 'miles' => 1284,
                 'start_date' => '2026-03-01',
@@ -273,13 +279,18 @@ class DemoContent
      */
     public static function modifications(): array
     {
+        // `layer` and `hotspot` place a part on the build page illustration;
+        // x/y are percentages of that artwork's box.
         return [
-            ['name' => 'Prinsu Roof Rack', 'vendor' => 'Prinsu', 'description' => 'Full-length aluminium rack with a wind deflector.', 'install_date' => '2024-04-12', 'cost' => 124999, 'url' => 'https://prinsu.com', 'timeline' => true],
-            ['name' => 'Dometic CFX3 45', 'vendor' => 'Dometic', 'description' => 'Dual-zone fridge freezer under the rear seat.', 'install_date' => '2024-07-02', 'cost' => 89900, 'timeline' => true],
-            ['name' => 'ARB Twin Compressor', 'vendor' => 'ARB', 'description' => 'Airs all four tyres back up in about six minutes.', 'install_date' => '2024-09-19', 'cost' => 55000, 'timeline' => true],
-            ['name' => 'Old Man Emu Suspension', 'vendor' => 'ARB', 'description' => 'Two inch lift with heavy rear leaves for the drawer weight.', 'install_date' => '2025-01-24', 'cost' => 189500, 'timeline' => true],
-            ['name' => 'Dual Battery System', 'vendor' => 'Redarc', 'description' => 'DC-DC charger and a 100Ah lithium under the tray.', 'install_date' => '2025-05-30', 'cost' => 142000, 'timeline' => true],
-            ['name' => 'Rear Drawer System', 'vendor' => 'Goose Gear', 'description' => 'Two drawers and a fridge slide.', 'install_date' => '2025-08-15', 'cost' => 210000, 'timeline' => true],
+            ['name' => 'Prinsu Roof Rack', 'vendor' => 'Prinsu', 'description' => 'Full-length aluminium rack with a wind deflector.', 'install_date' => '2024-04-12', 'cost' => 124999, 'url' => 'https://prinsu.com', 'timeline' => true, 'layer' => 'roof', 'hotspot' => [58.6, 25.8]],
+            ['name' => 'Baja Designs Light Bar', 'vendor' => 'Baja Designs', 'description' => 'Forty inches of light for the last hour of a long day.', 'install_date' => '2024-05-20', 'cost' => 79900, 'timeline' => false, 'layer' => 'roof', 'hotspot' => [65.9, 22.9]],
+            ['name' => 'Dometic CFX3 45', 'vendor' => 'Dometic', 'description' => 'Dual-zone fridge freezer under the rear seat.', 'install_date' => '2024-07-02', 'cost' => 89900, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [42.8, 58.8]],
+            ['name' => 'ARB Twin Compressor', 'vendor' => 'ARB', 'description' => 'Airs all four tyres back up in about six minutes.', 'install_date' => '2024-09-19', 'cost' => 55000, 'timeline' => true, 'layer' => 'underside', 'hotspot' => [69.0, 78.8]],
+            ['name' => 'CBI Rock Sliders', 'vendor' => 'CBI Offroad', 'description' => 'Bolt-on steel, and the reason the rockers are still straight.', 'install_date' => '2024-11-08', 'cost' => 98000, 'timeline' => false, 'layer' => 'underside', 'hotspot' => [51.7, 75.8]],
+            ['name' => 'Old Man Emu Suspension', 'vendor' => 'ARB', 'description' => 'Two inch lift with heavy rear leaves for the drawer weight.', 'install_date' => '2025-01-24', 'cost' => 189500, 'timeline' => true, 'layer' => 'underside', 'hotspot' => [26.9, 69.6]],
+            ['name' => 'C4 Fabrication Front Bumper', 'vendor' => 'C4 Fabrication', 'description' => 'Hybrid bumper with a recovery point at each corner.', 'install_date' => '2025-03-15', 'cost' => 165000, 'timeline' => false, 'layer' => 'body', 'hotspot' => [91.3, 68.5]],
+            ['name' => 'Dual Battery System', 'vendor' => 'Redarc', 'description' => 'DC-DC charger and a 100Ah lithium under the tray.', 'install_date' => '2025-05-30', 'cost' => 142000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [10.1, 62.9]],
+            ['name' => 'Rear Drawer System', 'vendor' => 'Goose Gear', 'description' => 'Two drawers and a fridge slide.', 'install_date' => '2025-08-15', 'cost' => 210000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [15.8, 55.4]],
         ];
     }
 

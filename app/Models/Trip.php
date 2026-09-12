@@ -64,6 +64,17 @@ class Trip extends Model
             ->orderBy('image_trip.order');
     }
 
+    /**
+     * Recipes cooked on this trip.
+     */
+    public function recipes(): BelongsToMany
+    {
+        return $this->belongsToMany(Recipe::class)
+            ->withPivot('order')
+            ->withTimestamps()
+            ->orderBy('recipe_trip.order');
+    }
+
     public function campsites(): HasMany
     {
         return $this->hasMany(Campsite::class)->orderBy('order');

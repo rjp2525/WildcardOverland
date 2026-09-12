@@ -28,14 +28,14 @@ defineProps<{ modifications: Modification[] }>()
           A Tacoma, slowly
         </h2>
         <p class="mt-4 max-w-lg text-white/70">
-          Every trip teaches the truck something. Here's what's gone on most recently — the
-          full build history lives on the about page.
+          Every trip teaches the truck something. Here's what's gone on most recently — pull
+          the whole thing apart on the rig page.
         </p>
         <Link
-          :href="route('about')"
+          :href="route('rig')"
           class="group mt-6 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-brand hover:underline"
         >
-          See the full build
+          Explode the build
           <ArrowRight class="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
