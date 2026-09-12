@@ -20,14 +20,14 @@ class Seo
     public const DEFAULT_DESCRIPTION = 'A Toyota Tacoma, a camper on the back and whatever road looks interesting. Trip write-ups, camp cooking and the whole build, part by part.';
 
     /**
-     * @param  array<string, mixed>|null  $image  An ImagePresenter payload
+     * @param  string|null  $card  A route('og.card') URL
      * @param  array<int, array<string, mixed>>  $schema  JSON-LD graph entries
      * @return array<string, mixed>
      */
     public static function make(
         string $title,
         ?string $description = null,
-        ?array $image = null,
+        ?string $card = null,
         string $type = 'website',
         ?string $canonical = null,
         bool $index = true,
@@ -40,12 +40,12 @@ class Seo
             'type' => $type,
             'index' => $index,
             'site' => static::SITE,
-            'image' => $image ? [
-                'url' => $image['src'],
-                'width' => $image['width'],
-                'height' => $image['height'],
-                'alt' => $image['alt'],
-            ] : static::defaultImage(),
+            'image' => [
+                'url' => $card ?? route('og.card', ['kind' => 'page', 'slug' => 'home']),
+                'width' => 1200,
+                'height' => 630,
+                'alt' => $title.' on Wildcard Overland',
+            ],
             'schema' => $schema,
         ];
     }
@@ -68,18 +68,5 @@ class Seo
     protected static function trim(string $description): string
     {
         return Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags($description))), 165);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected static function defaultImage(): array
-    {
-        return [
-            'url' => url('/og-default.jpg'),
-            'width' => 1200,
-            'height' => 630,
-            'alt' => 'A Toyota Tacoma with a camper on the back, parked in the trees',
-        ];
     }
 }

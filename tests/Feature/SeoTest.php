@@ -6,6 +6,7 @@ use App\Enums\MealType;
 use App\Models\Recipe;
 use App\Models\Trip;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -96,6 +97,56 @@ class SeoTest extends TestCase
         $this->assertSame('4 servings', $schema['recipeYield']);
         $this->assertSame(['1 lb ground beef'], $schema['recipeIngredient']);
         $this->assertSame('Brown the beef over a good bed of coals.', $schema['recipeInstructions'][0]['text']);
+    }
+
+    public function test_link_cards_are_drawn_at_the_size_the_platforms_want(): void
+    {
+        config(['assets.cache_disk' => 'card-test']);
+        Storage::fake('card-test');
+
+        $recipe = $this->recipe();
+
+        foreach ([
+            route('og.card', ['kind' => 'page', 'slug' => 'home']),
+            route('og.card', ['kind' => 'recipes', 'slug' => $recipe->slug]),
+        ] as $url) {
+            $response = $this->get($url);
+
+            $response->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+
+            [$width, $height] = getimagesizefromstring($response->getContent());
+            $this->assertSame([1200, 630], [$width, $height], "Wrong size for {$url}");
+        }
+    }
+
+    public function test_a_card_is_only_drawn_once(): void
+    {
+        config(['assets.cache_disk' => 'card-test']);
+        Storage::fake('card-test');
+
+        $url = route('og.card', ['kind' => 'page', 'slug' => 'rig']);
+
+        $this->get($url)->assertOk();
+        $drawn = Storage::disk('card-test')->allFiles();
+
+        $this->get($url)->assertOk();
+
+        $this->assertCount(1, $drawn);
+        $this->assertSame($drawn, Storage::disk('card-test')->allFiles());
+    }
+
+    public function test_an_unknown_card_is_not_drawn(): void
+    {
+        $this->get(route('og.card', ['kind' => 'page', 'slug' => 'nope']))->assertNotFound();
+        $this->get('/og/nonsense/home.jpg')->assertNotFound();
+    }
+
+    public function test_pages_point_at_their_own_card(): void
+    {
+        $recipe = $this->recipe();
+
+        $this->get(route('recipes.show', $recipe->slug))
+            ->assertSee('content="'.route('og.card', ['kind' => 'recipes', 'slug' => $recipe->slug]).'"', false);
     }
 
     public function test_error_pages_are_kept_out_of_the_index(): void

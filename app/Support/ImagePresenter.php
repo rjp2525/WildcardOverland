@@ -35,12 +35,6 @@ class ImagePresenter
         return static::present($image, 'thumb', $alt);
     }
 
-    /** The card a link turns into when someone shares it. */
-    public static function og(?Image $image, ?string $alt = null): ?array
-    {
-        return static::present($image, 'og', $alt);
-    }
-
     /** Whole image, scaled down to fit - used for logos. */
     public static function contain(?Image $image, ?string $alt = null): ?array
     {
@@ -58,8 +52,7 @@ class ImagePresenter
 
         // Logos and diagrams need their transparency, so they keep the
         // variant's own format rather than being flattened into webp.
-        $variantName = $variantName !== 'og'
-            && ($image->type === ImageType::Logo || $image->type === ImageType::Graphic)
+        $variantName = $image->type === ImageType::Logo || $image->type === ImageType::Graphic
             ? 'logo'
             : $variantName;
 

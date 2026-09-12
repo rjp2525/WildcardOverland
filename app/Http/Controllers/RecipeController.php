@@ -34,6 +34,7 @@ class RecipeController extends Controller
             'seo' => Seo::make(
                 title: $meal ? $meal->label().' recipes' : 'Camp Recipes',
                 description: 'Food worth making a long way from a kitchen. One pot where it can be, a skottle or a dutch oven where it cannot.',
+                card: route('og.card', ['kind' => 'page', 'slug' => 'recipes']),
                 canonical: $meal ? route('recipes.index', ['meal' => $meal->value]) : route('recipes.index'),
                 schema: [StructuredData::breadcrumbs([
                     ['name' => 'Home', 'url' => route('homepage')],
@@ -58,7 +59,7 @@ class RecipeController extends Controller
             'seo' => Seo::make(
                 title: $recipe->name,
                 description: $recipe->summary ?: $recipe->headline,
-                image: ImagePresenter::og($recipe->heroImage, $recipe->name),
+                card: route('og.card', ['kind' => 'recipes', 'slug' => $recipe->slug]),
                 type: 'article',
                 canonical: route('recipes.show', $recipe->slug),
                 schema: [

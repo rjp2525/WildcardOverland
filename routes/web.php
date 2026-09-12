@@ -3,6 +3,7 @@
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\HomepageController;
+use App\Http\Controllers\OgCardController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RigController;
 use App\Http\Controllers\SitemapController;
@@ -43,6 +44,12 @@ Route::get('robots.txt', fn () => response(
 ))->name('robots');
 
 Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
+
+// Unsigned on purpose: a crawler has to be able to fetch this cold, and the
+// platforms cache it hard, so the URL has to stay put.
+Route::get('og/{kind}/{slug}.jpg', OgCardController::class)
+    ->whereIn('kind', ['trips', 'recipes', 'page'])
+    ->name('og.card');
 
 Route::get('assets/{path}', AssetController::class)
     ->where('path', '.+')

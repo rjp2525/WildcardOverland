@@ -23,6 +23,7 @@ class HomepageController extends Controller
             'seo' => Seo::make(
                 title: 'Wildcard Overland',
                 description: Seo::DEFAULT_DESCRIPTION,
+                card: route('og.card', ['kind' => 'page', 'slug' => 'home']),
             ),
             // Drives the hero's primary call to action, which previously
             // pointed at an empty anchor.

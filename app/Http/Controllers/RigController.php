@@ -31,6 +31,7 @@ class RigController extends Controller
             'seo' => Seo::make(
                 title: 'The Rig',
                 description: 'Every part on the Tacoma and where it sits, from the Tune M1L camper down to the sliders. Pull the whole thing apart and see what it cost.',
+                card: route('og.card', ['kind' => 'page', 'slug' => 'rig']),
             ),
             'layers' => array_map(fn (BuildLayer $layer) => [
                 'value' => $layer->value,

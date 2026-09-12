@@ -27,6 +27,7 @@ class TripController extends Controller
             'seo' => Seo::make(
                 title: 'Trips',
                 description: 'Where the truck has been and what it was like out there. Route notes, campsites and the bits nobody puts in the guidebook.',
+                card: route('og.card', ['kind' => 'page', 'slug' => 'trips']),
                 schema: [StructuredData::breadcrumbs([
                     ['name' => 'Home', 'url' => route('homepage')],
                     ['name' => 'Trips', 'url' => route('trips.index')],
@@ -55,7 +56,7 @@ class TripController extends Controller
             'seo' => Seo::make(
                 title: $trip->name,
                 description: $trip->summary ?: $trip->headline,
-                image: ImagePresenter::og($trip->heroImage, $trip->name),
+                card: route('og.card', ['kind' => 'trips', 'slug' => $trip->slug]),
                 type: 'article',
                 canonical: route('trips.show', $trip->slug),
                 schema: [
