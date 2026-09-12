@@ -22,6 +22,9 @@ class ImageRequest extends FormRequest
             'name' => ['nullable', 'string', 'max:255'],
             'type' => ['required', Rule::enum(ImageType::class)],
             'private' => ['boolean'],
+            'featured' => ['boolean'],
+            'sort_order' => ['integer', 'min:0'],
+            'caption' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

@@ -22,6 +22,9 @@ interface ImagePayload {
   width: number | null
   height: number | null
   private: boolean
+  featured: boolean
+  sort_order: number
+  caption: string | null
   file: { id: string; original_filename: string; mime: string; readable_size: string } | null
 }
 
@@ -33,7 +36,10 @@ const props = defineProps<{
 const form = useForm({
   name: props.image.name ?? '',
   type: props.image.type,
+  caption: props.image.caption ?? '',
   private: props.image.private,
+  featured: props.image.featured,
+  sort_order: props.image.sort_order,
 })
 
 function submit() {
@@ -69,11 +75,30 @@ function submit() {
           <Select id="type" v-model="form.type" :options="imageTypes" :invalid="!!form.errors.type" />
         </Field>
 
+        <Field label="Caption" for="caption" :error="form.errors.caption" hint="Shown under the image in the homepage gallery.">
+          <Input id="caption" v-model="form.caption" :invalid="!!form.errors.caption" />
+        </Field>
+
         <Switch
           v-model="form.private"
           label="Private"
-          description="Private images are excluded from public listings."
+          description="Private images are excluded from public listings and never counted."
         />
+
+        <Switch
+          v-model="form.featured"
+          label="Featured"
+          description="Featured photographs appear in the homepage gallery."
+        />
+
+        <Field
+          label="Sort order"
+          for="sort_order"
+          :error="form.errors.sort_order"
+          hint="Lower numbers appear first in the gallery."
+        >
+          <Input id="sort_order" v-model="form.sort_order" type="number" min="0" class="max-w-32" :invalid="!!form.errors.sort_order" />
+        </Field>
       </div>
     </Card>
 

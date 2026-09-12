@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FileController;
 use App\Http\Controllers\Admin\ImageController;
 use App\Http\Controllers\Admin\NavigationLinkController;
+use App\Http\Controllers\Admin\RecipeController;
 use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\TripController;
 use App\Http\Controllers\Admin\VehicleModificationController;
@@ -22,6 +23,8 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('/', DashboardController::class)->name('dashboard');
 
         Route::resource('trips', TripController::class)->except('show');
+
+        Route::resource('recipes', RecipeController::class)->except('show');
 
         Route::resource('navigation-links', NavigationLinkController::class)
             ->except('show')

@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\ImageType;
+use App\Models\File;
+use App\Models\Image;
 use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -109,6 +112,58 @@ class TripTest extends TestCase
         $this->delete(route('admin.trips.destroy', $trip))->assertRedirect();
 
         $this->assertSoftDeleted($trip);
+    }
+
+    protected function makeImage(string $name): Image
+    {
+        $file = File::create([
+            'name' => $name, 'original_filename' => "{$name}.png", 'original_extension' => 'png',
+            'mime' => 'image/png', 'hash' => hash('sha256', $name), 'type' => 'content',
+            'size' => 100, 'stored_path' => "uploads/{$name}.png", 'disk' => 'local',
+        ]);
+
+        return Image::create(['name' => $name, 'type' => ImageType::Photo, 'file_id' => $file->id]);
+    }
+
+    public function test_a_trip_keeps_an_ordered_gallery_with_captions(): void
+    {
+        $trip = Trip::create(['name' => 'Baja', 'slug' => 'baja']);
+        $first = $this->makeImage('one');
+        $second = $this->makeImage('two');
+
+        $this->put(route('admin.trips.update', $trip), [
+            'name' => 'Baja',
+            'slug' => 'baja',
+            'hero_image_id' => $first->id,
+            'images' => [
+                ['id' => $second->id, 'caption' => 'Dunes'],
+                ['id' => $first->id, 'caption' => 'Camp'],
+            ],
+        ])->assertRedirect();
+
+        $trip->refresh();
+
+        $this->assertSame($first->id, $trip->hero_image_id);
+        // Submitted order wins, not id order.
+        $this->assertSame([$second->id, $first->id], $trip->images->pluck('id')->all());
+        $this->assertSame('Dunes', $trip->images->first()->pivot->caption);
+    }
+
+    public function test_removing_a_gallery_row_detaches_it(): void
+    {
+        $trip = Trip::create(['name' => 'Baja', 'slug' => 'baja']);
+        $keep = $this->makeImage('keep');
+        $drop = $this->makeImage('drop');
+        $trip->images()->sync([$keep->id => ['order' => 0], $drop->id => ['order' => 1]]);
+
+        $this->put(route('admin.trips.update', $trip), [
+            'name' => 'Baja', 'slug' => 'baja',
+            'images' => [['id' => $keep->id, 'caption' => null]],
+        ])->assertRedirect();
+
+        $this->assertSame([$keep->id], $trip->fresh()->images->pluck('id')->all());
+        // Detaching from a trip must not delete the image itself.
+        $this->assertSame(2, Image::count());
     }
 
     public function test_the_sort_column_is_whitelisted(): void

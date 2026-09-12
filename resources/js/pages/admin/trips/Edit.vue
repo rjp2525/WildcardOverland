@@ -7,7 +7,9 @@ import Button from '@/components/admin/ui/Button.vue'
 import Card from '@/components/admin/ui/Card.vue'
 import Field from '@/components/admin/ui/Field.vue'
 import Input from '@/components/admin/ui/Input.vue'
+import Repeater from '@/components/admin/ui/Repeater.vue'
 import RichTextEditor from '@/components/admin/ui/RichTextEditor.vue'
+import Select from '@/components/admin/ui/Select.vue'
 import Switch from '@/components/admin/ui/Switch.vue'
 import { useRoute } from '@/lib/route'
 
@@ -24,11 +26,19 @@ interface CampsiteRow {
   notes: string | null
 }
 
+interface GalleryRow {
+  id: number | null
+  label?: string
+  caption: string | null
+}
+
 interface TripPayload {
   id: number
   name: string
   slug: string | null
   headline: string | null
+  hero_image_id: number | null
+  images: GalleryRow[]
   summary: string | null
   content: string | null
   start_date: string | null
@@ -39,7 +49,10 @@ interface TripPayload {
   campsites: CampsiteRow[]
 }
 
-const props = defineProps<{ trip: TripPayload | null }>()
+const props = defineProps<{
+  trip: TripPayload | null
+  images: Array<{ value: number; label: string }>
+}>()
 
 const isEdit = !!props.trip
 
@@ -47,6 +60,8 @@ const form = useForm({
   name: props.trip?.name ?? '',
   slug: props.trip?.slug ?? '',
   headline: props.trip?.headline ?? '',
+  hero_image_id: props.trip?.hero_image_id ?? null,
+  images: (props.trip?.images ?? []) as GalleryRow[],
   summary: props.trip?.summary ?? null,
   content: props.trip?.content ?? null,
   start_date: props.trip?.start_date ?? '',
@@ -86,9 +101,13 @@ function submit() {
   }
 }
 
-/** Errors for nested campsite rows arrive dot-keyed from Laravel. */
+/** Nested row errors arrive dot-keyed from Laravel. */
+function err(path: string): string | undefined {
+  return (form.errors as Record<string, string>)[path]
+}
+
 function campsiteError(index: number, field: string): string | undefined {
-  return (form.errors as Record<string, string>)[`campsites.${index}.${field}`]
+  return err(`campsites.${index}.${field}`)
 }
 </script>
 
@@ -125,6 +144,21 @@ function campsiteError(index: number, field: string): string | undefined {
           <Input id="headline" v-model="form.headline" :invalid="!!form.errors.headline" />
         </Field>
 
+        <Field
+          label="Hero image"
+          for="hero_image_id"
+          :error="form.errors.hero_image_id"
+          hint="Used on trip cards and the top of the trip page."
+        >
+          <Select
+            id="hero_image_id"
+            v-model="form.hero_image_id"
+            :options="images"
+            placeholder="No hero image"
+            :invalid="!!form.errors.hero_image_id"
+          />
+        </Field>
+
         <div class="grid gap-5 sm:grid-cols-2">
           <Field label="Start date" for="start_date" :error="form.errors.start_date">
             <Input id="start_date" v-model="form.start_date" type="date" :invalid="!!form.errors.start_date" />
@@ -148,6 +182,26 @@ function campsiteError(index: number, field: string): string | undefined {
 
     <Card title="Content" description="The full trip write-up.">
       <RichTextEditor v-model="form.content" placeholder="Tell the story…" />
+    </Card>
+
+    <Card title="Gallery" description="Photos shown on the trip page, in order.">
+      <Repeater
+        v-model="form.images"
+        item-label="Photo"
+        :new-row="(): GalleryRow => ({ id: null, caption: null })"
+        empty-message="No photos attached to this trip."
+      >
+        <template #row="{ row, index }">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <Field label="Image" :error="err(`images.${index}.id`)" required>
+              <Select v-model="row.id" :options="images" placeholder="Choose an image…" />
+            </Field>
+            <Field label="Caption" :error="err(`images.${index}.caption`)">
+              <Input v-model="row.caption" placeholder="Optional caption" />
+            </Field>
+          </div>
+        </template>
+      </Repeater>
     </Card>
 
     <Card title="Campsites" description="Stops on this trip, in order.">

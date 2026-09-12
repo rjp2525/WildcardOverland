@@ -10,6 +10,7 @@ import {
   Link2,
   LogOut,
   Map,
+  ChefHat,
   Menu,
   Wrench,
   X,
@@ -47,6 +48,7 @@ watch(
 const nav = [
   { label: 'Dashboard', icon: LayoutDashboard, routeName: 'admin.dashboard' },
   { label: 'Trips', icon: Map, routeName: 'admin.trips.index' },
+  { label: 'Recipes', icon: ChefHat, routeName: 'admin.recipes.index' },
   { label: 'Modifications', icon: Wrench, routeName: 'admin.vehicle-modifications.index' },
   { label: 'Brands', icon: Boxes, routeName: 'admin.brands.index' },
   { label: 'Images', icon: FileImage, routeName: 'admin.images.index' },

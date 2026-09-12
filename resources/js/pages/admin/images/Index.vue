@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3'
-import { Lock, Pencil } from 'lucide-vue-next'
+import { Lock, Pencil, Star } from 'lucide-vue-next'
 import { AdminLayout } from '@/layouts'
 import PageHeading from '@/components/admin/ui/PageHeading.vue'
 import Button from '@/components/admin/ui/Button.vue'
@@ -18,6 +18,7 @@ interface ImageRow {
   width: number | null
   height: number | null
   private: boolean
+  featured: boolean
   file: { id: string; original_filename: string; mime: string; readable_size: string } | null
 }
 
@@ -32,6 +33,7 @@ const columns: Column[] = [
   { key: 'width', label: 'Dimensions', sortable: true },
   { key: 'file', label: 'File' },
   { key: 'private', label: 'Visibility' },
+  { key: 'featured', label: 'Featured', sortable: true },
 ]
 </script>
 
@@ -85,6 +87,11 @@ const columns: Column[] = [
         <Lock class="h-3.5 w-3.5" /> Private
       </span>
       <span v-else class="text-zinc-500 dark:text-zinc-400">Public</span>
+    </template>
+
+    <template #cell:featured="{ row }">
+      <Star v-if="row.featured" class="h-4 w-4 fill-amber-400 text-amber-500" />
+      <span v-else class="text-zinc-400">—</span>
     </template>
 
     <template #actions="{ row }">

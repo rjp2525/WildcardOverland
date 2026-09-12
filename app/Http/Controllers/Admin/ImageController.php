@@ -18,7 +18,7 @@ class ImageController extends Controller
     {
         $table = AdminTable::for(Image::query()->with('file'), $request)
             ->searchable(['name'])
-            ->sortable(['name', 'type', 'width', 'height', 'created_at']);
+            ->sortable(['name', 'type', 'featured', 'sort_order', 'width', 'height', 'created_at']);
 
         return Inertia::render('admin/images/Index', [
             'images' => $table->paginate()->through(fn (Image $image) => $this->present($image)),
@@ -66,6 +66,9 @@ class ImageController extends Controller
             'width' => $image->width,
             'height' => $image->height,
             'private' => $image->private,
+            'featured' => $image->featured,
+            'sort_order' => $image->sort_order,
+            'caption' => $image->caption,
             'file' => $image->file ? [
                 'id' => $image->file->id,
                 'original_filename' => $image->file->original_filename,
