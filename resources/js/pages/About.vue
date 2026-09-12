@@ -15,7 +15,7 @@ defineProps<{
 <template>
   <Head title="About" />
 
-  <PageHeader />
+  <PageHeader title="About" />
   <Introduction />
   <Statistics :stats="stats" />
   <Maya />
