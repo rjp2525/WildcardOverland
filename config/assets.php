@@ -80,6 +80,18 @@ return [
             'sizes' => '(min-width: 640px) 50vw, 100vw',
         ],
 
+        /*
+         * Link cards. One size, because the platforms all want the same one,
+         * and jpg because not every unfurler reads webp.
+         */
+        'og' => [
+            'fit' => 'cover',
+            'ratio' => [1200, 630],
+            'widths' => [1200],
+            'sizes' => '1200px',
+            'format' => 'jpg',
+        ],
+
         'logo' => [
             'fit' => 'scale',
             'ratio' => null,

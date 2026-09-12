@@ -312,6 +312,25 @@ class DemoContent
     }
 
     /**
+     * Demo parts that used to be seeded under a different name.
+     *
+     * The seeder matches on name, so a rename leaves the old row behind and
+     * the build timeline shows the same part twice. These get cleared out on
+     * the next run. Only ever add names this seeder itself created.
+     *
+     * @return array<int, string>
+     */
+    public static function retiredModifications(): array
+    {
+        return [
+            'Rear Drawer System',
+            'Dual Battery System',
+            'Camper Side Door',
+            'Prinsu Roof Rack',
+        ];
+    }
+
+    /**
      * Extra photographs for the homepage gallery, beyond the trip heroes.
      *
      * @return array<int, array{key: string, caption: string}>

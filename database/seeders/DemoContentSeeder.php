@@ -225,6 +225,15 @@ class DemoContentSeeder extends Seeder
 
     protected function seedModifications(): void
     {
+        // Clear out anything this seeder created under an older name, so a
+        // rename does not leave the same part listed twice.
+        $current = array_column(DemoContent::modifications(), 'name');
+        $stale = array_diff(DemoContent::retiredModifications(), $current);
+
+        if ($stale !== []) {
+            VehicleModification::whereIn('name', $stale)->delete();
+        }
+
         foreach (DemoContent::modifications() as $data) {
             VehicleModification::updateOrCreate(
                 ['name' => $data['name']],

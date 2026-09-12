@@ -20,7 +20,7 @@ defineProps<{
   <div class="relative h-screen w-full bg-cover bg-landing">
     <div class="relative h-full w-full bg-black/30 backdrop-blur-sm">
       <div class="container flex h-full flex-col items-center justify-center space-y-4">
-        <span class="text-2xl font-bold uppercase tracking-widest text-white">Welcome to</span>
+        <span class="text-2xl font-bold uppercase tracking-widest text-white">A Tacoma and no fixed plan</span>
         <h1
           class="text-center font-brand text-6xl font-extrabold uppercase text-brand drop-shadow sm:text-8xl"
         >
@@ -31,14 +31,14 @@ defineProps<{
           class="relative flex w-full flex-col justify-center space-y-4 px-4 md:flex-row md:space-x-4 md:space-y-0 md:px-0"
         >
           <Button v-if="hasRecipes" variant="outline" class="w-full md:w-auto" as-child>
-            <Link :href="route('recipes.index')">Browse The Camp Recipes</Link>
+            <Link :href="route('recipes.index')">Browse the camp recipes</Link>
           </Button>
 
           <Button v-if="latestTrip" class="w-full md:w-fit" as-child>
-            <Link :href="latestTrip.url">Read about My Latest Trip</Link>
+            <Link :href="latestTrip.url">Read my latest trip</Link>
           </Button>
           <Button v-else class="w-full md:w-fit" as-child>
-            <Link :href="route('about')">About The Journey</Link>
+            <Link :href="route('about')">About the truck and me</Link>
           </Button>
         </div>
       </div>

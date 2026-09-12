@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\BuildLayer;
 use App\Models\VehicleModification;
+use App\Support\Seo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -27,6 +28,10 @@ class RigController extends Controller
             ->get();
 
         return Inertia::render('Rig', [
+            'seo' => Seo::make(
+                title: 'The Rig',
+                description: 'Every part on the Tacoma and where it sits, from the Tune M1L camper down to the sliders. Pull the whole thing apart and see what it cost.',
+            ),
             'layers' => array_map(fn (BuildLayer $layer) => [
                 'value' => $layer->value,
                 'label' => $layer->label(),

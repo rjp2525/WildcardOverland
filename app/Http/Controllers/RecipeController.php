@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\MealType;
 use App\Models\Recipe;
 use App\Support\ImagePresenter;
+use App\Support\Seo;
+use App\Support\StructuredData;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -29,6 +31,15 @@ class RecipeController extends Controller
             ->through(fn (Recipe $recipe) => static::cardFor($recipe));
 
         return Inertia::render('recipes/Index', [
+            'seo' => Seo::make(
+                title: $meal ? $meal->label().' recipes' : 'Camp Recipes',
+                description: 'Food worth making a long way from a kitchen. One pot where it can be, a skottle or a dutch oven where it cannot.',
+                canonical: $meal ? route('recipes.index', ['meal' => $meal->value]) : route('recipes.index'),
+                schema: [StructuredData::breadcrumbs([
+                    ['name' => 'Home', 'url' => route('homepage')],
+                    ['name' => 'Camp recipes', 'url' => route('recipes.index')],
+                ])],
+            ),
             'recipes' => $recipes,
             'mealTypes' => MealType::options(),
             'activeMeal' => $meal?->value,
@@ -41,7 +52,24 @@ class RecipeController extends Controller
 
         $recipe->load(['heroImage.file', 'ingredients', 'steps.image.file', 'sources']);
 
+        $hero = ImagePresenter::hero($recipe->heroImage, $recipe->name);
+
         return Inertia::render('recipes/Show', [
+            'seo' => Seo::make(
+                title: $recipe->name,
+                description: $recipe->summary ?: $recipe->headline,
+                image: ImagePresenter::og($recipe->heroImage, $recipe->name),
+                type: 'article',
+                canonical: route('recipes.show', $recipe->slug),
+                schema: [
+                    StructuredData::recipe($recipe, $hero),
+                    StructuredData::breadcrumbs([
+                        ['name' => 'Home', 'url' => route('homepage')],
+                        ['name' => 'Camp recipes', 'url' => route('recipes.index')],
+                        ['name' => $recipe->name, 'url' => route('recipes.show', $recipe->slug)],
+                    ]),
+                ],
+            ),
             'recipe' => [
                 'name' => $recipe->name,
                 'headline' => $recipe->headline,
@@ -58,7 +86,7 @@ class RecipeController extends Controller
                 'cook_minutes' => $recipe->cook_minutes,
                 'total_minutes' => $recipe->totalMinutes(),
                 'servings' => $recipe->servings,
-                'hero' => ImagePresenter::hero($recipe->heroImage, $recipe->name),
+                'hero' => $hero,
                 'ingredients' => $recipe->ingredients->map(fn ($i) => [
                     'label' => $i->label(),
                     'note' => $i->note,

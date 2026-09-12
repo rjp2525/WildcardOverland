@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Support\Seo;
 use App\Support\TrailStatus;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -51,8 +52,15 @@ return Application::configure(basePath: dirname(__DIR__))
                 return $response;
             }
 
+            $status = TrailStatus::for($response->getStatusCode());
+
             return Inertia::render('Error', [
-                'status' => TrailStatus::for($response->getStatusCode()),
+                'seo' => Seo::make(
+                    title: $status['sign'],
+                    description: $status['body'],
+                    index: false,
+                ),
+                'status' => $status,
             ])
                 ->toResponse($request)
                 ->setStatusCode($response->getStatusCode());

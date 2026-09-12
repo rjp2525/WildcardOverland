@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Recipe;
 use App\Models\Trip;
+use App\Support\Seo;
 use App\Support\SiteContent;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,6 +20,10 @@ class HomepageController extends Controller
             ->first();
 
         return Inertia::render('Homepage', [
+            'seo' => Seo::make(
+                title: 'Wildcard Overland',
+                description: Seo::DEFAULT_DESCRIPTION,
+            ),
             // Drives the hero's primary call to action, which previously
             // pointed at an empty anchor.
             'latestTrip' => $latestTrip === null ? null : [

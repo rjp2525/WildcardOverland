@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Trip;
 use App\Support\ImagePresenter;
 use App\Support\LocationAccess;
+use App\Support\Seo;
+use App\Support\StructuredData;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,6 +24,14 @@ class TripController extends Controller
             ->through(fn (Trip $trip) => $this->card($trip));
 
         return Inertia::render('trips/Index', [
+            'seo' => Seo::make(
+                title: 'Trips',
+                description: 'Where the truck has been and what it was like out there. Route notes, campsites and the bits nobody puts in the guidebook.',
+                schema: [StructuredData::breadcrumbs([
+                    ['name' => 'Home', 'url' => route('homepage')],
+                    ['name' => 'Trips', 'url' => route('trips.index')],
+                ])],
+            ),
             'trips' => $trips,
         ]);
     }
@@ -39,7 +49,24 @@ class TripController extends Controller
             'recipes' => fn ($query) => $query->published()->with('heroImage.file'),
         ]);
 
+        $hero = ImagePresenter::hero($trip->heroImage, $trip->name);
+
         return Inertia::render('trips/Show', [
+            'seo' => Seo::make(
+                title: $trip->name,
+                description: $trip->summary ?: $trip->headline,
+                image: ImagePresenter::og($trip->heroImage, $trip->name),
+                type: 'article',
+                canonical: route('trips.show', $trip->slug),
+                schema: [
+                    StructuredData::trip($trip, $hero),
+                    StructuredData::breadcrumbs([
+                        ['name' => 'Home', 'url' => route('homepage')],
+                        ['name' => 'Trips', 'url' => route('trips.index')],
+                        ['name' => $trip->name, 'url' => route('trips.show', $trip->slug)],
+                    ]),
+                ],
+            ),
             'trip' => [
                 'name' => $trip->name,
                 'headline' => $trip->headline,
@@ -49,7 +76,7 @@ class TripController extends Controller
                 'end_date' => $trip->end_date?->toDateString(),
                 'date_label' => $this->dateLabel($trip),
                 'nights' => $trip->calculated_nights,
-                'hero' => ImagePresenter::hero($trip->heroImage, $trip->name),
+                'hero' => $hero,
                 'gallery' => $trip->images
                     ->map(function ($image) use ($trip) {
                         $presented = ImagePresenter::thumb($image, $image->pivot->caption ?? $trip->name);
