@@ -25,7 +25,7 @@ defineProps<{
     </div>
 
     <p v-else class="py-16 text-center text-slate-500 dark:text-white/60">
-      No trips published yet — check back soon.
+      No trips published yet. Check back soon.
     </p>
 
     <Pagination :links="trips.links" />

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Enums\DietaryTag;
 use App\Enums\Difficulty;
 use App\Enums\MealType;
+use App\Enums\SourceKind;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -54,6 +55,14 @@ class RecipeRequest extends FormRequest
 
             'steps' => ['array'],
             'steps.*.body' => ['required', 'string'],
+            'steps.*.note' => ['nullable', 'string', 'max:1000'],
+            'steps.*.image_id' => ['nullable', 'integer', 'exists:images,id'],
+
+            'sources' => ['array'],
+            'sources.*.kind' => ['required', Rule::enum(SourceKind::class)],
+            'sources.*.label' => ['required', 'string', 'max:255'],
+            'sources.*.url' => ['nullable', 'url', 'max:255'],
+            'sources.*.note' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -75,6 +84,7 @@ class RecipeRequest extends FormRequest
             'hero_image_id' => 'hero image',
             'ingredients.*.item' => 'ingredient',
             'steps.*.body' => 'step',
+            'sources.*.label' => 'source',
         ];
     }
 }

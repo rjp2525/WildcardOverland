@@ -14,7 +14,7 @@ class NavigationLinkOrderedScope implements Scope
             ->whereNull('parent_id')
             ->orderBy('order', 'DESC')
             ->with([
-                'children' => fn ($q) => $q->orderBy('order', 'DESC')
+                'children' => fn ($q) => $q->orderBy('order', 'DESC'),
             ]);
     }
 }

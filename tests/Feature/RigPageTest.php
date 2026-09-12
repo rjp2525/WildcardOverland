@@ -30,7 +30,7 @@ class RigPageTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Rig')
                 ->has('parts', 0)
-                ->has('layers', 4)
+                ->has('layers', 5)
                 ->where('stats.parts', 0)
                 ->where('stats.years', 0));
     }

@@ -94,7 +94,7 @@ class BuildFieldsTest extends TestCase
     {
         $this->get(route('admin.vehicle-modifications.create'))
             ->assertInertia(fn ($page) => $page
-                ->has('buildLayers', 4)
+                ->has('buildLayers', 5)
                 ->where('buildLayers.0.value', 'roof'));
     }
 

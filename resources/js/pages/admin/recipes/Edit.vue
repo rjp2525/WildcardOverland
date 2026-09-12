@@ -28,9 +28,18 @@ interface Ingredient {
   note: string | null
 }
 
+interface Source {
+  kind: string
+  label: string
+  url: string
+  note: string
+}
+
 interface Step {
   id?: number | null
   body: string
+  note: string
+  image_id: number | null
 }
 
 interface RecipePayload {
@@ -51,6 +60,7 @@ interface RecipePayload {
   published_at: string | null
   ingredients: Ingredient[]
   steps: Step[]
+  sources: Source[]
 }
 
 const props = defineProps<{
@@ -58,6 +68,7 @@ const props = defineProps<{
   mealTypes: Array<{ value: string; label: string }>
   difficulties: Array<{ value: string; label: string }>
   dietaryTags: Array<{ value: string; label: string }>
+  sourceKinds: Array<{ value: string; label: string }>
   images: Array<{ value: number; label: string }>
 }>()
 
@@ -80,6 +91,7 @@ const form = useForm({
   published_at: props.recipe?.published_at ?? '',
   ingredients: (props.recipe?.ingredients ?? []) as Ingredient[],
   steps: (props.recipe?.steps ?? []) as Step[],
+  sources: (props.recipe?.sources ?? []) as Source[],
 })
 
 const totalMinutes = computed(() => {
@@ -214,13 +226,49 @@ function submit() {
         v-model="form.steps"
         item-label="Step"
         numbered
-        :new-row="(): Step => ({ id: null, body: '' })"
+        :new-row="(): Step => ({ id: null, body: '', note: '', image_id: null })"
         empty-message="No steps yet."
       >
         <template #row="{ row, index }">
-          <Field :error="err(`steps.${index}.body`)" required>
-            <Textarea v-model="row.body" :rows="2" :invalid="!!err(`steps.${index}.body`)" />
-          </Field>
+          <div class="space-y-4">
+            <Field :error="err(`steps.${index}.body`)" required>
+              <Textarea v-model="row.body" :rows="2" :invalid="!!err(`steps.${index}.body`)" />
+            </Field>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <Field label="Aside" :error="err(`steps.${index}.note`)" hint="Shown beside the step, not as part of it.">
+                <Input v-model="row.note" placeholder="Watch it, this catches fast" :invalid="!!err(`steps.${index}.note`)" />
+              </Field>
+              <Field label="Photo" :error="err(`steps.${index}.image_id`)" hint="What the pan should look like here.">
+                <Select v-model="row.image_id" :options="images" placeholder="No photo" />
+              </Field>
+            </div>
+          </div>
+        </template>
+      </Repeater>
+    </Card>
+
+    <Card title="Where it came from" description="Credit the source, and say what set you off.">
+      <Repeater
+        v-model="form.sources"
+        item-label="Source"
+        :new-row="(): Source => ({ kind: 'found', label: '', url: '', note: '' })"
+        empty-message="No sources listed."
+      >
+        <template #row="{ row, index }">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <Field label="Kind" :error="err(`sources.${index}.kind`)" required>
+              <Select v-model="row.kind" :options="sourceKinds" />
+            </Field>
+            <Field label="Name" :error="err(`sources.${index}.label`)" required>
+              <Input v-model="row.label" placeholder="Serious Eats" :invalid="!!err(`sources.${index}.label`)" />
+            </Field>
+            <Field label="Link" :error="err(`sources.${index}.url`)">
+              <Input v-model="row.url" type="url" :invalid="!!err(`sources.${index}.url`)" />
+            </Field>
+            <Field label="Note" :error="err(`sources.${index}.note`)">
+              <Input v-model="row.note" placeholder="Swapped the beans" :invalid="!!err(`sources.${index}.note`)" />
+            </Field>
+          </div>
         </template>
       </Repeater>
     </Card>

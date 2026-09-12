@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /**
- * The truck, drawn in four separate slices so they can be pulled apart.
+ * The rig, drawn in five slices so they can be pulled apart.
  *
  * Every slice shares one viewBox, so a point in the artwork means the same
- * thing in each of them - which is what lets a hotspot be stored as a plain
- * percentage of the box regardless of which layer it belongs to.
+ * thing in each of them. That is what lets a hotspot be stored as a plain
+ * percentage of the box no matter which layer it belongs to.
  *
- * Proportions come from a double-cab Tacoma: 127" wheelbase, 70.6" roof,
- * 32" tyres, at roughly 3.9px to the inch with the ground at y=416. The frame
- * carries deliberate slack above and below so the exploded layers have
- * somewhere to travel.
+ * Proportions come off a 2021 double cab Tacoma: 127in wheelbase, 71in to
+ * the cab roof, 32in tyres, at roughly 3.9px to the inch with the ground at
+ * y=416. The camper adds about another foot above the cab. The frame carries
+ * slack above and below so the exploded layers have somewhere to travel.
  */
 defineProps<{ layer: string }>()
 
@@ -19,15 +19,17 @@ const WHEELS = [
 ]
 
 /**
- * A wheel arch: along the body's lower edge, up over the tyre, back down.
- * A cubic rather than an elliptical arc, so the tangents at both ends are
- * vertical - which is what makes it read as a fender rather than a bite.
+ * A wheel arch: along the lower edge, up over the tyre, back down. A cubic
+ * rather than an elliptical arc, so the tangents at both ends are vertical,
+ * which is what makes it read as a fender rather than a bite.
  *
- * Both body outlines are drawn front to back, so the curve runs right to
- * left; reversing it would close a lens across the opening and fill it in.
+ * Both outlines are drawn front to back, so the curve runs right to left;
+ * reversing it closes a lens across the opening and fills it in.
  */
+const BASE = 356
+
 const arch = (cx: number) =>
-  `L ${cx + 72} 368 C ${cx + 72} 249, ${cx - 72} 249, ${cx - 72} 368`
+  `L ${cx + 72} ${BASE} C ${cx + 72} 240, ${cx - 72} 240, ${cx - 72} ${BASE}`
 </script>
 
 <template>
@@ -41,8 +43,8 @@ const arch = (cx: number) =>
   >
     <!-- Underside: wheels, axles, sliders, skid plate, exhaust. -->
     <g v-if="layer === 'underside'">
-      <path d="M197 368 C197 249, 341 249, 341 368 Z" class="rig-well" />
-      <path d="M692 368 C692 249, 836 249, 836 368 Z" class="rig-well" />
+      <path d="M197 356 C197 240, 341 240, 341 356 Z" class="rig-well" />
+      <path d="M692 356 C692 240, 836 240, 836 356 Z" class="rig-well" />
       <path d="M70 418 L930 418" class="rig-ground" />
 
       <rect x="188" y="348" width="172" height="13" rx="6" class="rig-metal" />
@@ -62,90 +64,142 @@ const arch = (cx: number) =>
         <circle :cx="wheel.cx" :cy="wheel.cy" r="12" class="rig-hub" />
         <g class="rig-spoke">
           <line
-            v-for="n in 5"
+            v-for="n in 6"
             :key="n"
             :x1="wheel.cx"
             :y1="wheel.cy"
-            :x2="wheel.cx + 27 * Math.cos(((n - 1) * 72 - 90) * (Math.PI / 180))"
-            :y2="wheel.cy + 27 * Math.sin(((n - 1) * 72 - 90) * (Math.PI / 180))"
+            :x2="wheel.cx + 27 * Math.cos(((n - 1) * 60 - 90) * (Math.PI / 180))"
+            :y2="wheel.cy + 27 * Math.sin(((n - 1) * 60 - 90) * (Math.PI / 180))"
           />
         </g>
       </g>
     </g>
 
-    <!-- Interior: what lives in the bed. -->
+    <!-- Interior: the build inside the camper, seen through the ghosted side. -->
     <g v-if="layer === 'interior'">
-      <rect x="120" y="248" width="248" height="98" rx="6" class="rig-kit" />
-      <rect x="130" y="257" width="228" height="39" rx="3" class="rig-kit-face" />
-      <rect x="130" y="300" width="228" height="39" rx="3" class="rig-kit-face" />
-      <rect x="214" y="272" width="60" height="9" rx="4" class="rig-accent" />
-      <rect x="214" y="315" width="60" height="9" rx="4" class="rig-accent" />
+      <!-- Sleeping platform, up high, with the mattress on it. -->
+      <rect x="86" y="140" width="222" height="15" rx="4" class="rig-kit" />
+      <rect x="91" y="121" width="212" height="20" rx="9" class="rig-soft" />
 
-      <rect x="382" y="240" width="92" height="106" rx="6" class="rig-kit" />
-      <rect x="382" y="240" width="92" height="19" rx="6" class="rig-kit-face" />
-      <rect x="396" y="280" width="64" height="10" rx="5" class="rig-accent" />
-      <rect x="396" y="302" width="42" height="7" rx="3" class="rig-kit-face" />
+      <!-- Galley below it: drawers, fridge, then water and power. -->
+      <rect x="88" y="163" width="86" height="118" rx="5" class="rig-kit" />
+      <rect x="94" y="171" width="74" height="33" rx="3" class="rig-kit-face" />
+      <rect x="94" y="210" width="74" height="33" rx="3" class="rig-kit-face" />
+      <rect x="94" y="249" width="74" height="25" rx="3" class="rig-kit-face" />
+      <rect x="115" y="184" width="32" height="7" rx="3" class="rig-accent" />
+      <rect x="115" y="223" width="32" height="7" rx="3" class="rig-accent" />
 
-      <rect x="84" y="278" width="34" height="68" rx="4" class="rig-kit" />
-      <rect x="90" y="287" width="22" height="7" rx="3" class="rig-accent" />
-      <rect x="90" y="300" width="22" height="7" rx="3" class="rig-kit-face" />
+      <rect x="182" y="163" width="60" height="118" rx="5" class="rig-kit" />
+      <rect x="182" y="163" width="60" height="18" rx="5" class="rig-kit-face" />
+      <rect x="192" y="200" width="40" height="9" rx="4" class="rig-accent" />
+      <rect x="192" y="220" width="26" height="6" rx="3" class="rig-kit-face" />
+
+      <rect x="250" y="163" width="58" height="56" rx="5" class="rig-kit" />
+      <rect x="257" y="174" width="44" height="8" rx="4" class="rig-accent" />
+      <rect x="257" y="188" width="30" height="6" rx="3" class="rig-kit-face" />
+
+      <rect x="250" y="227" width="58" height="54" rx="5" class="rig-kit" />
+      <path d="M260 241 L284 241 M260 253 L298 253 M260 265 L276 265" class="rig-wire" />
+
+      <!-- Counter run along the top of the galley. -->
+      <rect x="86" y="156" width="224" height="7" rx="3" class="rig-counter" />
     </g>
 
-    <!-- Body: the cab and the bed, the bed side ghosted so the gear inside
-         still reads before the layers are pulled apart. -->
+    <!-- Body: the truck itself. Bed sides ghosted so the build reads. -->
     <g v-if="layer === 'body'">
+      <!-- Cab, hood and front, drawn as one silhouette. -->
       <path
-        :d="`M498 143 L672 143 L755 240 L897 250 L902 368
-             ${arch(764)} L498 368 Z`"
+        :d="`M318 139 L340 131 L606 131 L620 139 L700 231 L722 236 L884 250 L900 286 L902 356
+             ${arch(764)} L318 356 Z`"
         class="rig-body"
       />
+
+      <!-- Bed sides. The camper sits on top of these. -->
       <path
-        :d="`M74 210 L486 210 L486 368 ${arch(269)} L74 368 Z`"
+        :d="`M74 209 L318 209 L318 356 ${arch(269)} L74 356 Z`"
         class="rig-body rig-bed"
       />
+      <rect x="72" y="203" width="250" height="9" rx="4" class="rig-body-edge" />
 
-      <rect x="72" y="204" width="416" height="10" rx="4" class="rig-body-edge" />
-      <path d="M602 244 L602 364" class="rig-crease" />
-      <path d="M508 244 L508 364" class="rig-crease" />
+      <!-- Hood scoop and cowl, the giveaway on a TRD. -->
+      <path d="M760 243 Q812 230 862 246 L862 250 L760 248 Z" class="rig-body-edge" />
+      <path d="M724 240 L878 252" class="rig-crease" />
 
-      <path d="M512 158 L594 158 L594 232 L512 232 Z" class="rig-glass" />
-      <path d="M606 158 L668 158 L678 232 L606 232 Z" class="rig-glass" />
-      <path d="M678 148 L700 148 L757 238 L724 238 Z" class="rig-glass" />
-      <path d="M676 240 L654 247 L657 259 L679 252 Z" class="rig-body-edge" />
+      <!-- Double cab: two doors, and the beltline kick at the back. -->
+      <path d="M472 232 L472 352" class="rig-crease" />
+      <path d="M330 232 L330 352" class="rig-crease" />
+      <path d="M330 228 L700 228" class="rig-crease" />
 
-      <rect x="548" y="248" width="30" height="8" rx="4" class="rig-body-edge" />
-      <rect x="626" y="248" width="30" height="8" rx="4" class="rig-body-edge" />
+      <path d="M346 148 L466 148 L466 221 L346 221 Z" class="rig-glass" />
+      <path d="M478 148 L598 148 L610 221 L478 221 Z" class="rig-glass" />
+      <path d="M624 143 L646 143 L698 221 L666 221 Z" class="rig-glass" />
+      <path d="M630 232 L606 240 L609 252 L633 244 Z" class="rig-body-edge" />
 
-      <path d="M197 368 C197 249, 341 249, 341 368" class="rig-flare" />
-      <path d="M692 368 C692 249, 836 249, 836 368" class="rig-flare" />
+      <rect x="398" y="238" width="32" height="8" rx="4" class="rig-body-edge" />
+      <rect x="530" y="238" width="32" height="8" rx="4" class="rig-body-edge" />
 
-      <rect x="884" y="306" width="42" height="66" rx="7" class="rig-bumper" />
-      <rect x="876" y="292" width="12" height="66" rx="5" class="rig-bumper" />
-      <rect x="52" y="312" width="34" height="58" rx="6" class="rig-bumper" />
+      <path d="M197 356 C197 240, 341 240, 341 356" class="rig-flare" />
+      <path d="M692 356 C692 240, 836 240, 836 356" class="rig-flare" />
 
-      <path d="M768 252 L886 261" class="rig-crease" />
-      <path d="M864 256 L894 251 L896 278 L864 274 Z" class="rig-lamp" />
-      <rect x="76" y="222" width="13" height="42" rx="3" class="rig-accent" />
+      <!-- Hybrid front bumper with a hoop, and the rear steel. -->
+      <rect x="880" y="296" width="46" height="62" rx="7" class="rig-bumper" />
+      <path d="M888 296 L888 258 Q888 250 898 250" class="rig-hoop" />
+      <rect x="52" y="302" width="34" height="54" rx="6" class="rig-bumper" />
+
+      <path d="M862 256 L892 252 L894 280 L862 276 Z" class="rig-lamp" />
+      <rect x="76" y="218" width="12" height="40" rx="3" class="rig-accent" />
+    </g>
+
+    <!-- Camper: the hard side shell on the bed. -->
+    <g v-if="layer === 'camper'">
+      <path d="M74 209 L74 104 Q74 96 84 96 L308 96 Q318 96 318 106 L318 209 Z" class="rig-shell" />
+
+      <!-- Roof cap and the lower rail, the two hard lines on it. -->
+      <path d="M70 96 L322 96 L322 106 L70 106 Z" class="rig-shell-edge" />
+      <rect x="72" y="200" width="250" height="10" rx="3" class="rig-shell-edge" />
+
+      <!-- Riveted panel seams. -->
+      <g class="rig-seam">
+        <path d="M152 108 L152 199" />
+        <path d="M232 108 L232 199" />
+      </g>
+
+      <!-- The big side window, and the door with its own. -->
+      <rect x="164" y="122" width="60" height="62" rx="6" class="rig-shell-glass" />
+      <rect x="240" y="116" width="70" height="82" rx="5" class="rig-shell-door" />
+      <rect x="248" y="124" width="54" height="42" rx="4" class="rig-shell-glass" />
+      <rect x="292" y="178" width="12" height="6" rx="3" class="rig-accent" />
+
+      <!-- Rear hatch, hinged at the top. -->
+      <path d="M78 112 L142 112 L142 196 L78 196" class="rig-seam" />
+      <rect x="86" y="150" width="8" height="18" rx="4" class="rig-accent" />
     </g>
 
     <!-- Roof: rack and everything bolted to it. -->
     <g v-if="layer === 'roof'">
-      <rect x="502" y="128" width="168" height="13" rx="3" class="rig-rack" />
+      <rect x="78" y="80" width="240" height="12" rx="3" class="rig-rack" />
       <g class="rig-rack-slat">
-        <line v-for="n in 8" :key="n" :x1="512 + n * 18" y1="129" :x2="512 + n * 18" y2="140" />
+        <line v-for="n in 11" :key="n" :x1="86 + n * 20" y1="81" :x2="86 + n * 20" y2="91" />
       </g>
-      <rect x="510" y="141" width="9" height="6" class="rig-rack" />
-      <rect x="654" y="141" width="9" height="6" class="rig-rack" />
 
-      <rect x="506" y="108" width="126" height="20" rx="10" class="rig-rack" />
-      <rect x="506" y="110" width="14" height="16" rx="5" class="rig-accent" />
-      <path d="M534 118 L620 118" class="rig-rack-slat" />
+      <!-- Solar, flat on the rack. -->
+      <rect x="126" y="70" width="140" height="11" rx="2" class="rig-solar" />
+      <g class="rig-solar-cell">
+        <line v-for="n in 5" :key="n" :x1="126 + n * 23" y1="71" :x2="126 + n * 23" y2="80" />
+      </g>
 
-      <rect x="638" y="112" width="42" height="16" rx="4" class="rig-rack" />
-      <rect x="643" y="116" width="32" height="8" rx="4" class="rig-lamp" />
+      <!-- Awning down the side, roof fan at the back. -->
+      <rect x="274" y="66" width="46" height="16" rx="8" class="rig-rack" />
+      <rect x="274" y="66" width="12" height="16" rx="6" class="rig-accent" />
+      <rect x="86" y="64" width="34" height="17" rx="3" class="rig-rack" />
+      <rect x="91" y="60" width="24" height="5" rx="2" class="rig-shell-edge" />
 
-      <path d="M502 130 L490 82" class="rig-whip" />
-      <circle cx="489" cy="80" r="5" class="rig-accent" />
+      <!-- Light bar across the cab roof. -->
+      <rect x="414" y="119" width="122" height="12" rx="3" class="rig-rack" />
+      <rect x="421" y="122" width="108" height="6" rx="3" class="rig-lamp" />
+
+      <path d="M314 96 L304 52" class="rig-whip" />
+      <circle cx="303" cy="50" r="5" class="rig-accent" />
     </g>
   </svg>
 </template>
@@ -161,13 +215,21 @@ const arch = (cx: number) =>
 }
 
 .rig-body { fill: #e7ecf2; }
-.rig-bed { fill-opacity: 0.55; }
+.rig-bed { fill-opacity: 0.4; }
 .rig-body-edge { fill: #aab4c2; }
-.rig-crease { stroke: #b6bfcc; stroke-width: 2; }
+.rig-crease { stroke: #b6bfcc; stroke-width: 2; fill: none; }
 .rig-glass { fill: #4e5c72; fill-opacity: 0.92; }
 .rig-flare { stroke: #333b47; stroke-width: 13; fill: none; stroke-linecap: round; }
 .rig-bumper { fill: #333b47; }
+.rig-hoop { stroke: #333b47; stroke-width: 9; fill: none; stroke-linecap: round; }
 .rig-lamp { fill: #ffd88a; }
+
+/* The camper is aluminium, so it reads cooler and flatter than the truck. */
+.rig-shell { fill: #cfd7e0; fill-opacity: 0.38; stroke: #9aa5b4; stroke-width: 2.5; }
+.rig-shell-edge { fill: #9aa5b4; }
+.rig-shell-glass { fill: #46536a; fill-opacity: 0.9; }
+.rig-shell-door { fill: #b9c3d0; fill-opacity: 0.55; stroke: #8d97a6; stroke-width: 2; }
+.rig-seam { stroke: #9aa5b4; stroke-width: 2; fill: none; }
 
 .rig-tyre { fill: #181d25; stroke: #333b47; stroke-width: 3; }
 .rig-tread { fill: none; stroke: #2f3742; stroke-width: 9; stroke-dasharray: 9 10; }
@@ -175,18 +237,23 @@ const arch = (cx: number) =>
 .rig-hub { fill: #59626f; }
 .rig-spoke { stroke: #59626f; stroke-width: 7; stroke-linecap: round; }
 .rig-metal { fill: #4a5361; }
-.rig-well { fill: #12161d; }
-.rig-ground { stroke: #ffffff; stroke-opacity: 0.08; stroke-width: 3; }
 .rig-slider { fill: #333b47; }
 .rig-pipe { stroke: #4a5361; stroke-width: 7; fill: none; stroke-linecap: round; }
 .rig-leaf { stroke: #4a5361; stroke-width: 7; fill: none; stroke-linecap: round; }
 .rig-whip { stroke: #38414f; stroke-width: 5; fill: none; stroke-linecap: round; }
+.rig-well { fill: #12161d; }
+.rig-ground { stroke: #ffffff; stroke-opacity: 0.08; stroke-width: 3; }
 
-.rig-kit { fill: #39424f; }
-.rig-kit-face { fill: #515c6d; }
+.rig-kit { fill: #262e3a; stroke: #47525f; stroke-width: 1.5; }
+.rig-kit-face { fill: #3f4a5a; }
+.rig-soft { fill: #7a8598; }
+.rig-counter { fill: #97a2b1; }
+.rig-wire { stroke: var(--color-brand); stroke-width: 3; stroke-linecap: round; fill: none; opacity: 0.8; }
 
 .rig-rack { fill: #222933; }
-.rig-rack-slat { stroke: #39424f; stroke-width: 3; fill: none; }
+.rig-rack-slat { stroke: #39424f; stroke-width: 3; }
+.rig-solar { fill: #1b2a44; }
+.rig-solar-cell { stroke: #33507d; stroke-width: 2; }
 
 .rig-accent { fill: var(--color-brand); }
 </style>

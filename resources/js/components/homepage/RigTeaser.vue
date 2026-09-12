@@ -28,7 +28,7 @@ defineProps<{ modifications: Modification[] }>()
           A Tacoma, slowly
         </h2>
         <p class="mt-4 max-w-lg text-white/70">
-          Every trip teaches the truck something. Here's what's gone on most recently — pull
+          Every trip teaches the truck something. Here is what went on most recently. Pull
           the whole thing apart on the rig page.
         </p>
         <Link

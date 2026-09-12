@@ -5,6 +5,7 @@ import { RecipeCard, TripCard } from '@/components/cards'
 import type { TripCardData } from '@/components/cards/TripCard.vue'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
+import { AnimatedContent } from '@/components/ui/motion'
 
 type GalleryImage = ResponsiveImageData
 
@@ -90,7 +91,7 @@ defineProps<{
       />
       <p v-else class="text-slate-500 dark:text-white/60">The write-up for this trip is still coming.</p>
 
-      <section v-if="trip.gallery.length" class="pt-12">
+      <AnimatedContent v-if="trip.gallery.length" as="section" class="pt-12">
         <h2 class="mb-5 text-2xl font-extrabold uppercase text-brand">Photos</h2>
         <div class="grid gap-4 sm:grid-cols-2">
           <figure v-for="(image, i) in trip.gallery" :key="i" class="overflow-hidden rounded-lg">
@@ -103,7 +104,7 @@ defineProps<{
             </figcaption>
           </figure>
         </div>
-      </section>
+      </AnimatedContent>
     </div>
 
     <aside v-if="trip.campsites.length" class="lg:pt-2">
@@ -147,8 +148,8 @@ defineProps<{
           <Lock class="h-3.5 w-3.5" /> Members only
         </p>
         <p class="mt-1.5 text-sm text-slate-600 dark:text-white/70">
-          Exact coordinates and GPX downloads for these campsites are part of a
-          membership — it keeps the quiet spots quiet.
+          Exact coordinates and GPX downloads for these campsites come with a
+          membership. It is what keeps the quiet spots quiet.
         </p>
       </div>
     </aside>

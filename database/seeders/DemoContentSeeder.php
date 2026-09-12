@@ -162,9 +162,30 @@ class DemoContentSeeder extends Seeder
                     ]);
                 }
 
+                $recipe->sources()->delete();
+                foreach (array_values($data['sources'] ?? []) as $order => [$kind, $label, $url, $note]) {
+                    $recipe->sources()->create([
+                        'order' => $order,
+                        'kind' => $kind,
+                        'label' => $label,
+                        'url' => $url,
+                        'note' => $note,
+                    ]);
+                }
+
                 $recipe->steps()->delete();
-                foreach (array_values($data['steps']) as $order => $body) {
-                    $recipe->steps()->create(['order' => $order, 'body' => $body]);
+                foreach (array_values($data['steps']) as $order => $step) {
+                    // A step is either a line on its own or a line and an aside.
+                    [$body, $note] = is_array($step) ? $step : [$step, null];
+
+                    $recipe->steps()->create([
+                        'order' => $order,
+                        'body' => $body,
+                        'note' => $note,
+                        // Reuse the hero as the step photo so the layout is
+                        // exercised; real steps get their own.
+                        'image_id' => $order === 0 ? ($images[$data['image']] ?? null) : null,
+                    ]);
                 }
             });
         }

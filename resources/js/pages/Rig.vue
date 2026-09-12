@@ -54,7 +54,7 @@ const anyAffiliate = computed(() => props.parts.some((part) => part.isAffiliate)
 
   <div class="container py-12">
     <div v-if="parts.length === 0" class="py-16 text-center text-slate-500 dark:text-white/60">
-      Nothing bolted on yet — the build starts soon.
+      Nothing bolted on yet. The build starts soon.
     </div>
 
     <template v-else>
@@ -163,9 +163,9 @@ const anyAffiliate = computed(() => props.parts.some((part) => part.isAffiliate)
       </section>
 
       <p v-if="anyAffiliate" class="pt-12 text-xs text-slate-500 dark:text-white/50">
-        Some links here are affiliate links. They cost you nothing extra and they
-        help pay for fuel — but everything on this truck was chosen because it
-        earned its place, not because of a commission.
+        Some of these are affiliate links. They cost you nothing extra and they help
+        pay for fuel. Everything on this truck earned its place first. No part of it
+        is here because of a commission.
       </p>
     </template>
   </div>

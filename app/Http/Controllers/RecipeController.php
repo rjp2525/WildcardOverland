@@ -39,7 +39,7 @@ class RecipeController extends Controller
     {
         abort_unless($this->isPublished($recipe), 404);
 
-        $recipe->load(['heroImage.file', 'ingredients', 'steps']);
+        $recipe->load(['heroImage.file', 'ingredients', 'steps.image.file', 'sources']);
 
         return Inertia::render('recipes/Show', [
             'recipe' => [
@@ -59,7 +59,17 @@ class RecipeController extends Controller
                     'label' => $i->label(),
                     'note' => $i->note,
                 ]),
-                'steps' => $recipe->steps->map(fn ($s) => $s->body),
+                'steps' => $recipe->steps->map(fn ($step) => [
+                    'body' => $step->body,
+                    'note' => $step->note,
+                    'image' => ImagePresenter::thumb($step->image, "Step {$step->order}"),
+                ]),
+                'sources' => $recipe->sources->map(fn ($source) => [
+                    'kind' => $source->kind->label(),
+                    'label' => $source->label,
+                    'url' => $source->url,
+                    'note' => $source->note,
+                ]),
             ],
             'more' => Recipe::published()
                 ->whereKeyNot($recipe->id)

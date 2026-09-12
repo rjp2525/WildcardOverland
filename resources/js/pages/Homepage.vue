@@ -16,6 +16,7 @@ import type { RecipeCardData } from '@/components/cards/RecipeCard.vue';
 import type { GalleryImage } from '@/components/homepage/GalleryStrip.vue';
 import type { Modification } from '@/components/homepage/RigTeaser.vue';
 import type { CampsitePoint, MapFocus } from '@/components/homepage/CampsiteMap.vue';
+import { AnimatedContent } from '@/components/ui/motion'
 
 defineProps<{
   latestTrip: { name: string; url: string } | null;
@@ -38,11 +39,11 @@ defineProps<{
 
   <div id="below-the-fold">
     <Statistics :stats="stats" />
-    <LatestTrips :trips="trips" />
-    <GalleryStrip :images="gallery" />
-    <RigTeaser :modifications="modifications" />
-    <LatestRecipes :recipes="recipes" />
-    <CampsiteMap :campsites="campsites" :focus="mapFocus" />
+    <AnimatedContent><LatestTrips :trips="trips" /></AnimatedContent>
+    <AnimatedContent><GalleryStrip :images="gallery" /></AnimatedContent>
+    <AnimatedContent><RigTeaser :modifications="modifications" /></AnimatedContent>
+    <AnimatedContent><LatestRecipes :recipes="recipes" /></AnimatedContent>
+    <AnimatedContent><CampsiteMap :campsites="campsites" :focus="mapFocus" /></AnimatedContent>
     <Partners :partners="partners" />
   </div>
 </template>

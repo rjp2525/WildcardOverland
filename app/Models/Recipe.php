@@ -69,6 +69,12 @@ class Recipe extends Model
         return $this->hasMany(RecipeStep::class)->orderBy('order');
     }
 
+    /** Where the recipe came from, and what it started as. */
+    public function sources(): HasMany
+    {
+        return $this->hasMany(RecipeSource::class)->orderBy('order');
+    }
+
     /**
      * Mirrors Trip::scopePublished() - live on the public site.
      *

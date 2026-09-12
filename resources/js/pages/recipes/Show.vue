@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Head } from '@inertiajs/vue3'
-import { Clock, Flame, Users } from 'lucide-vue-next'
+import { Check, Clock, ExternalLink, Flame, Users } from 'lucide-vue-next'
+import { AnimatedContent } from '@/components/ui/motion'
+import ShoppingList from '@/components/pages/recipe/ShoppingList.vue'
 import { RecipeCard } from '@/components/cards'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
@@ -11,7 +13,20 @@ interface Ingredient {
   note: string | null
 }
 
-defineProps<{
+interface Step {
+  body: string
+  note: string | null
+  image: ResponsiveImageData | null
+}
+
+interface Source {
+  kind: string
+  label: string
+  url: string | null
+  note: string | null
+}
+
+const props = defineProps<{
   recipe: {
     name: string
     headline: string | null
@@ -26,7 +41,8 @@ defineProps<{
     servings: number | null
     hero: ResponsiveImageData | null
     ingredients: Ingredient[]
-    steps: string[]
+    steps: Step[]
+    sources: Source[]
   }
   more: RecipeCardData[]
 }>()
@@ -42,6 +58,12 @@ function toggle(index: number) {
   next.has(index) ? next.delete(index) : next.add(index)
   checked.value = next
 }
+
+const shoppingList = computed(() =>
+  props.recipe.ingredients.map((ingredient) =>
+    ingredient.note ? `${ingredient.label} (${ingredient.note})` : ingredient.label,
+  ),
+)
 </script>
 
 <template>
@@ -105,13 +127,26 @@ function toggle(index: number) {
         <h2 class="mb-4 text-2xl font-extrabold uppercase text-brand">Ingredients</h2>
         <ul class="space-y-2">
           <li v-for="(ingredient, i) in recipe.ingredients" :key="i">
-            <label class="flex cursor-pointer items-start gap-3 text-slate-700 dark:text-white/80">
+            <label class="group flex cursor-pointer items-start gap-3 text-slate-700 dark:text-white/80">
               <input
                 type="checkbox"
                 :checked="checked.has(i)"
-                class="mt-1 h-4 w-4 shrink-0 accent-[var(--color-brand)]"
+                class="peer sr-only"
                 @change="toggle(i)"
               >
+              <!--
+                Drawn rather than native: accent-color leaves an unfilled box
+                on a dark background, which reads as disabled.
+              -->
+              <span
+                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[0.3rem] border-2 border-slate-300 bg-white transition-colors peer-checked:border-brand peer-checked:bg-brand peer-focus-visible:ring-2 peer-focus-visible:ring-brand/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-white group-hover:border-brand dark:border-white/25 dark:bg-white/5 dark:peer-focus-visible:ring-offset-dark"
+                aria-hidden="true"
+              >
+                <Check
+                  class="h-3.5 w-3.5 text-white transition-opacity"
+                  :class="checked.has(i) ? 'opacity-100' : 'opacity-0'"
+                />
+              </span>
               <span :class="checked.has(i) ? 'line-through opacity-50' : ''">
                 {{ ingredient.label }}
                 <span v-if="ingredient.note" class="text-slate-500 dark:text-white/60">
@@ -121,20 +156,38 @@ function toggle(index: number) {
             </label>
           </li>
         </ul>
+
+        <ShoppingList :name="`${recipe.name} shopping list`" :items="shoppingList" />
       </section>
 
       <section v-if="recipe.steps.length">
         <h2 class="mb-4 text-2xl font-extrabold uppercase text-brand">Method</h2>
-        <ol class="space-y-5">
-          <li v-for="(step, i) in recipe.steps" :key="i" class="flex gap-4">
-            <span
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white"
-              aria-hidden="true"
-            >
-              {{ i + 1 }}
-            </span>
-            <p class="pt-1 leading-relaxed text-slate-700 dark:text-white/80">{{ step }}</p>
-          </li>
+        <ol class="space-y-8">
+            <li v-for="(step, i) in recipe.steps" :key="i" class="flex gap-4">
+              <span
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white"
+                aria-hidden="true"
+              >
+                {{ i + 1 }}
+              </span>
+              <div class="min-w-0 flex-1 pt-1">
+                <p class="leading-relaxed text-slate-700 dark:text-white/80">{{ step.body }}</p>
+
+                <p
+                  v-if="step.note"
+                  class="mt-2 border-l-2 border-brand/50 pl-3 text-sm italic text-slate-500 dark:text-white/60"
+                >
+                  {{ step.note }}
+                </p>
+
+                <ResponsiveImage
+                  v-if="step.image"
+                  :image="step.image"
+                  class="mt-3 aspect-[4/3] max-w-xs rounded-lg sm:max-w-sm"
+                  sizes="(min-width: 640px) 24rem, 20rem"
+                />
+              </div>
+            </li>
         </ol>
       </section>
     </div>
@@ -143,6 +196,35 @@ function toggle(index: number) {
       <h2 class="mb-3 text-xl font-extrabold uppercase text-brand">Notes</h2>
       <div class="recipe-notes text-slate-700 dark:text-white/80" v-html="recipe.notes" />
     </section>
+
+    <!-- Credit where it is due. Almost nothing here started with me. -->
+    <AnimatedContent v-if="recipe.sources.length" class="mt-12 max-w-3xl">
+      <h2 class="mb-4 text-xl font-extrabold uppercase text-brand">Where this came from</h2>
+      <ul class="space-y-3">
+        <li
+          v-for="(source, i) in recipe.sources"
+          :key="i"
+          class="flex flex-wrap items-baseline gap-x-2 text-slate-700 dark:text-white/80"
+        >
+          <span class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-white/40">
+            {{ source.kind }}
+          </span>
+          <a
+            v-if="source.url"
+            :href="source.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 font-medium text-brand hover:underline"
+          >
+            {{ source.label }} <ExternalLink class="h-3 w-3" />
+          </a>
+          <span v-else class="font-medium">{{ source.label }}</span>
+          <span v-if="source.note" class="text-sm text-slate-500 dark:text-white/55">
+            {{ source.note }}
+          </span>
+        </li>
+      </ul>
+    </AnimatedContent>
   </div>
 
   <section v-if="more.length" class="border-t border-slate-200 py-12 dark:border-white/10">

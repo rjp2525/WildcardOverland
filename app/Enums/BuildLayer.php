@@ -9,6 +9,7 @@ namespace App\Enums;
 enum BuildLayer: string
 {
     case Roof = 'roof';
+    case Camper = 'camper';
     case Body = 'body';
     case Interior = 'interior';
     case Underside = 'underside';
@@ -17,7 +18,8 @@ enum BuildLayer: string
     {
         return match ($this) {
             self::Roof => 'Roof & rack',
-            self::Body => 'Body & exterior',
+            self::Camper => 'Camper shell',
+            self::Body => 'Truck & exterior',
             self::Interior => 'Interior & storage',
             self::Underside => 'Underside & drivetrain',
         };
@@ -28,6 +30,7 @@ enum BuildLayer: string
     {
         return match ($this) {
             self::Roof => 1.0,
+            self::Camper => 0.85,
             self::Body => 0.65,
             self::Interior => 0.4,
             self::Underside => 0.2,

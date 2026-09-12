@@ -62,7 +62,7 @@ defineProps<{
     </div>
 
     <p v-else class="py-16 text-center text-slate-500 dark:text-white/60">
-      Nothing here yet<span v-if="activeMeal"> for this meal</span> — check back soon.
+      Nothing here yet<span v-if="activeMeal"> for this meal</span>. Check back soon.
     </p>
 
     <Pagination :links="recipes.links" />

@@ -149,7 +149,7 @@ class PublicPagesTest extends TestCase
     {
         $recipe = $this->recipe('Chili', ['prep_minutes' => 15, 'cook_minutes' => 45, 'servings' => 4]);
         $recipe->ingredients()->create(['order' => 0, 'quantity' => '1', 'unit' => 'lb', 'item' => 'beef']);
-        $recipe->steps()->create(['order' => 0, 'body' => 'Brown the beef.']);
+        $recipe->steps()->create(['order' => 0, 'body' => 'Brown the beef.', 'note' => 'Coals, not flame.']);
 
         $this->get(route('recipes.show', $recipe->slug))
             ->assertOk()
@@ -157,7 +157,9 @@ class PublicPagesTest extends TestCase
                 ->component('recipes/Show')
                 ->where('recipe.total_minutes', 60)
                 ->where('recipe.ingredients.0.label', '1 lb beef')
-                ->where('recipe.steps.0', 'Brown the beef.'));
+                ->where('recipe.steps.0.body', 'Brown the beef.')
+                ->where('recipe.steps.0.note', 'Coals, not flame.')
+                ->where('recipe.steps.0.image', null));
     }
 
     public function test_unpublished_recipes_are_not_reachable(): void

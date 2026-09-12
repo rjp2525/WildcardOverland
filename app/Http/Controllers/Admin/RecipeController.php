@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\DietaryTag;
 use App\Enums\Difficulty;
 use App\Enums\MealType;
+use App\Enums\SourceKind;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RecipeRequest;
 use App\Models\Image;
@@ -50,7 +51,7 @@ class RecipeController extends Controller
     public function store(RecipeRequest $request): RedirectResponse
     {
         $recipe = DB::transaction(function () use ($request): Recipe {
-            $recipe = Recipe::create($request->safe()->except(['ingredients', 'steps']));
+            $recipe = Recipe::create($request->safe()->except(['ingredients', 'steps', 'sources']));
 
             $this->syncChildren($recipe, $request);
 
@@ -88,9 +89,17 @@ class RecipeController extends Controller
                     'item' => $i->item,
                     'note' => $i->note,
                 ]),
+                'sources' => $recipe->sources->map(fn ($source) => [
+                    'kind' => $source->kind->value,
+                    'label' => $source->label,
+                    'url' => $source->url,
+                    'note' => $source->note,
+                ]),
                 'steps' => $recipe->steps->map(fn ($s) => [
                     'id' => $s->id,
                     'body' => $s->body,
+                    'note' => $s->note,
+                    'image_id' => $s->image_id,
                 ]),
             ],
             ...$this->formOptions(),
@@ -100,7 +109,7 @@ class RecipeController extends Controller
     public function update(RecipeRequest $request, Recipe $recipe): RedirectResponse
     {
         DB::transaction(function () use ($request, $recipe): void {
-            $recipe->update($request->safe()->except(['ingredients', 'steps']));
+            $recipe->update($request->safe()->except(['ingredients', 'steps', 'sources']));
 
             $this->syncChildren($recipe, $request);
         });
@@ -118,8 +127,8 @@ class RecipeController extends Controller
     }
 
     /**
-     * Replace ingredients and steps with the submitted sets, renumbering as
-     * they arrive so the form's order is what gets stored.
+     * Replace ingredients, sources and steps with the submitted sets,
+     * renumbering as they arrive so the form's order is what gets stored.
      */
     protected function syncChildren(Recipe $recipe, RecipeRequest $request): void
     {
@@ -134,9 +143,25 @@ class RecipeController extends Controller
             ]);
         }
 
+        $recipe->sources()->delete();
+        foreach (array_values($request->validated('sources', [])) as $order => $row) {
+            $recipe->sources()->create([
+                'order' => $order,
+                'kind' => $row['kind'],
+                'label' => $row['label'],
+                'url' => $row['url'] ?? null,
+                'note' => $row['note'] ?? null,
+            ]);
+        }
+
         $recipe->steps()->delete();
         foreach (array_values($request->validated('steps', [])) as $order => $row) {
-            $recipe->steps()->create(['order' => $order, 'body' => $row['body']]);
+            $recipe->steps()->create([
+                'order' => $order,
+                'body' => $row['body'],
+                'note' => $row['note'] ?? null,
+                'image_id' => $row['image_id'] ?? null,
+            ]);
         }
     }
 
@@ -149,6 +174,7 @@ class RecipeController extends Controller
             'mealTypes' => MealType::options(),
             'difficulties' => Difficulty::options(),
             'dietaryTags' => DietaryTag::options(),
+            'sourceKinds' => SourceKind::options(),
             'images' => Image::query()
                 ->orderBy('name')
                 ->get(['id', 'name'])

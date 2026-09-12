@@ -32,7 +32,7 @@ class DemoContent
                 'miles' => 412,
                 'start_date' => '2025-05-09',
                 'end_date' => '2025-05-12',
-                'summary' => 'Hot springs, a playa you can drive across at speed, and not another vehicle for a day and a half.',
+                'summary' => 'Hot springs, a playa you can drive across at speed and not another vehicle for a day and a half.',
                 'content' => '<h2>Getting there</h2><p>The last fuel is a long way back, so we topped off twice and carried an extra twenty litres. The washboard on the approach road is the worst part of the whole trip.</p><h2>On the playa</h2><p>Flat, white and absolutely silent. We aired down to 18psi and did a slow lap of the edge before setting up somewhere near the middle.</p><ul><li>Bring more shade than you think</li><li>The wind picks up hard around four</li></ul>',
                 'image' => 'alvord-desert',
                 'campsites' => [
@@ -65,7 +65,7 @@ class DemoContent
                 'miles' => 188,
                 'start_date' => '2025-09-22',
                 'end_date' => '2025-09-25',
-                'summary' => 'Permit-only, no water, and some of the best camping anywhere in Utah.',
+                'summary' => 'Permit-only, no water and some of the best camping anywhere in Utah.',
                 'content' => '<h2>Permits</h2><p>Book the moment the window opens. The good sites go in minutes.</p><h2>Shafer switchbacks</h2><p>Steeper than the photographs suggest, and the drop is right there. Low range, first gear, no drama.</p>',
                 'image' => 'white-rim',
                 'campsites' => [
@@ -81,7 +81,7 @@ class DemoContent
                 'miles' => 164,
                 'start_date' => '2025-07-18',
                 'end_date' => '2025-07-20',
-                'summary' => 'Two twelve-thousand-foot passes, an old mining town, and afternoon storms you can set your watch by.',
+                'summary' => 'Two twelve-thousand-foot passes, an old mining town and afternoon storms you can set your watch by.',
                 'content' => '<h2>Weather</h2><p>Be over the passes by noon. The build-up starts early and the exposed sections are no place to be in a storm.</p><p>Animas Forks is worth an hour on its own.</p>',
                 'image' => 'alpine-loop',
                 'campsites' => [
@@ -112,7 +112,7 @@ class DemoContent
                 'miles' => 1284,
                 'start_date' => '2026-03-01',
                 'end_date' => '2026-03-09',
-                'summary' => 'Fish tacos, empty beaches you can park on, and the best water on the whole trip.',
+                'summary' => 'Fish tacos, empty beaches you can park on and the best water on the whole trip.',
                 'content' => '<h2>Crossing</h2><p>Tecate is calmer than Tijuana and the paperwork took twenty minutes. Get the vehicle permit sorted before you go.</p><h2>The beaches</h2><p>Playa Santispac is the famous one, but the coves either side are quieter and cost nothing.</p><ul><li>Fuel is cash in a lot of places</li><li>The topes will destroy you if you are not watching</li></ul>',
                 'image' => 'baja-peninsula',
                 'campsites' => [
@@ -138,7 +138,7 @@ class DemoContent
                 'dietary' => [DietaryTag::OnePot->value, DietaryTag::GlutenFree->value],
                 'prep' => 15, 'cook' => 45, 'servings' => 4,
                 'image' => 'recipe-chili',
-                'summary' => 'The one that gets made on almost every trip. Forgiving, filling, and it reheats better than it has any right to.',
+                'summary' => 'The one that gets made on almost every trip. Forgiving, filling and it reheats better than it has any right to.',
                 'notes' => '<p>Swap the beef for another tin of beans and it is just as good. If you are at altitude, give it another twenty minutes.</p>',
                 'ingredients' => [
                     ['1', 'lb', 'ground beef', null],
@@ -149,10 +149,14 @@ class DemoContent
                     [null, null, 'salt', 'to taste'],
                 ],
                 'steps' => [
-                    'Brown the beef in the dutch oven over a good bed of coals.',
-                    'Add the onion and cook until it goes soft, about five minutes.',
-                    'Tip in everything else, stir, and put the lid on.',
-                    'Simmer for forty-five minutes, stirring whenever you walk past.',
+                    ['Brown the beef in the dutch oven over a good bed of coals.', 'Coals, not flame. Flame scorches the bottom before the middle knows about it.'],
+                    ['Add the onion and cook until it goes soft, about five minutes.', null],
+                    ['Tip in everything else, stir and put the lid on.', null],
+                    ['Simmer for forty-five minutes, stirring whenever you walk past.', 'If it looks dry, a splash of water. It should not need it.'],
+                ],
+                'sources' => [
+                    ['found', 'Serious Eats', 'https://www.seriouseats.com', 'Their dutch oven method is the one I copy'],
+                    ['inspired', "My grandmother's chili", null, 'Hers had a whole cinnamon stick in it'],
                 ],
             ],
             [
@@ -258,7 +262,7 @@ class DemoContent
                 'dietary' => [DietaryTag::Vegan->value, DietaryTag::GlutenFree->value],
                 'prep' => 2, 'cook' => 8, 'servings' => 4,
                 'image' => 'recipe-coffee',
-                'summary' => 'Grounds in the pot, cold water to settle them, and nobody complains.',
+                'summary' => 'Grounds in the pot, cold water to settle them and nobody complains.',
                 'notes' => '<p>The splash of cold water at the end really does drop the grounds. Pour slowly and stop before the bottom.</p>',
                 'ingredients' => [
                     ['4', 'cups', 'water', null],
@@ -279,18 +283,24 @@ class DemoContent
      */
     public static function modifications(): array
     {
-        // `layer` and `hotspot` place a part on the build page illustration;
-        // x/y are percentages of that artwork's box.
+        // `layer` and `hotspot` place a part on the rig illustration;
+        // x and y are percentages of that artwork's box.
         return [
-            ['name' => 'Prinsu Roof Rack', 'vendor' => 'Prinsu', 'description' => 'Full-length aluminium rack with a wind deflector.', 'install_date' => '2024-04-12', 'cost' => 124999, 'url' => 'https://prinsu.com', 'timeline' => true, 'layer' => 'roof', 'hotspot' => [58.6, 25.8]],
-            ['name' => 'Baja Designs Light Bar', 'vendor' => 'Baja Designs', 'description' => 'Forty inches of light for the last hour of a long day.', 'install_date' => '2024-05-20', 'cost' => 79900, 'timeline' => false, 'layer' => 'roof', 'hotspot' => [65.9, 22.9]],
-            ['name' => 'Dometic CFX3 45', 'vendor' => 'Dometic', 'description' => 'Dual-zone fridge freezer under the rear seat.', 'install_date' => '2024-07-02', 'cost' => 89900, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [42.8, 58.8]],
-            ['name' => 'ARB Twin Compressor', 'vendor' => 'ARB', 'description' => 'Airs all four tyres back up in about six minutes.', 'install_date' => '2024-09-19', 'cost' => 55000, 'timeline' => true, 'layer' => 'underside', 'hotspot' => [69.0, 78.8]],
-            ['name' => 'CBI Rock Sliders', 'vendor' => 'CBI Offroad', 'description' => 'Bolt-on steel, and the reason the rockers are still straight.', 'install_date' => '2024-11-08', 'cost' => 98000, 'timeline' => false, 'layer' => 'underside', 'hotspot' => [51.7, 75.8]],
-            ['name' => 'Old Man Emu Suspension', 'vendor' => 'ARB', 'description' => 'Two inch lift with heavy rear leaves for the drawer weight.', 'install_date' => '2025-01-24', 'cost' => 189500, 'timeline' => true, 'layer' => 'underside', 'hotspot' => [26.9, 69.6]],
-            ['name' => 'C4 Fabrication Front Bumper', 'vendor' => 'C4 Fabrication', 'description' => 'Hybrid bumper with a recovery point at each corner.', 'install_date' => '2025-03-15', 'cost' => 165000, 'timeline' => false, 'layer' => 'body', 'hotspot' => [91.3, 68.5]],
-            ['name' => 'Dual Battery System', 'vendor' => 'Redarc', 'description' => 'DC-DC charger and a 100Ah lithium under the tray.', 'install_date' => '2025-05-30', 'cost' => 142000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [10.1, 62.9]],
-            ['name' => 'Rear Drawer System', 'vendor' => 'Goose Gear', 'description' => 'Two drawers and a fridge slide.', 'install_date' => '2025-08-15', 'cost' => 210000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [15.8, 55.4]],
+            ['name' => 'Prinsu Roof Rack', 'vendor' => 'Prinsu', 'description' => 'Full length aluminium rack over the camper, wind deflector up front.', 'install_date' => '2024-04-12', 'cost' => 124999, 'url' => 'https://prinsu.com', 'timeline' => true, 'layer' => 'roof', 'hotspot' => [19.8, 15.8]],
+            ['name' => 'Baja Designs Light Bar', 'vendor' => 'Baja Designs', 'description' => 'Forty inches across the cab roof for the last hour of a long day.', 'install_date' => '2024-05-20', 'cost' => 79900, 'timeline' => false, 'layer' => 'roof', 'hotspot' => [47.5, 24.0]],
+            ['name' => 'Renogy 200W Solar', 'vendor' => 'Renogy', 'description' => 'Two panels flat on the rack. Keeps the batteries topped up without idling.', 'install_date' => '2024-06-08', 'cost' => 42000, 'timeline' => false, 'layer' => 'roof', 'hotspot' => [19.6, 13.5]],
+            ['name' => 'Tune M1L Camper', 'vendor' => 'Tune Outdoor', 'description' => 'Hard side aluminium camper. Stand up room, big side window and it stays put on washboard.', 'install_date' => '2024-06-28', 'cost' => 1850000, 'url' => 'https://tuneoutdoor.com', 'timeline' => true, 'layer' => 'camper', 'hotspot' => [19.6, 38.8]],
+            ['name' => 'Camper Side Door', 'vendor' => 'Tune Outdoor', 'description' => 'Door on the passenger side so camp faces away from the road.', 'install_date' => '2024-06-28', 'cost' => 0, 'timeline' => false, 'layer' => 'camper', 'hotspot' => [27.5, 30.8]],
+            ['name' => 'Dometic CFX3 45', 'vendor' => 'Dometic', 'description' => 'Dual zone fridge freezer under the sleeping platform.', 'install_date' => '2024-07-02', 'cost' => 89900, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [21.2, 40.6]],
+            ['name' => 'Galley Drawer System', 'vendor' => 'Goose Gear', 'description' => 'Three drawers I built out for the stove, the pots and the dry food.', 'install_date' => '2024-08-15', 'cost' => 210000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [13.1, 42.3]],
+            ['name' => 'Sleeping Platform', 'vendor' => null, 'description' => 'Plywood deck and a four inch foam mattress. Built it in a weekend.', 'install_date' => '2024-07-20', 'cost' => 38000, 'timeline' => false, 'layer' => 'interior', 'hotspot' => [19.6, 25.2]],
+            ['name' => 'Redarc Dual Battery', 'vendor' => 'Redarc', 'description' => 'DC to DC charger and a 100Ah lithium under the galley.', 'install_date' => '2025-05-30', 'cost' => 142000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [27.9, 50.6]],
+            ['name' => 'Fresh Water Tank', 'vendor' => null, 'description' => 'Twenty gallons plumbed to a foot pump at the galley.', 'install_date' => '2025-02-10', 'cost' => 46000, 'timeline' => false, 'layer' => 'interior', 'hotspot' => [27.9, 37.5]],
+            ['name' => 'C4 Fabrication Front Bumper', 'vendor' => 'C4 Fabrication', 'description' => 'Hybrid bumper with a recovery point at each corner.', 'install_date' => '2025-03-15', 'cost' => 165000, 'timeline' => false, 'layer' => 'body', 'hotspot' => [90.2, 65.8]],
+            ['name' => 'CBI Rock Sliders', 'vendor' => 'CBI Offroad', 'description' => 'Bolt on steel, and the reason the rockers are still straight.', 'install_date' => '2024-11-08', 'cost' => 98000, 'timeline' => false, 'layer' => 'underside', 'hotspot' => [51.7, 75.8]],
+            ['name' => 'Old Man Emu Suspension', 'vendor' => 'ARB', 'description' => 'Two inch lift with heavy rear leaves for the camper weight.', 'install_date' => '2025-01-24', 'cost' => 189500, 'timeline' => true, 'layer' => 'underside', 'hotspot' => [26.9, 69.6]],
+            ['name' => 'ARB Twin Compressor', 'vendor' => 'ARB', 'description' => 'Airs all four tyres back up in about six minutes.', 'install_date' => '2024-09-19', 'cost' => 55000, 'timeline' => true, 'layer' => 'underside', 'hotspot' => [76.6, 78.3]],
+            ['name' => 'BFGoodrich KO2 285/75R16', 'vendor' => 'BFGoodrich', 'description' => 'Thirty three inch all terrains. Quiet enough on pavement, honest in the rocks.', 'install_date' => '2024-10-02', 'cost' => 132000, 'timeline' => false, 'layer' => 'underside', 'hotspot' => [76.4, 60.4]],
         ];
     }
 

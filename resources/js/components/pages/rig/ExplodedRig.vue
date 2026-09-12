@@ -15,6 +15,23 @@ const exploded = ref(false)
 const pointer = ref({ x: 0, y: 0 })
 const parallaxEnabled = ref(false)
 
+/**
+ * Which slice is being looked at. The interior is the part that is normally
+ * hidden behind two panels, so being able to pull it out on its own is the
+ * only way it gets seen at all.
+ */
+const focused = ref<string | null>(null)
+
+function focus(layer: string | null) {
+  focused.value = focused.value === layer ? null : layer
+  // Isolating a layer only reads once the stack is pulled apart.
+  if (focused.value !== null) {
+    exploded.value = true
+  }
+}
+
+const dimmed = (layer: string) => focused.value !== null && focused.value !== layer
+
 /** Back to front, so the roof sits on top of the body in the DOM. */
 const ordered = computed(() =>
   [...props.layers].sort((a, b) => a.depth - b.depth),
@@ -69,19 +86,38 @@ onMounted(() => {
   media.addEventListener('change', syncParallax)
 })
 
-onBeforeUnmount(() => media?.removeEventListener('change', syncParallax))
+onBeforeUnmount(() => {
+  cancelAnimationFrame(queued)
+  media?.removeEventListener('change', syncParallax)
+})
+
+let queued = 0
 
 function onMove(event: PointerEvent) {
   if (!parallaxEnabled.value) return
 
+  /*
+   * Only real cursor movement counts. When the layers animate under a
+   * stationary pointer the browser fires pointermove anyway, with no
+   * movement on it - and acting on those feeds the transform back into
+   * itself every frame, which restarts every transition on the element
+   * before it can finish.
+   */
+  if (event.movementX === 0 && event.movementY === 0) return
+
   const box = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  pointer.value = {
-    x: ((event.clientX - box.left) / box.width) * 2 - 1,
-    y: ((event.clientY - box.top) / box.height) * 2 - 1,
-  }
+  const x = ((event.clientX - box.left) / box.width) * 2 - 1
+  const y = ((event.clientY - box.top) / box.height) * 2 - 1
+
+  // One update per frame is as often as it can possibly matter.
+  cancelAnimationFrame(queued)
+  queued = requestAnimationFrame(() => (pointer.value = { x, y }))
 }
 
-const reset = () => (pointer.value = { x: 0, y: 0 })
+function reset() {
+  cancelAnimationFrame(queued)
+  pointer.value = { x: 0, y: 0 }
+}
 
 function toggle(id: number) {
   emit('select', props.selectedId === id ? null : id)
@@ -108,6 +144,7 @@ function toggle(id: number) {
           v-for="layer in ordered"
           :key="layer.value"
           class="absolute inset-0 rig-layer"
+          :class="{ 'is-dimmed': dimmed(layer.value) }"
           :style="layerStyle(layer.depth)"
         >
           <RigArt :layer="layer.value" />
@@ -122,6 +159,7 @@ function toggle(id: number) {
           v-for="layer in ordered"
           :key="`pins-${layer.value}`"
           class="absolute inset-0 rig-layer"
+          :class="{ 'is-dimmed': dimmed(layer.value) }"
           :style="layerStyle(layer.depth)"
         >
           <button
@@ -140,6 +178,29 @@ function toggle(id: number) {
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- Pick a slice to look at on its own. -->
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        class="rig-chip"
+        :class="{ 'is-on': focused === null }"
+        @click="focus(null)"
+      >
+        Whole rig
+      </button>
+      <button
+        v-for="layer in layers"
+        :key="`chip-${layer.value}`"
+        type="button"
+        class="rig-chip"
+        :class="{ 'is-on': focused === layer.value }"
+        :aria-pressed="focused === layer.value"
+        @click="focus(layer.value)"
+      >
+        {{ layer.label }}
+      </button>
     </div>
 
     <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -172,8 +233,41 @@ function toggle(id: number) {
 }
 
 .rig-layer {
-  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 600ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 350ms ease,
+    filter 350ms ease;
   will-change: transform;
+}
+
+/* Pushed back rather than hidden, so the isolated slice keeps its context. */
+.rig-layer.is-dimmed {
+  opacity: 0.12;
+  filter: saturate(0.2);
+  pointer-events: none;
+}
+
+.rig-chip {
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 0.6);
+  transition: color 200ms ease, border-color 200ms ease, background-color 200ms ease;
+}
+
+.rig-chip:hover {
+  color: var(--color-brand);
+  border-color: color-mix(in oklab, var(--color-brand) 50%, transparent);
+}
+
+.rig-chip.is-on {
+  background: color-mix(in oklab, var(--color-brand) 16%, transparent);
+  border-color: color-mix(in oklab, var(--color-brand) 55%, transparent);
+  color: var(--color-brand);
 }
 
 .rig-grid {

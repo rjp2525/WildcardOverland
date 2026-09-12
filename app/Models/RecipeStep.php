@@ -10,7 +10,7 @@ class RecipeStep extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['recipe_id', 'order', 'body'];
+    protected $fillable = ['recipe_id', 'order', 'image_id', 'body', 'note'];
 
     protected function casts(): array
     {
@@ -20,5 +20,11 @@ class RecipeStep extends Model
     public function recipe(): BelongsTo
     {
         return $this->belongsTo(Recipe::class);
+    }
+
+    /** What the pan should look like at this point. */
+    public function image(): BelongsTo
+    {
+        return $this->belongsTo(Image::class);
     }
 }
