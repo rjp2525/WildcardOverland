@@ -15,9 +15,13 @@ use App\Models\VehicleModification;
 class SiteContent
 {
     /**
-     * Counters backed by real records. Trips and nights come from the same
-     * published set so they stay consistent with each other; photos counts
-     * images typed as photographs, excluding private ones.
+     * Counters backed by real records. Trips, nights and miles come from the
+     * same published set so they stay consistent with each other; photos
+     * counts images typed as photographs, excluding private ones.
+     *
+     * States is the number of distinct regions campsites resolved to. Those
+     * are geocoded from coordinates, so a campsite whose lookup has not run
+     * (or found nothing) simply does not contribute.
      *
      * @return array<string, int>
      */
@@ -26,7 +30,13 @@ class SiteContent
         return [
             'trips' => Trip::published()->count(),
             'nights' => (int) Trip::published()->sum('calculated_nights'),
+            'miles' => (int) Trip::published()->sum('miles'),
             'photos' => Image::publicPhotos()->count(),
+            'states' => Campsite::query()
+                ->whereNotNull('state')
+                ->whereHas('trip', fn ($query) => $query->published())
+                ->distinct()
+                ->count('state'),
         ];
     }
 

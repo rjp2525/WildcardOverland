@@ -272,6 +272,35 @@ class AboutPageTest extends TestCase
                 ->where('stats.photos', 0));
     }
 
+    public function test_miles_come_from_published_trips(): void
+    {
+        $this->trip('One', ['miles' => 400]);
+        $this->trip('Two', ['miles' => 120]);
+        $this->trip('Draft', ['is_draft' => true, 'miles' => 9999]);
+        $this->trip('No mileage recorded');
+
+        $this->get(route('about'))
+            ->assertInertia(fn ($page) => $page->where('stats.miles', 520));
+    }
+
+    public function test_states_counts_distinct_regions_from_published_trips(): void
+    {
+        $live = $this->trip('Live');
+        $live->campsites()->createMany([
+            ['order' => 0, 'name' => 'A', 'latitude' => 1, 'longitude' => 1, 'state' => 'Utah'],
+            ['order' => 1, 'name' => 'B', 'latitude' => 2, 'longitude' => 2, 'state' => 'Utah'],
+            ['order' => 2, 'name' => 'C', 'latitude' => 3, 'longitude' => 3, 'state' => 'Colorado'],
+            // Never resolved, so it contributes nothing.
+            ['order' => 3, 'name' => 'D', 'latitude' => 4, 'longitude' => 4],
+        ]);
+
+        $draft = $this->trip('Draft', ['is_draft' => true]);
+        $draft->campsites()->create(['order' => 0, 'name' => 'Hidden', 'latitude' => 5, 'longitude' => 5, 'state' => 'Nevada']);
+
+        $this->get(route('about'))
+            ->assertInertia(fn ($page) => $page->where('stats.states', 2));
+    }
+
     public function test_the_page_renders_with_no_data_at_all(): void
     {
         $this->get(route('about'))

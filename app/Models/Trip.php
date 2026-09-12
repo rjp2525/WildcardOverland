@@ -27,6 +27,7 @@ class Trip extends Model
         'content',
         'start_date',
         'end_date',
+        'miles',
         'is_draft',
         'published_at',
     ];
@@ -40,6 +41,7 @@ class Trip extends Model
         return [
             'start_date' => 'date',
             'end_date' => 'date',
+            'miles' => 'integer',
             'published_at' => 'datetime',
             'is_draft' => 'boolean',
         ];

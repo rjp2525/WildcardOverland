@@ -92,6 +92,7 @@ class TripController extends Controller
                 'content' => $trip->content,
                 'start_date' => $trip->start_date?->toDateString(),
                 'end_date' => $trip->end_date?->toDateString(),
+                'miles' => $trip->miles,
                 'is_draft' => $trip->is_draft,
                 'published_at' => $trip->published_at?->format('Y-m-d\TH:i'),
                 'nights' => $trip->calculated_nights,

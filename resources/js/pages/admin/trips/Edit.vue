@@ -43,6 +43,7 @@ interface TripPayload {
   content: string | null
   start_date: string | null
   end_date: string | null
+  miles: number | null
   is_draft: boolean
   published_at: string | null
   nights: number | null
@@ -66,6 +67,7 @@ const form = useForm({
   content: props.trip?.content ?? null,
   start_date: props.trip?.start_date ?? '',
   end_date: props.trip?.end_date ?? '',
+  miles: props.trip?.miles ?? null,
   is_draft: props.trip?.is_draft ?? true,
   published_at: props.trip?.published_at ?? '',
   campsites: (props.trip?.campsites ?? []) as CampsiteRow[],
@@ -173,6 +175,15 @@ function campsiteError(index: number, field: string): string | undefined {
             <Input id="end_date" v-model="form.end_date" type="date" :invalid="!!form.errors.end_date" />
           </Field>
         </div>
+
+        <Field
+          label="Miles off road"
+          for="miles"
+          :error="form.errors.miles"
+          hint="Counted into the site statistics."
+        >
+          <Input id="miles" v-model="form.miles" type="number" min="0" class="max-w-48" :invalid="!!form.errors.miles" />
+        </Field>
       </div>
     </Card>
 
