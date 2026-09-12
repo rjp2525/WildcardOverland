@@ -19,6 +19,7 @@ class Image extends Model
         'file_id',
         'width',
         'height',
+        'dominant_color',
         'private',
         'featured',
         'sort_order',

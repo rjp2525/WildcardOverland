@@ -4,12 +4,9 @@ import { Lock, MapPin, Moon } from 'lucide-vue-next'
 import { RecipeCard, TripCard } from '@/components/cards'
 import type { TripCardData } from '@/components/cards/TripCard.vue'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
+import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
 
-interface GalleryImage {
-  url: string
-  alt: string
-  caption: string | null
-}
+type GalleryImage = ResponsiveImageData
 
 interface Campsite {
   name: string
@@ -28,7 +25,7 @@ defineProps<{
     content: string | null
     date_label: string | null
     nights: number | null
-    hero: { url: string; alt: string } | null
+    hero: ResponsiveImageData | null
     gallery: GalleryImage[]
     campsites: Campsite[]
     hasHiddenLocations: boolean
@@ -44,12 +41,7 @@ defineProps<{
   <!-- Hero -->
   <div class="relative w-full bg-dark">
     <div class="relative h-[26rem] w-full overflow-hidden sm:h-[32rem]">
-      <img
-        v-if="trip.hero"
-        :src="trip.hero.url"
-        :alt="trip.hero.alt"
-        class="h-full w-full object-cover"
-      >
+      <ResponsiveImage v-if="trip.hero" :image="trip.hero" priority />
       <div v-else class="h-full w-full bg-page-header bg-cover bg-center" />
       <div class="absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-black/30" />
 
@@ -102,13 +94,7 @@ defineProps<{
         <h2 class="mb-5 text-2xl font-extrabold uppercase text-brand">Photos</h2>
         <div class="grid gap-4 sm:grid-cols-2">
           <figure v-for="(image, i) in trip.gallery" :key="i" class="overflow-hidden rounded-lg">
-            <img
-              :src="image.url"
-              :alt="image.alt"
-              loading="lazy"
-              decoding="async"
-              class="aspect-square w-full object-cover"
-            >
+            <ResponsiveImage :image="image" class="aspect-square" />
             <figcaption
               v-if="image.caption"
               class="pt-2 text-sm text-slate-500 dark:text-white/60"

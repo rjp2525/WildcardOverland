@@ -71,7 +71,9 @@ class AboutPageTest extends TestCase
                 ->component('About')
                 ->has('partners', 1)
                 ->where('partners.0.name', 'katadyn')
-                ->where('partners.0.width', 120));
+                // The logo travels as a full candidate set, not one URL.
+                ->has('partners.0.logo.srcset')
+                ->where('partners.0.logo.alt', 'katadyn'));
     }
 
     public function test_private_logos_are_never_shown_publicly(): void
@@ -86,7 +88,7 @@ class AboutPageTest extends TestCase
     {
         $brand = $this->brandWithLogo('katadyn');
 
-        $url = AssetUrl::image($brand->logo->file, 300, 146);
+        $url = AssetUrl::image($brand->logo->file, 'logo', 160);
 
         // The signature must satisfy the asset route it was generated for.
         $response = $this->get($url);
@@ -98,7 +100,7 @@ class AboutPageTest extends TestCase
     {
         $brand = $this->brandWithLogo('katadyn');
 
-        $url = AssetUrl::image($brand->logo->file, 300, 146);
+        $url = AssetUrl::image($brand->logo->file, 'logo', 160);
         $tampered = preg_replace('/s=[a-f0-9]+/', 's='.str_repeat('0', 32), $url);
 
         $this->get($tampered)->assertForbidden();
@@ -109,18 +111,18 @@ class AboutPageTest extends TestCase
         $brand = $this->brandWithLogo('katadyn');
 
         // Same signature, different width: must not validate.
-        $url = str_replace('w=300', 'w=600', AssetUrl::image($brand->logo->file, 300, 146));
+        $url = str_replace('w=160', 'w=320', AssetUrl::image($brand->logo->file, 'logo', 160));
 
         $this->get($url)->assertForbidden();
     }
 
-    public function test_unsupported_dimensions_fail_loudly_at_the_call_site(): void
+    public function test_an_unknown_variant_fails_loudly_at_the_call_site(): void
     {
         $brand = $this->brandWithLogo('katadyn');
 
         $this->expectException(\InvalidArgumentException::class);
 
-        AssetUrl::image($brand->logo->file, 12345, 146);
+        AssetUrl::image($brand->logo->file, 'enormous');
     }
 
     public function test_the_timeline_only_includes_modifications_flagged_for_it(): void

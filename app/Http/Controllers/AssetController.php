@@ -3,81 +3,61 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AssetFileRequest;
-use Exception;
+use App\Services\ImageRenderer;
+use App\Support\AssetSignature;
+use App\Support\ImageVariant;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use League\Glide\Filesystem\FileNotFoundException;
-use League\Glide\Responses\SymfonyResponseFactory;
-use League\Glide\Server;
-use League\Glide\ServerFactory;
-use League\Glide\Signatures\SignatureException;
-use League\Glide\Signatures\SignatureFactory;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
+/**
+ * Serves image derivatives.
+ *
+ * Nothing under storage/ is reachable by the web server, so every image goes
+ * through here. The signature is what makes that safe to expose: it ties the
+ * path, the variant and the width together, so the only renderings anyone
+ * can ask for are the ones the application itself linked to.
+ */
 class AssetController extends Controller
 {
-    protected Server $server;
+    public function __construct(protected ImageRenderer $renderer) {}
 
-    public function __construct()
+    public function __invoke(AssetFileRequest $request, string $path): Response
     {
-        $this->server = ServerFactory::create([
-            'response' => new SymfonyResponseFactory(app('request')),
-            // Must match config('assets.disk'), which is where uploads land.
-            'source' => Storage::disk(config('assets.disk'))->getDriver(),
-            'cache' => Storage::disk('local')->getDriver(),
-            'cache_path_prefix' => '.glide-cache/',
-            'base_url' => 'assets',
-            'defaults' => [
-                'q' => '75',
-            ],
-            'disable_asserts' => true,
-        ]);
-    }
+        abort_unless(AssetSignature::verify("/assets/{$path}", $request->all()), 403);
 
-    public function __invoke(AssetFileRequest $request, string $path): StreamedResponse
-    {
+        $variant = ImageVariant::make($request->string('v')->value());
+        $width = $request->integer('w');
+
+        // The signature covers this pair, so a mismatch means the variant
+        // table changed under a URL that is still in someone's cache.
+        abort_unless($variant->allows($width), 404);
+
         try {
-            $path = $request->path;
-
-            // Validate HTTP signature
-            // Use the $factory->generateSignature(path, params) method to generate signature
-            $f = SignatureFactory::create(config('app.key'));
-            // dd($f->generateSignature("/assets/$path", $request->all()));
-            $f->validateRequest("/assets/$path", $request->all());
-
-            return $this->getImageResponse($path, $request->all());
-        } catch (SignatureException $e) {
-            // Forbidden
-            abort(403);
-        } catch (FileNotFoundException $e) {
-            // Not Found
-            abort(404);
-        }
-    }
-
-    public function getPlaceholder(string $path): string
-    {
-        return $this->server->getImageAsBase64($path, $this->placeholderParams);
-    }
-
-    public function getImageResponse(string $path, array $params)
-    {
-        try {
-            return $this->server->getImageResponse($path, $params);
-        } catch (Exception $e) {
+            ['bytes' => $bytes, 'mime' => $mime] = $this->renderer->render($path, $variant, $width);
+        } catch (Throwable $e) {
             /*
-             * A source object that is not on the disk, an unreadable file and
-             * a missing image driver all arrive here, and all leave as the
-             * same bare 404. Record why before throwing that away, otherwise
-             * a broken image is indistinguishable from a wrong URL.
+             * A source that is not on the disk, an unreadable file and a
+             * missing image driver all arrive here and all leave as the same
+             * bare 404. Record why first, otherwise a broken image is
+             * indistinguishable from a wrong URL.
              */
-            Log::warning('Asset could not be served', [
+            Log::warning('Asset could not be rendered', [
                 'path' => $path,
+                'variant' => $variant->name,
+                'width' => $width,
                 'disk' => config('assets.disk'),
                 'error' => $e->getMessage(),
             ]);
 
             abort(404);
         }
+
+        return response($bytes, 200, [
+            'Content-Type' => $mime,
+            // Derivatives are immutable: a replaced source is written to a
+            // new path, so the URL changes with the bytes.
+            'Cache-Control' => 'public, max-age='.config('assets.max_age').', immutable',
+        ]);
     }
 }

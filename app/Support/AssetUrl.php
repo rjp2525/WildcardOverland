@@ -2,84 +2,55 @@
 
 namespace App\Support;
 
-use App\Enums\ImageEnum;
 use App\Models\File;
-use InvalidArgumentException;
-use League\Glide\Signatures\SignatureFactory;
 
 /**
- * Builds signed URLs for the Glide asset route.
+ * Builds signed URLs for the asset route.
  *
- * AssetController validates the signature against the *whole* request, and
- * AssetFileRequest::prepareForValidation() merges `path`, `q` and `fit` in
- * before that happens. So the signed payload has to include `path` even
- * though it travels in the route rather than the query string, and `q`/`fit`
- * are always sent explicitly rather than relying on their defaults.
+ * A URL carries a variant name and a width, both signed, so the set of
+ * images the server can be asked to produce is exactly the table in
+ * config('assets.variants') - there is no size parameter to tamper with.
+ *
+ * AssetController validates the signature against the whole request and
+ * AssetFileRequest merges `path` in before that happens, so `path` has to be
+ * part of the signed payload even though it travels in the route rather than
+ * the query string.
  */
 class AssetUrl
 {
-    /**
-     * A resized image URL for a stored file.
-     *
-     * @param  int  $width  One of ImageEnum::ALLOWED_WIDTHS
-     * @param  int  $height  One of ImageEnum::ALLOWED_HEIGHTS
-     */
-    public static function image(
-        File $file,
-        int $width,
-        int $height,
-        string $format = 'png',
-        int $quality = ImageEnum::DEFAULT_QUALITY,
-        string $fit = ImageEnum::DEFAULT_FITMENT,
-    ): string {
-        static::guard($width, $height, $format, $quality, $fit);
+    /** The URL for one candidate: a variant rendered at one width. */
+    public static function image(File $file, string $variant, ?int $width = null): string
+    {
+        $variant = ImageVariant::make($variant);
+        $width ??= $variant->largestWidth();
 
-        return static::build($file->stored_path, [
-            't' => 'i',
-            'w' => $width,
-            'h' => $height,
-            'fm' => $format,
-            'q' => $quality,
-            'fit' => $fit,
-        ]);
+        return static::build($file->stored_path, $variant->name, $width);
     }
 
     /**
-     * @param  array<string, scalar>  $params
+     * Every candidate for a variant, as a srcset value.
+     *
+     * The browser picks from these knowing the viewport and pixel density,
+     * which is information the server does not have.
      */
-    protected static function build(string $path, array $params): string
+    public static function srcset(File $file, string $variant): string
+    {
+        $variant = ImageVariant::make($variant);
+
+        return implode(', ', array_map(
+            fn (int $width) => static::build($file->stored_path, $variant->name, $width)." {$width}w",
+            $variant->widths,
+        ));
+    }
+
+    protected static function build(string $path, string $variant, int $width): string
     {
         $path = ltrim($path, '/');
 
-        // `path` is signed but not emitted: the route supplies it, and the
-        // form request merges it back in before validation.
-        $signature = SignatureFactory::create(config('app.key'))
-            ->generateSignature("/assets/{$path}", [...$params, 'path' => $path]);
+        $params = ['v' => $variant, 'w' => $width];
+
+        $signature = AssetSignature::generate("/assets/{$path}", [...$params, 'path' => $path]);
 
         return url("/assets/{$path}").'?'.http_build_query([...$params, 's' => $signature]);
-    }
-
-    protected static function guard(int $width, int $height, string $format, int $quality, string $fit): void
-    {
-        // AssetFileRequest rejects anything outside these sets, so failing
-        // here surfaces the mistake at the call site instead of as a 422.
-        $checks = [
-            'width' => [$width, ImageEnum::ALLOWED_WIDTHS],
-            'height' => [$height, ImageEnum::ALLOWED_HEIGHTS],
-            'format' => [$format, ImageEnum::ALLOWED_TYPES],
-            'quality' => [$quality, ImageEnum::ALLOWED_QUALITIES],
-            'fit' => [$fit, ImageEnum::ALLOWED_FITMENTS],
-        ];
-
-        foreach ($checks as $name => [$value, $allowed]) {
-            if (! in_array($value, $allowed, true)) {
-                throw new InvalidArgumentException(sprintf(
-                    'Unsupported asset %s [%s]. Allowed: %s.',
-                    $name,
-                    $value,
-                    implode(', ', $allowed),
-                ));
-            }
-        }
     }
 }

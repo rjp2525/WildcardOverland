@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import { MapPin, Moon } from 'lucide-vue-next'
+import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
 
 export interface TripCardData {
   name: string
@@ -10,7 +11,7 @@ export interface TripCardData {
   date_label: string | null
   nights: number | null
   campsites_count: number | null
-  image: { url: string; alt: string } | null
+  image: ResponsiveImageData | null
 }
 
 defineProps<{ trip: TripCardData }>()
@@ -22,14 +23,11 @@ defineProps<{ trip: TripCardData }>()
     class="group flex flex-col overflow-hidden rounded-lg bg-white shadow-md transition-shadow hover:shadow-xl dark:bg-dark/60"
   >
     <div class="relative aspect-[2/1] overflow-hidden bg-zinc-200 dark:bg-zinc-800">
-      <img
+      <ResponsiveImage
         v-if="trip.image"
-        :src="trip.image.url"
-        :alt="trip.image.alt"
-        loading="lazy"
-        decoding="async"
-        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-      >
+        :image="trip.image"
+        class="transition-transform duration-500 group-hover:scale-105"
+      />
       <div v-else class="flex h-full w-full items-center justify-center bg-brand-radial-gradient">
         <span class="font-brand text-2xl font-extrabold uppercase text-brand/40">Wildcard</span>
       </div>

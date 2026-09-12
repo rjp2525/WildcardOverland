@@ -7,6 +7,7 @@ use App\Models\File;
 use App\Models\Image;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Image as LaravelImage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -74,6 +75,7 @@ class FileUploadService
                     'file_id' => $file->id,
                     'width' => $width,
                     'height' => $height,
+                    'dominant_color' => $this->dominantColor($upload),
                     'private' => false,
                 ]);
             }
@@ -111,9 +113,9 @@ class FileUploadService
     /**
      * Put a known file's bytes back on the current disk.
      *
-     * The path is regenerated rather than reused: Glide caches derivatives
-     * under the source path, so writing new bytes to the old one would keep
-     * serving whatever had already been cached against it.
+     * The path is regenerated rather than reused: derivatives are cached
+     * against the source path, so writing new bytes to the old one would
+     * keep serving whatever had already been cached against it.
      */
     protected function restore(File $file, UploadedFile $upload): File
     {
@@ -134,6 +136,13 @@ class FileUploadService
             'size' => $upload->getSize(),
         ]);
 
+        // A record can predate the colour column, or have been written
+        // before its bytes were readable; either way this is the moment the
+        // bytes are in hand again.
+        if ($file->image !== null && $file->image->dominant_color === null) {
+            $file->image->update(['dominant_color' => $this->dominantColor($upload)]);
+        }
+
         return $file;
     }
 
@@ -144,6 +153,22 @@ class FileUploadService
             $file->deleteFromDisk();
             $file->forceDelete();
         });
+    }
+
+    /**
+     * The image's average colour, for the placeholder a page paints while
+     * the real bytes are in flight. Sampled once here rather than per
+     * request, and never at the cost of the upload itself.
+     */
+    protected function dominantColor(UploadedFile $upload): ?string
+    {
+        try {
+            return LaravelImage::fromUpload($upload)->dominantColor();
+        } catch (Throwable $e) {
+            Log::info('Could not sample an image colour', ['error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /**

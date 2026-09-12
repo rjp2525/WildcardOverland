@@ -58,9 +58,8 @@ class SiteContent
                 return $logo === null ? null : [
                     'name' => $brand->name,
                     'url' => $brand->website,
-                    'logo' => $logo['url'],
-                    'width' => $brand->logo->width,
-                    'height' => $brand->logo->height,
+                    // The whole payload, so the marquee gets a srcset too.
+                    'logo' => $logo,
                 ];
             })
             ->filter()

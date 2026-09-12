@@ -24,8 +24,9 @@ class AssetServingTest extends TestCase
     {
         parent::setUp();
 
-        config(['assets.disk' => 'assets-test']);
+        config(['assets.disk' => 'assets-test', 'assets.cache_disk' => 'cache-test']);
         Storage::fake('assets-test');
+        Storage::fake('cache-test');
         Storage::fake('other-disk');
     }
 
@@ -41,7 +42,7 @@ class AssetServingTest extends TestCase
 
     protected function urlFor(File $file): string
     {
-        return AssetUrl::image($file, 600, 600, 'jpg', 80, 'crop-center');
+        return AssetUrl::image($file, 'thumb', 320);
     }
 
     public function test_a_stored_image_is_served(): void
@@ -120,5 +121,51 @@ class AssetServingTest extends TestCase
         $this->artisan('assets:check')
             ->expectsOutputToContain('Every file is where it should be.')
             ->assertExitCode(0);
+    }
+
+    public function test_files_can_be_moved_onto_the_disk_being_served_from(): void
+    {
+        $file = $this->upload();
+
+        // Simulate the record having been written under a different setting.
+        Storage::disk('other-disk')->put($file->stored_path, 'bytes');
+        Storage::disk('assets-test')->delete($file->stored_path);
+        $file->update(['disk' => 'other-disk']);
+
+        $this->artisan('assets:migrate-disk')->assertExitCode(0);
+
+        $this->assertSame('assets-test', $file->fresh()->disk);
+        Storage::disk('assets-test')->assertExists($file->stored_path);
+    }
+
+    public function test_migrating_can_be_rehearsed_without_moving_anything(): void
+    {
+        $file = $this->upload();
+        $file->update(['disk' => 'other-disk']);
+
+        $this->artisan('assets:migrate-disk --pretend')->assertExitCode(0);
+
+        $this->assertSame('other-disk', $file->fresh()->disk);
+    }
+
+    public function test_a_file_the_old_disk_no_longer_has_is_reported_not_silently_dropped(): void
+    {
+        $file = $this->upload();
+        Storage::disk('assets-test')->delete($file->stored_path);
+        $file->update(['disk' => 'other-disk']);
+
+        $this->artisan('assets:migrate-disk')->assertExitCode(1);
+
+        $this->assertSame('other-disk', $file->fresh()->disk);
+    }
+
+    public function test_colours_are_sampled_for_records_that_predate_the_column(): void
+    {
+        $image = $this->upload()->image;
+        $image->update(['dominant_color' => null]);
+
+        $this->artisan('assets:sample-colors')->assertExitCode(0);
+
+        $this->assertMatchesRegularExpression('/^#[0-9a-f]{6}$/i', (string) $image->fresh()->dominant_color);
     }
 }

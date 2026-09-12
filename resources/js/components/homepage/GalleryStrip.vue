@@ -1,9 +1,7 @@
 <script setup lang="ts">
-export interface GalleryImage {
-  url: string
-  alt: string
-  caption: string | null
-}
+import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
+
+export type GalleryImage = ResponsiveImageData
 
 defineProps<{ images: GalleryImage[] }>()
 </script>
@@ -21,13 +19,10 @@ defineProps<{ images: GalleryImage[] }>()
         :key="i"
         class="group relative aspect-square overflow-hidden bg-zinc-200 dark:bg-zinc-800"
       >
-        <img
-          :src="image.url"
-          :alt="image.alt"
-          loading="lazy"
-          decoding="async"
-          class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        >
+        <ResponsiveImage
+          :image="image"
+          class="transition-transform duration-500 group-hover:scale-105"
+        />
         <figcaption
           v-if="image.caption"
           class="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 to-transparent p-3 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"

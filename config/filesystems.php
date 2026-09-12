@@ -44,6 +44,25 @@ return [
             'throw' => false,
         ],
 
+        /*
+         * Image originals, and the derivatives generated from them. Both are
+         * private: nothing under storage/ is web-reachable, so every asset is
+         * served through a signed route rather than by the web server.
+         */
+        'assets' => [
+            'driver' => 'local',
+            'root' => storage_path('app/assets'),
+            'visibility' => 'private',
+            'throw' => false,
+        ],
+
+        'asset-cache' => [
+            'driver' => 'local',
+            'root' => storage_path('app/asset-cache'),
+            'visibility' => 'private',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

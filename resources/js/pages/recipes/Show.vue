@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/vue3'
 import { Clock, Flame, Users } from 'lucide-vue-next'
 import { RecipeCard } from '@/components/cards'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
+import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
 
 interface Ingredient {
   label: string
@@ -23,7 +24,7 @@ defineProps<{
     cook_minutes: number | null
     total_minutes: number | null
     servings: number | null
-    hero: { url: string; alt: string } | null
+    hero: ResponsiveImageData | null
     ingredients: Ingredient[]
     steps: string[]
   }
@@ -48,7 +49,7 @@ function toggle(index: number) {
 
   <div class="relative w-full bg-dark">
     <div class="relative h-80 w-full overflow-hidden sm:h-[26rem]">
-      <img v-if="recipe.hero" :src="recipe.hero.url" :alt="recipe.hero.alt" class="h-full w-full object-cover">
+      <ResponsiveImage v-if="recipe.hero" :image="recipe.hero" priority />
       <div v-else class="h-full w-full bg-page-header bg-cover bg-center" />
       <div class="absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-black/30" />
 

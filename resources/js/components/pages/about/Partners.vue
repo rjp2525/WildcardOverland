@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { Vue3Marquee } from 'vue3-marquee'
+import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
 
 export interface Partner {
   name: string
   url: string | null
-  logo: string
-  width: number | null
-  height: number | null
+  logo: ResponsiveImageData
 }
 
 defineProps<{ partners: Partner[] }>()
@@ -24,14 +23,12 @@ defineProps<{ partners: Partner[] }>()
         :rel="partner.url ? 'noopener noreferrer' : undefined"
         class="px-8"
       >
-        <img
-          :src="partner.logo"
+        <ResponsiveImage
+          :image="partner.logo"
           :alt="partner.name"
-          height="60"
-          width="100%"
-          loading="lazy"
-          decoding="async"
-        >
+          fit="contain"
+          class="h-15 w-auto"
+        />
       </component>
     </Vue3Marquee>
   </div>
