@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -20,6 +22,7 @@ class Trip extends Model
         'slug',
         'name',
         'headline',
+        'hero_image_id',
         'summary',
         'content',
         'start_date',
@@ -40,6 +43,23 @@ class Trip extends Model
             'published_at' => 'datetime',
             'is_draft' => 'boolean',
         ];
+    }
+
+    public function heroImage(): BelongsTo
+    {
+        return $this->belongsTo(Image::class, 'hero_image_id');
+    }
+
+    /**
+     * Ordered gallery. `order` and `caption` live on the pivot so the same
+     * image can appear in several trips with different captions.
+     */
+    public function images(): BelongsToMany
+    {
+        return $this->belongsToMany(Image::class)
+            ->withPivot(['order', 'caption'])
+            ->withTimestamps()
+            ->orderBy('image_trip.order');
     }
 
     public function campsites(): HasMany

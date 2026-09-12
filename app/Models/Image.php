@@ -20,6 +20,9 @@ class Image extends Model
         'width',
         'height',
         'private',
+        'featured',
+        'sort_order',
+        'caption',
     ];
 
     protected function casts(): array
@@ -29,6 +32,8 @@ class Image extends Model
             'width' => 'integer',
             'height' => 'integer',
             'private' => 'boolean',
+            'featured' => 'boolean',
+            'sort_order' => 'integer',
         ];
     }
 
@@ -40,6 +45,19 @@ class Image extends Model
     public function scopePublicPhotos(Builder $query): void
     {
         $query->where('type', ImageType::Photo)->where('private', false);
+    }
+
+    /**
+     * The curated homepage gallery, in the order set in the admin.
+     *
+     * @param  Builder<Image>  $query
+     */
+    public function scopeFeatured(Builder $query): void
+    {
+        $query->publicPhotos()
+            ->where('featured', true)
+            ->orderBy('sort_order')
+            ->orderByDesc('id');
     }
 
     public function brand(): HasOne
