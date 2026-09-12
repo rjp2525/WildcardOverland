@@ -53,6 +53,7 @@ class RecipeRequest extends FormRequest
             'ingredients.*.unit' => ['nullable', 'string', 'max:64'],
             'ingredients.*.item' => ['required', 'string', 'max:255'],
             'ingredients.*.note' => ['nullable', 'string', 'max:255'],
+            'ingredients.*.in_shopping_list' => ['boolean'],
 
             'steps' => ['array'],
             'steps.*.body' => ['required', 'string'],

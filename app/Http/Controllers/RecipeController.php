@@ -62,6 +62,7 @@ class RecipeController extends Controller
                 'ingredients' => $recipe->ingredients->map(fn ($i) => [
                     'label' => $i->label(),
                     'note' => $i->note,
+                    'shopping' => $i->in_shopping_list,
                 ]),
                 'steps' => $recipe->steps->map(fn ($step) => [
                     'body' => $step->body,

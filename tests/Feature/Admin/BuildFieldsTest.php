@@ -120,6 +120,24 @@ class BuildFieldsTest extends TestCase
         ])->assertSessionHasErrors('cooking_methods.0');
     }
 
+    public function test_an_ingredient_can_be_kept_off_the_shopping_list(): void
+    {
+        $this->post(route('admin.recipes.store'), [
+            'name' => 'Camp Breakfast Hash',
+            'meal_type' => MealType::Breakfast->value,
+            'is_draft' => true,
+            'ingredients' => [
+                ['item' => 'potatoes', 'in_shopping_list' => true],
+                ['item' => 'whatever else is in the cooler', 'in_shopping_list' => false],
+            ],
+        ])->assertRedirect();
+
+        $ingredients = Recipe::firstWhere('name', 'Camp Breakfast Hash')->ingredients;
+
+        $this->assertTrue($ingredients[0]->in_shopping_list);
+        $this->assertFalse($ingredients[1]->in_shopping_list);
+    }
+
     public function test_the_modification_form_offers_the_build_layers(): void
     {
         $this->get(route('admin.vehicle-modifications.create'))

@@ -148,7 +148,7 @@ class DemoContent
                     ['2', 'cans', 'kidney beans', 'drained'],
                     ['1', 'can', 'chopped tomatoes', null],
                     ['2', 'tbsp', 'chilli powder', null],
-                    [null, null, 'salt', 'to taste'],
+                    [null, null, 'salt', 'to taste', false],
                 ],
                 'steps' => [
                     ['Brown the beef in the dutch oven over a good bed of coals.', 'Coals, not flame. Flame scorches the bottom before the middle knows about it.'],
@@ -177,7 +177,7 @@ class DemoContent
                     ['3', null, 'potatoes', 'diced small'],
                     ['1', null, 'onion', 'diced'],
                     ['4', null, 'eggs', null],
-                    [null, null, 'whatever else is in the cooler', null],
+                    [null, null, 'whatever else is in the cooler', null, false],
                 ],
                 'steps' => [
                     'Fry the potatoes in plenty of oil until the edges go properly golden.',

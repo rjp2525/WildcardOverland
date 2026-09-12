@@ -153,13 +153,16 @@ class DemoContentSeeder extends Seeder
                 );
 
                 $recipe->ingredients()->delete();
-                foreach (array_values($data['ingredients']) as $order => [$qty, $unit, $item, $note]) {
+                foreach (array_values($data['ingredients']) as $order => $row) {
+                    // A fifth element opts a line out of the shopping list.
+                    [$qty, $unit, $item, $note] = $row;
                     $recipe->ingredients()->create([
                         'order' => $order,
                         'quantity' => $qty,
                         'unit' => $unit,
                         'item' => $item,
                         'note' => $note,
+                        'in_shopping_list' => $row[4] ?? true,
                     ]);
                 }
 

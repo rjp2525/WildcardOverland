@@ -103,6 +103,31 @@ class TripRecipesTest extends TestCase
             ->assertInertia(fn ($page) => $page->has('recipe.cooked_on', 0));
     }
 
+    public function test_ingredients_carry_whether_they_belong_on_a_shopping_list(): void
+    {
+        $recipe = $this->recipe('Camp Breakfast Hash');
+        $recipe->ingredients()->create(['order' => 0, 'quantity' => '3', 'item' => 'potatoes']);
+        $recipe->ingredients()->create([
+            'order' => 1,
+            'item' => 'whatever else is in the cooler',
+            'in_shopping_list' => false,
+        ]);
+
+        $this->get(route('recipes.show', $recipe->slug))
+            ->assertInertia(fn ($page) => $page
+                ->has('recipe.ingredients', 2)
+                ->where('recipe.ingredients.0.shopping', true)
+                ->where('recipe.ingredients.1.shopping', false));
+    }
+
+    public function test_an_ingredient_is_on_the_shopping_list_unless_it_is_taken_off(): void
+    {
+        $recipe = $this->recipe('Chili');
+        $recipe->ingredients()->create(['order' => 0, 'item' => 'beans']);
+
+        $this->assertTrue($recipe->ingredients()->first()->in_shopping_list);
+    }
+
     public function test_a_recipe_can_belong_to_several_trips(): void
     {
         $chili = $this->recipe('Dutch Oven Chili');

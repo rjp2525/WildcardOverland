@@ -12,6 +12,8 @@ import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image
 interface Ingredient {
   label: string
   note: string | null
+  /** False for things you do not buy: what is left in the cooler, water. */
+  shopping: boolean
 }
 
 interface Step {
@@ -62,9 +64,11 @@ function toggle(index: number) {
 }
 
 const shoppingList = computed(() =>
-  props.recipe.ingredients.map((ingredient) =>
-    ingredient.note ? `${ingredient.label} (${ingredient.note})` : ingredient.label,
-  ),
+  props.recipe.ingredients
+    .filter((ingredient) => ingredient.shopping)
+    .map((ingredient) =>
+      ingredient.note ? `${ingredient.label} (${ingredient.note})` : ingredient.label,
+    ),
 )
 </script>
 
@@ -174,7 +178,7 @@ const shoppingList = computed(() =>
           </li>
         </ul>
 
-        <ShoppingList :name="`${recipe.name} shopping list`" :items="shoppingList" />
+        <ShoppingList v-if="shoppingList.length" :name="recipe.name" :items="shoppingList" />
       </section>
 
       <section v-if="recipe.steps.length">

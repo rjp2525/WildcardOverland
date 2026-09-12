@@ -89,6 +89,7 @@ class RecipeController extends Controller
                     'unit' => $i->unit,
                     'item' => $i->item,
                     'note' => $i->note,
+                    'in_shopping_list' => $i->in_shopping_list,
                 ]),
                 'sources' => $recipe->sources->map(fn ($source) => [
                     'kind' => $source->kind->value,
@@ -141,6 +142,7 @@ class RecipeController extends Controller
                 'unit' => $row['unit'] ?? null,
                 'item' => $row['item'],
                 'note' => $row['note'] ?? null,
+                'in_shopping_list' => $row['in_shopping_list'] ?? true,
             ]);
         }
 

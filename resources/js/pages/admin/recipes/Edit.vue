@@ -26,6 +26,7 @@ interface Ingredient {
   unit: string | null
   item: string
   note: string | null
+  in_shopping_list: boolean
 }
 
 interface Source {
@@ -206,7 +207,7 @@ function submit() {
       <Repeater
         v-model="form.ingredients"
         item-label="Ingredient"
-        :new-row="(): Ingredient => ({ id: null, quantity: null, unit: null, item: '', note: null })"
+        :new-row="(): Ingredient => ({ id: null, quantity: null, unit: null, item: '', note: null, in_shopping_list: true })"
         empty-message="No ingredients yet."
       >
         <template #row="{ row, index }">
@@ -222,6 +223,13 @@ function submit() {
             </Field>
             <Field label="Note" :error="err(`ingredients.${index}.note`)">
               <Input v-model="row.note" placeholder="drained" :invalid="!!err(`ingredients.${index}.note`)" />
+            </Field>
+            <Field label="Shopping list" :error="err(`ingredients.${index}.in_shopping_list`)">
+              <Switch
+                v-model="row.in_shopping_list"
+                label="Include"
+                description="Off for things you already carry."
+              />
             </Field>
           </div>
         </template>

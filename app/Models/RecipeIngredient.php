@@ -10,11 +10,11 @@ class RecipeIngredient extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['recipe_id', 'order', 'quantity', 'unit', 'item', 'note'];
+    protected $fillable = ['recipe_id', 'order', 'quantity', 'unit', 'item', 'note', 'in_shopping_list'];
 
     protected function casts(): array
     {
-        return ['order' => 'integer'];
+        return ['order' => 'integer', 'in_shopping_list' => 'boolean'];
     }
 
     public function recipe(): BelongsTo
