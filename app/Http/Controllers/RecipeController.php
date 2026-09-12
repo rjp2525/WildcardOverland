@@ -50,6 +50,10 @@ class RecipeController extends Controller
                 'meal_type' => $recipe->meal_type->label(),
                 'difficulty' => $recipe->difficulty?->label(),
                 'dietary' => array_map(fn ($tag) => $tag->label(), $recipe->dietaryTags()),
+                'cooked_on' => array_map(
+                    fn ($method) => ['value' => $method->value, 'label' => $method->label()],
+                    $recipe->cookingMethods(),
+                ),
                 'prep_minutes' => $recipe->prep_minutes,
                 'cook_minutes' => $recipe->cook_minutes,
                 'total_minutes' => $recipe->totalMinutes(),
@@ -96,6 +100,10 @@ class RecipeController extends Controller
             'total_minutes' => $recipe->totalMinutes(),
             'servings' => $recipe->servings,
             'dietary' => array_map(fn ($tag) => $tag->label(), $recipe->dietaryTags()),
+            'cooked_on' => array_map(
+                fn ($method) => ['value' => $method->value, 'label' => $method->label()],
+                $recipe->cookingMethods(),
+            ),
             'image' => ImagePresenter::card($recipe->heroImage, $recipe->name),
         ];
     }

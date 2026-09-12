@@ -2,6 +2,7 @@
 import { Link } from '@inertiajs/vue3'
 import { Clock, Users } from 'lucide-vue-next'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
+import CookingIcon from '@/components/pages/recipe/CookingIcon.vue'
 
 export interface RecipeCardData {
   name: string
@@ -13,6 +14,7 @@ export interface RecipeCardData {
   total_minutes: number | null
   servings: number | null
   dietary: string[]
+  cooked_on: Array<{ value: string; label: string }>
   image: ResponsiveImageData | null
 }
 
@@ -54,6 +56,16 @@ defineProps<{ recipe: RecipeCardData }>()
           <Users class="h-3.5 w-3.5" /> serves {{ recipe.servings }}
         </span>
         <span v-if="recipe.difficulty">{{ recipe.difficulty }}</span>
+
+        <span v-if="recipe.cooked_on?.length" class="ml-auto inline-flex items-center gap-1.5 text-brand">
+          <CookingIcon
+            v-for="method in recipe.cooked_on.slice(0, 3)"
+            :key="method.value"
+            :method="method.value"
+            class="h-4 w-4"
+          />
+          <span class="sr-only">Cooked on {{ recipe.cooked_on.map((m) => m.label).join(', ') }}</span>
+        </span>
       </div>
 
       <div v-if="recipe.dietary.length" class="flex flex-wrap gap-1.5 pt-1">

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CookingMethod;
 use App\Enums\MealType;
 use App\Models\Recipe;
 use App\Models\Trip;
@@ -69,6 +70,37 @@ class TripRecipesTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->has('trip.recipes', 1)
                 ->where('trip.recipes.0.name', 'Live one'));
+    }
+
+    public function test_a_recipe_reports_what_it_is_cooked_on(): void
+    {
+        $recipe = $this->recipe('Dutch Oven Chili', [
+            'cooking_methods' => [
+                CookingMethod::DutchOven->value,
+                CookingMethod::Campfire->value,
+            ],
+        ]);
+
+        $this->get(route('recipes.show', $recipe->slug))
+            ->assertInertia(fn ($page) => $page
+                ->has('recipe.cooked_on', 2)
+                ->where('recipe.cooked_on.0.value', 'dutch-oven')
+                ->where('recipe.cooked_on.0.label', 'Dutch oven')
+                ->where('recipe.cooked_on.1.label', 'Campfire'));
+    }
+
+    public function test_an_unknown_cooking_method_is_dropped_rather_than_rendered(): void
+    {
+        $recipe = $this->recipe('Mystery', ['cooking_methods' => ['dutch-oven', 'microwave']]);
+
+        $this->get(route('recipes.show', $recipe->slug))
+            ->assertInertia(fn ($page) => $page->has('recipe.cooked_on', 1));
+    }
+
+    public function test_a_recipe_with_no_kit_listed_says_nothing(): void
+    {
+        $this->get(route('recipes.show', $this->recipe('Cold oats')->slug))
+            ->assertInertia(fn ($page) => $page->has('recipe.cooked_on', 0));
     }
 
     public function test_a_recipe_can_belong_to_several_trips(): void

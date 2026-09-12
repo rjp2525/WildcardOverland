@@ -53,6 +53,7 @@ interface RecipePayload {
   meal_type: string
   difficulty: string | null
   dietary: string[]
+  cooking_methods: string[]
   prep_minutes: number | null
   cook_minutes: number | null
   servings: number | null
@@ -68,6 +69,7 @@ const props = defineProps<{
   mealTypes: Array<{ value: string; label: string }>
   difficulties: Array<{ value: string; label: string }>
   dietaryTags: Array<{ value: string; label: string }>
+  cookingMethods: Array<{ value: string; label: string }>
   sourceKinds: Array<{ value: string; label: string }>
   images: Array<{ value: number; label: string }>
 }>()
@@ -84,6 +86,7 @@ const form = useForm({
   meal_type: props.recipe?.meal_type ?? 'dinner',
   difficulty: props.recipe?.difficulty ?? null,
   dietary: props.recipe?.dietary ?? [],
+  cooking_methods: props.recipe?.cooking_methods ?? [],
   prep_minutes: props.recipe?.prep_minutes ?? null,
   cook_minutes: props.recipe?.cook_minutes ?? null,
   servings: props.recipe?.servings ?? null,
@@ -191,6 +194,10 @@ function submit() {
 
         <Field label="Dietary" :error="form.errors.dietary">
           <CheckboxGroup v-model="form.dietary" :options="dietaryTags" />
+        </Field>
+
+        <Field label="Cooked on" :error="form.errors.cooking_methods" hint="Pick every bit of kit the recipe needs.">
+          <CheckboxGroup v-model="form.cooking_methods" :options="cookingMethods" />
         </Field>
       </div>
     </Card>

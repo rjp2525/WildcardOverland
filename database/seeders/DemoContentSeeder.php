@@ -142,6 +142,7 @@ class DemoContentSeeder extends Seeder
                         'meal_type' => $data['meal_type'],
                         'difficulty' => $data['difficulty'],
                         'dietary' => $data['dietary'],
+                        'cooking_methods' => $data['cooking_methods'] ?? [],
                         'prep_minutes' => $data['prep'],
                         'cook_minutes' => $data['cook'],
                         'servings' => $data['servings'],

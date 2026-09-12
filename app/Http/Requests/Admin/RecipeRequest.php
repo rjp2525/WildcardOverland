@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\CookingMethod;
 use App\Enums\DietaryTag;
 use App\Enums\Difficulty;
 use App\Enums\MealType;
@@ -57,6 +58,9 @@ class RecipeRequest extends FormRequest
             'steps.*.body' => ['required', 'string'],
             'steps.*.note' => ['nullable', 'string', 'max:1000'],
             'steps.*.image_id' => ['nullable', 'integer', 'exists:images,id'],
+
+            'cooking_methods' => ['array'],
+            'cooking_methods.*' => [Rule::enum(CookingMethod::class)],
 
             'sources' => ['array'],
             'sources.*.kind' => ['required', Rule::enum(SourceKind::class)],

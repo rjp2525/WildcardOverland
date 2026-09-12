@@ -12,6 +12,8 @@ const props = defineProps<{
 const emit = defineEmits<{ select: [id: number | null] }>()
 
 const exploded = ref(false)
+/** Camp mode. The top going up is the truck's whole party trick. */
+const popped = ref(true)
 const pointer = ref({ x: 0, y: 0 })
 const parallaxEnabled = ref(false)
 
@@ -59,12 +61,20 @@ function hotspotsFor(layer: string) {
  * with a little lateral fan, which is what makes the stack legible rather
  * than just tall.
  */
-function layerStyle(depth: number) {
+function layerStyle(depth: number, layer: string) {
   const spread = exploded.value ? 0.65 - depth : 0
   const x = pointer.value.x * depth * 24 + spread * 60
   const y = pointer.value.y * depth * 15 + spread * 190
 
-  return { transform: `translate3d(${x}px, ${y}px, 0)` }
+  /*
+   * Dropping the top takes the rack and everything on it down with it. The
+   * shift lives on the layer rather than inside the drawing so the markers
+   * travel with the parts they are pointing at. 58 of the artwork's 480
+   * units, as a percentage so it holds at any size.
+   */
+  const stow = layer === 'roof' && !popped.value ? ' translateY(12.083%)' : ''
+
+  return { transform: `translate3d(${x}px, ${y}px, 0)${stow}` }
 }
 
 let media: MediaQueryList | undefined
@@ -145,9 +155,9 @@ function toggle(id: number) {
           :key="layer.value"
           class="absolute inset-0 rig-layer"
           :class="{ 'is-dimmed': dimmed(layer.value) }"
-          :style="layerStyle(layer.depth)"
+          :style="layerStyle(layer.depth, layer.value)"
         >
-          <RigArt :layer="layer.value" />
+          <RigArt :layer="layer.value" :popped="popped" />
         </div>
 
         <!--
@@ -160,7 +170,7 @@ function toggle(id: number) {
           :key="`pins-${layer.value}`"
           class="absolute inset-0 rig-layer"
           :class="{ 'is-dimmed': dimmed(layer.value) }"
-          :style="layerStyle(layer.depth)"
+          :style="layerStyle(layer.depth, layer.value)"
         >
           <button
             v-for="spot in hotspotsFor(layer.value)"
@@ -211,14 +221,24 @@ function toggle(id: number) {
             : 'Tap a marker for the part behind it.'
         }}
       </p>
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 rounded-md border border-brand/40 bg-brand/10 px-4 py-2 text-sm font-bold uppercase tracking-wide text-brand transition-colors hover:bg-brand/20"
-        :aria-pressed="exploded"
-        @click="exploded = !exploded"
-      >
-        {{ exploded ? 'Put it back together' : 'Explode the view' }}
-      </button>
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-md border border-brand/40 bg-brand/10 px-4 py-2 text-sm font-bold uppercase tracking-wide text-brand transition-colors hover:bg-brand/20"
+          :aria-pressed="popped"
+          @click="popped = !popped"
+        >
+          {{ popped ? 'Drop the top' : 'Pop the top' }}
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-md border border-brand/40 bg-brand/10 px-4 py-2 text-sm font-bold uppercase tracking-wide text-brand transition-colors hover:bg-brand/20"
+          :aria-pressed="exploded"
+          @click="exploded = !exploded"
+        >
+          {{ exploded ? 'Put it back together' : 'Explode the view' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>

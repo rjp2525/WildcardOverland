@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/vue3'
 import { Check, Clock, ExternalLink, Flame, Users } from 'lucide-vue-next'
 import { AnimatedContent } from '@/components/ui/motion'
 import ShoppingList from '@/components/pages/recipe/ShoppingList.vue'
+import CookingIcon from '@/components/pages/recipe/CookingIcon.vue'
 import { RecipeCard } from '@/components/cards'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
@@ -35,6 +36,7 @@ const props = defineProps<{
     meal_type: string
     difficulty: string | null
     dietary: string[]
+    cooked_on: Array<{ value: string; label: string }>
     prep_minutes: number | null
     cook_minutes: number | null
     total_minutes: number | null
@@ -111,6 +113,21 @@ const shoppingList = computed(() =>
     <p v-if="recipe.summary" class="mb-8 max-w-3xl text-lg text-slate-700 dark:text-white/80">
       {{ recipe.summary }}
     </p>
+
+    <!-- What it gets cooked on. The kit is half the recipe out here. -->
+    <div v-if="recipe.cooked_on.length" class="mb-10">
+      <h2 class="mb-4 text-sm font-bold uppercase tracking-widest text-brand">Cooked on</h2>
+      <ul class="flex flex-wrap gap-3">
+        <li
+          v-for="method in recipe.cooked_on"
+          :key="method.value"
+          class="flex items-center gap-2.5 rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 dark:border-white/12 dark:text-white/80"
+        >
+          <CookingIcon :method="method.value" class="h-7 w-7 shrink-0 text-brand" />
+          {{ method.label }}
+        </li>
+      </ul>
+    </div>
 
     <div v-if="recipe.dietary.length" class="mb-10 flex flex-wrap gap-2">
       <span

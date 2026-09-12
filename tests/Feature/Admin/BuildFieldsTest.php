@@ -90,6 +90,36 @@ class BuildFieldsTest extends TestCase
         ])->assertSessionHasErrors('recipes.0.id');
     }
 
+    public function test_the_recipe_form_offers_the_cooking_methods(): void
+    {
+        $this->get(route('admin.recipes.create'))
+            ->assertInertia(fn ($page) => $page
+                ->has('cookingMethods', 8)
+                ->where('cookingMethods.0.value', 'skottle'));
+    }
+
+    public function test_cooking_methods_are_saved_and_validated(): void
+    {
+        $this->post(route('admin.recipes.store'), [
+            'name' => 'Skottle Hash',
+            'meal_type' => MealType::Breakfast->value,
+            'is_draft' => true,
+            'cooking_methods' => ['skottle', 'skillet'],
+        ])->assertRedirect();
+
+        $this->assertSame(
+            ['skottle', 'skillet'],
+            Recipe::firstWhere('name', 'Skottle Hash')->cooking_methods,
+        );
+
+        $this->post(route('admin.recipes.store'), [
+            'name' => 'Microwave Hash',
+            'meal_type' => MealType::Breakfast->value,
+            'is_draft' => true,
+            'cooking_methods' => ['microwave'],
+        ])->assertSessionHasErrors('cooking_methods.0');
+    }
+
     public function test_the_modification_form_offers_the_build_layers(): void
     {
         $this->get(route('admin.vehicle-modifications.create'))

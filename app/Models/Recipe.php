@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CookingMethod;
 use App\Enums\DietaryTag;
 use App\Enums\Difficulty;
 use App\Enums\MealType;
@@ -28,6 +29,7 @@ class Recipe extends Model
         'meal_type',
         'difficulty',
         'dietary',
+        'cooking_methods',
         'prep_minutes',
         'cook_minutes',
         'servings',
@@ -41,6 +43,7 @@ class Recipe extends Model
             'meal_type' => MealType::class,
             'difficulty' => Difficulty::class,
             'dietary' => 'array',
+            'cooking_methods' => 'array',
             'prep_minutes' => 'integer',
             'cook_minutes' => 'integer',
             'servings' => 'integer',
@@ -94,6 +97,17 @@ class Recipe extends Model
         }
 
         return (int) $this->prep_minutes + (int) $this->cook_minutes;
+    }
+
+    /**
+     * @return array<int, CookingMethod>
+     */
+    public function cookingMethods(): array
+    {
+        return array_values(array_filter(array_map(
+            fn (string $value) => CookingMethod::tryFrom($value),
+            $this->cooking_methods ?? [],
+        )));
     }
 
     /**

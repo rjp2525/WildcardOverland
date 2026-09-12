@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CookingMethod;
 use App\Enums\DietaryTag;
 use App\Enums\Difficulty;
 use App\Enums\MealType;
@@ -174,6 +175,7 @@ class RecipeController extends Controller
             'mealTypes' => MealType::options(),
             'difficulties' => Difficulty::options(),
             'dietaryTags' => DietaryTag::options(),
+            'cookingMethods' => CookingMethod::options(),
             'sourceKinds' => SourceKind::options(),
             'images' => Image::query()
                 ->orderBy('name')

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Demo;
 
+use App\Enums\CookingMethod;
 use App\Enums\DietaryTag;
 use App\Enums\Difficulty;
 use App\Enums\MealType;
@@ -136,6 +137,7 @@ class DemoContent
                 'meal_type' => MealType::Dinner,
                 'difficulty' => Difficulty::Easy,
                 'dietary' => [DietaryTag::OnePot->value, DietaryTag::GlutenFree->value],
+                'cooking_methods' => [CookingMethod::DutchOven->value, CookingMethod::Campfire->value],
                 'prep' => 15, 'cook' => 45, 'servings' => 4,
                 'image' => 'recipe-chili',
                 'summary' => 'The one that gets made on almost every trip. Forgiving, filling and it reheats better than it has any right to.',
@@ -166,6 +168,7 @@ class DemoContent
                 'meal_type' => MealType::Breakfast,
                 'difficulty' => Difficulty::Easy,
                 'dietary' => [DietaryTag::OnePot->value, DietaryTag::GlutenFree->value],
+                'cooking_methods' => [CookingMethod::Skottle->value, CookingMethod::Skillet->value],
                 'prep' => 10, 'cook' => 20, 'servings' => 2,
                 'image' => 'recipe-hash',
                 'summary' => 'The last-morning breakfast that clears out the cooler.',
@@ -189,6 +192,7 @@ class DemoContent
                 'meal_type' => MealType::Dinner,
                 'difficulty' => Difficulty::Medium,
                 'dietary' => [DietaryTag::GlutenFree->value, DietaryTag::DairyFree->value],
+                'cooking_methods' => [CookingMethod::Campfire->value, CookingMethod::Charcoal->value],
                 'prep' => 10, 'cook' => 18, 'servings' => 2,
                 'image' => 'recipe-trout',
                 'summary' => 'If you caught it that afternoon, this is the only thing to do with it.',
@@ -213,6 +217,7 @@ class DemoContent
                 'meal_type' => MealType::Breakfast,
                 'difficulty' => Difficulty::Easy,
                 'dietary' => [DietaryTag::Vegetarian->value, DietaryTag::NoCook->value, DietaryTag::MakeAhead->value],
+                'cooking_methods' => [],
                 'prep' => 5, 'cook' => 0, 'servings' => 2,
                 'image' => 'recipe-oats',
                 'summary' => 'For mornings when you want to be moving before the sun is properly up.',
@@ -236,6 +241,7 @@ class DemoContent
                 'meal_type' => MealType::Snack,
                 'difficulty' => Difficulty::Medium,
                 'dietary' => [DietaryTag::Vegetarian->value],
+                'cooking_methods' => [CookingMethod::Skillet->value, CookingMethod::DutchOven->value],
                 'prep' => 10, 'cook' => 25, 'servings' => 6,
                 'image' => 'recipe-cornbread',
                 'summary' => 'Cooked in the same skillet as everything else, which is rather the point.',
@@ -260,6 +266,7 @@ class DemoContent
                 'meal_type' => MealType::Drink,
                 'difficulty' => Difficulty::Easy,
                 'dietary' => [DietaryTag::Vegan->value, DietaryTag::GlutenFree->value],
+                'cooking_methods' => [CookingMethod::Jetboil->value, CookingMethod::Campfire->value],
                 'prep' => 2, 'cook' => 8, 'servings' => 4,
                 'image' => 'recipe-coffee',
                 'summary' => 'Grounds in the pot, cold water to settle them and nobody complains.',
@@ -286,17 +293,17 @@ class DemoContent
         // `layer` and `hotspot` place a part on the rig illustration;
         // x and y are percentages of that artwork's box.
         return [
-            ['name' => 'Prinsu Roof Rack', 'vendor' => 'Prinsu', 'description' => 'Full length aluminium rack over the camper, wind deflector up front.', 'install_date' => '2024-04-12', 'cost' => 124999, 'url' => 'https://prinsu.com', 'timeline' => true, 'layer' => 'roof', 'hotspot' => [19.8, 15.8]],
-            ['name' => 'Baja Designs Light Bar', 'vendor' => 'Baja Designs', 'description' => 'Forty inches across the cab roof for the last hour of a long day.', 'install_date' => '2024-05-20', 'cost' => 79900, 'timeline' => false, 'layer' => 'roof', 'hotspot' => [47.5, 24.0]],
-            ['name' => 'Renogy 200W Solar', 'vendor' => 'Renogy', 'description' => 'Two panels flat on the rack. Keeps the batteries topped up without idling.', 'install_date' => '2024-06-08', 'cost' => 42000, 'timeline' => false, 'layer' => 'roof', 'hotspot' => [19.6, 13.5]],
-            ['name' => 'Tune M1L Camper', 'vendor' => 'Tune Outdoor', 'description' => 'Hard side aluminium camper. Stand up room, big side window and it stays put on washboard.', 'install_date' => '2024-06-28', 'cost' => 1850000, 'url' => 'https://tuneoutdoor.com', 'timeline' => true, 'layer' => 'camper', 'hotspot' => [19.6, 38.8]],
-            ['name' => 'Camper Side Door', 'vendor' => 'Tune Outdoor', 'description' => 'Door on the passenger side so camp faces away from the road.', 'install_date' => '2024-06-28', 'cost' => 0, 'timeline' => false, 'layer' => 'camper', 'hotspot' => [27.5, 30.8]],
-            ['name' => 'Dometic CFX3 45', 'vendor' => 'Dometic', 'description' => 'Dual zone fridge freezer under the sleeping platform.', 'install_date' => '2024-07-02', 'cost' => 89900, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [21.2, 40.6]],
-            ['name' => 'Galley Drawer System', 'vendor' => 'Goose Gear', 'description' => 'Three drawers I built out for the stove, the pots and the dry food.', 'install_date' => '2024-08-15', 'cost' => 210000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [13.1, 42.3]],
-            ['name' => 'Sleeping Platform', 'vendor' => null, 'description' => 'Plywood deck and a four inch foam mattress. Built it in a weekend.', 'install_date' => '2024-07-20', 'cost' => 38000, 'timeline' => false, 'layer' => 'interior', 'hotspot' => [19.6, 25.2]],
-            ['name' => 'Redarc Dual Battery', 'vendor' => 'Redarc', 'description' => 'DC to DC charger and a 100Ah lithium under the galley.', 'install_date' => '2025-05-30', 'cost' => 142000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [27.9, 50.6]],
-            ['name' => 'Fresh Water Tank', 'vendor' => null, 'description' => 'Twenty gallons plumbed to a foot pump at the galley.', 'install_date' => '2025-02-10', 'cost' => 46000, 'timeline' => false, 'layer' => 'interior', 'hotspot' => [27.9, 37.5]],
-            ['name' => 'C4 Fabrication Front Bumper', 'vendor' => 'C4 Fabrication', 'description' => 'Hybrid bumper with a recovery point at each corner.', 'install_date' => '2025-03-15', 'cost' => 165000, 'timeline' => false, 'layer' => 'body', 'hotspot' => [90.2, 65.8]],
+            ['name' => 'Prinsu Roof Rack', 'vendor' => 'Prinsu', 'description' => 'Full length aluminium rack over the camper, wind deflector up front.', 'install_date' => '2024-04-12', 'cost' => 124999, 'url' => 'https://prinsu.com', 'timeline' => true, 'layer' => 'roof', 'hotspot' => [20.0, 8.5]],
+            ['name' => 'Baja Designs Light Bar', 'vendor' => 'Baja Designs', 'description' => 'Forty inches across the cab roof for the last hour of a long day.', 'install_date' => '2024-05-20', 'cost' => 79900, 'timeline' => false, 'layer' => 'roof', 'hotspot' => [39.2, 8.3]],
+            ['name' => 'Renogy 200W Solar', 'vendor' => 'Renogy', 'description' => 'Two panels flat on the rack. Keeps the batteries topped up without idling.', 'install_date' => '2024-06-08', 'cost' => 42000, 'timeline' => false, 'layer' => 'roof', 'hotspot' => [19.5, 6.5]],
+            ['name' => 'Tune M1L Camper', 'vendor' => 'Tune Outdoor', 'description' => 'Hard side aluminium camper. Stand up room, big side window and it stays put on washboard.', 'install_date' => '2024-06-28', 'cost' => 1850000, 'url' => 'https://tuneoutdoor.com', 'timeline' => true, 'layer' => 'camper', 'hotspot' => [11.0, 32.9]],
+            ['name' => '270 Degree Awning', 'vendor' => null, 'description' => 'Wraps around the back and down one side. Shade in the afternoon, a dry spot to cook when it turns.', 'install_date' => '2024-09-04', 'cost' => 128000, 'timeline' => false, 'layer' => 'camper', 'hotspot' => [23.2, 32.5]],
+            ['name' => 'Dometic CFX3 45', 'vendor' => 'Dometic', 'description' => 'Dual zone fridge freezer under the sleeping platform.', 'install_date' => '2024-07-02', 'cost' => 89900, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [21.4, 42.9]],
+            ['name' => 'Galley Drawer System', 'vendor' => 'Goose Gear', 'description' => 'Three drawers I built out for the stove, the pots and the dry food.', 'install_date' => '2024-08-15', 'cost' => 210000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [13.3, 44.8]],
+            ['name' => 'Sleeping Platform', 'vendor' => null, 'description' => 'Plywood deck and a four inch foam mattress. Built it in a weekend.', 'install_date' => '2024-07-20', 'cost' => 38000, 'timeline' => false, 'layer' => 'interior', 'hotspot' => [19.6, 15.4]],
+            ['name' => 'Redarc Dual Battery', 'vendor' => 'Redarc', 'description' => 'DC to DC charger and a 100Ah lithium under the galley.', 'install_date' => '2025-05-30', 'cost' => 142000, 'timeline' => true, 'layer' => 'interior', 'hotspot' => [27.9, 51.7]],
+            ['name' => 'Fresh Water Tank', 'vendor' => null, 'description' => 'Twenty gallons plumbed to a foot pump at the galley.', 'install_date' => '2025-02-10', 'cost' => 46000, 'timeline' => false, 'layer' => 'interior', 'hotspot' => [27.9, 39.6]],
+            ['name' => 'C4 Fabrication Front Bumper', 'vendor' => 'C4 Fabrication', 'description' => 'Hybrid bumper with a recovery point at each corner.', 'install_date' => '2025-03-15', 'cost' => 165000, 'timeline' => false, 'layer' => 'body', 'hotspot' => [90.3, 65.0]],
             ['name' => 'CBI Rock Sliders', 'vendor' => 'CBI Offroad', 'description' => 'Bolt on steel, and the reason the rockers are still straight.', 'install_date' => '2024-11-08', 'cost' => 98000, 'timeline' => false, 'layer' => 'underside', 'hotspot' => [51.7, 75.8]],
             ['name' => 'Old Man Emu Suspension', 'vendor' => 'ARB', 'description' => 'Two inch lift with heavy rear leaves for the camper weight.', 'install_date' => '2025-01-24', 'cost' => 189500, 'timeline' => true, 'layer' => 'underside', 'hotspot' => [26.9, 69.6]],
             ['name' => 'ARB Twin Compressor', 'vendor' => 'ARB', 'description' => 'Airs all four tyres back up in about six minutes.', 'install_date' => '2024-09-19', 'cost' => 55000, 'timeline' => true, 'layer' => 'underside', 'hotspot' => [76.6, 78.3]],
