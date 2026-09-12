@@ -65,8 +65,8 @@ onBeforeUnmount(() => window.removeEventListener("scroll", onScroll));
 <template>
     <nav class="navbar" id="navbar">
     <div class="container flex flex-wrap items-center justify-between">
-      <Link :href="route('homepage')" class="text-white/80 hover:text-white py-0.5">
-        <HorizontalLogo class="h-14 w-auto" />
+      <Link :href="route('homepage')" class="group py-0.5">
+        <HorizontalLogo class="h-14 w-auto text-white/85 transition-colors group-hover:text-white" />
       </Link>
 
       <div class="navigation hidden lg:order-1 lg:flex" id="menu-collapse">
