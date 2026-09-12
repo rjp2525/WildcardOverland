@@ -17,10 +17,12 @@ defineProps<{
 </script>
 
 <template>
-  <div class="relative h-screen w-full bg-cover bg-landing">
+  <div class="relative h-[100svh] w-full bg-cover bg-landing">
     <div class="relative h-full w-full bg-black/30 backdrop-blur-sm">
       <div class="container flex h-full flex-col items-center justify-center space-y-4">
-        <span class="text-2xl font-bold uppercase tracking-widest text-white">A Tacoma and no fixed plan</span>
+        <span
+          class="text-center text-base font-bold uppercase tracking-widest text-white sm:text-2xl"
+        >A Tacoma and no fixed plan</span>
         <h1
           class="text-center font-brand text-6xl font-extrabold uppercase text-brand drop-shadow sm:text-8xl"
         >

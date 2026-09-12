@@ -26,7 +26,7 @@ const routes = [
 <template>
   <Head :title="status.sign" />
 
-  <section class="relative isolate flex min-h-[calc(100vh-6rem)] items-center overflow-hidden bg-dark">
+  <section class="relative isolate flex min-h-[calc(100svh-6rem)] items-center overflow-hidden bg-dark">
     <div class="absolute inset-0 bg-brand-radial-gradient opacity-25" aria-hidden="true" />
 
     <!-- A road that stops. The bar across it is the tree. -->

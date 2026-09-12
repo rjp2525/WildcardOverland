@@ -1,8 +1,13 @@
 .navbar {
     @apply fixed top-0 z-50 py-4 bg-transparent transition-all duration-500 w-full;
 
+    /*
+     * No display here. This selector outranks a utility class, so setting
+     * flex on it meant the desktop menu could never be hidden and both menus
+     * rendered at once on a phone. The element's own classes decide.
+     */
     .navigation {
-        @apply m-0 w-auto flex;
+        @apply m-0 w-auto;
 
         .navbar-nav {
             @apply flex flex-row;
