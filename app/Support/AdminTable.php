@@ -25,6 +25,8 @@ class AdminTable
 
     protected int $perPage = 15;
 
+    protected bool $trashable = false;
+
     public function __construct(
         protected Builder $query,
         protected Request $request,
@@ -57,6 +59,20 @@ class AdminTable
         return $this;
     }
 
+    /**
+     * Lets the screen switch between live rows and the trash.
+     *
+     * Without this a soft deleted record is simply gone from the admin,
+     * which is the worst of both worlds: still in the database, taking up
+     * its own slug, and impossible to restore or finish deleting.
+     */
+    public function trashable(): self
+    {
+        $this->trashable = true;
+
+        return $this;
+    }
+
     public function perPage(int $perPage): self
     {
         $this->perPage = $perPage;
@@ -66,6 +82,7 @@ class AdminTable
 
     public function paginate(): LengthAwarePaginator
     {
+        $this->applyTrashed();
         $this->applySearch();
         $this->applySort();
 
@@ -85,7 +102,29 @@ class AdminTable
             'search' => $this->searchTerm(),
             'sort' => $this->sortColumn(),
             'direction' => $this->sortDirection(),
+            'trashed' => $this->trashable ? $this->trashedFilter() : null,
         ];
+    }
+
+    protected function applyTrashed(): void
+    {
+        if (! $this->trashable) {
+            return;
+        }
+
+        match ($this->trashedFilter()) {
+            'only' => $this->query->onlyTrashed(),
+            'with' => $this->query->withTrashed(),
+            default => null,
+        };
+    }
+
+    /** One of "none", "with" or "only". Anything else means "none". */
+    protected function trashedFilter(): string
+    {
+        $value = (string) $this->request->query('trashed', 'none');
+
+        return in_array($value, ['none', 'with', 'only'], true) ? $value : 'none';
     }
 
     protected function applySearch(): void

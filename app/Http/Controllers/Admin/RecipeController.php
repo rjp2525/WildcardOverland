@@ -23,6 +23,7 @@ class RecipeController extends Controller
     public function index(Request $request): Response
     {
         $table = AdminTable::for(Recipe::query(), $request)
+            ->trashable()
             ->searchable(['name', 'headline', 'slug'])
             ->sortable(['name', 'meal_type', 'published_at', 'created_at'], 'created_at');
 
@@ -36,8 +37,10 @@ class RecipeController extends Controller
                 'total_minutes' => $recipe->totalMinutes(),
                 'servings' => $recipe->servings,
                 'is_draft' => $recipe->is_draft,
+                'deleted_at' => $recipe->deleted_at?->toDateTimeString(),
             ]),
             'filters' => $table->state(),
+            'trashedCount' => Recipe::onlyTrashed()->count(),
         ]);
     }
 
@@ -125,7 +128,29 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('admin.recipes.index')
-            ->with('success', "Recipe \"{$recipe->name}\" deleted.");
+            ->with('success', "\"{$recipe->name}\" is in the trash. You can still restore it.");
+    }
+
+    public function restore(Recipe $recipe): RedirectResponse
+    {
+        $recipe->restore();
+
+        return redirect()
+            ->route('admin.recipes.index')
+            ->with('success', "\"{$recipe->name}\" is back.");
+    }
+
+    /**
+     * Deletes the recipe for good, along with its ingredients, steps,
+     * sources and any link to a trip. All of those cascade in the database.
+     */
+    public function forceDestroy(Recipe $recipe): RedirectResponse
+    {
+        $recipe->forceDelete();
+
+        return redirect()
+            ->route('admin.recipes.index', ['trashed' => 'only'])
+            ->with('success', "\"{$recipe->name}\" is gone for good.");
     }
 
     /**

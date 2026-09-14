@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3'
-import { Pencil, Plus } from 'lucide-vue-next'
+import { Plus } from 'lucide-vue-next'
 import { AdminLayout } from '@/layouts'
 import PageHeading from '@/components/admin/ui/PageHeading.vue'
 import Button from '@/components/admin/ui/Button.vue'
-import ConfirmDelete from '@/components/admin/ui/ConfirmDelete.vue'
+import RowActions from '@/components/admin/ui/RowActions.vue'
 import DataTable from '@/components/admin/ui/DataTable.vue'
 import type { Column, Paginated } from '@/components/admin/ui/table'
 import { useRoute } from '@/lib/route'
@@ -22,11 +22,13 @@ interface RecipeRow {
   total_minutes: number | null
   servings: number | null
   is_draft: boolean
+  deleted_at: string | null
 }
 
 defineProps<{
   recipes: Paginated<RecipeRow>
-  filters: { search: string | null; sort: string; direction: string }
+  filters: { search: string | null; sort: string; direction: string; trashed: string | null }
+  trashedCount: number
 }>()
 
 const columns: Column[] = [
@@ -54,9 +56,13 @@ const columns: Column[] = [
     :columns="columns"
     :rows="recipes"
     :filters="filters"
+    trashable
+    :trashed-count="trashedCount"
     route-name="admin.recipes.index"
     search-placeholder="Search recipes…"
-    empty-message="No recipes yet. Add your first camp recipe."
+    :empty-message="filters.trashed === 'only'
+      ? 'Nothing in the trash.'
+      : 'No recipes yet. Add your first camp recipe.'"
   >
     <template #cell:name="{ row }">
       <Link
@@ -74,7 +80,13 @@ const columns: Column[] = [
 
     <template #cell:is_draft="{ row }">
       <span
-        v-if="row.is_draft"
+        v-if="row.deleted_at"
+        class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/40 dark:text-red-300"
+      >
+        In the trash
+      </span>
+      <span
+        v-else-if="row.is_draft"
         class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
       >
         Draft
@@ -88,16 +100,16 @@ const columns: Column[] = [
     </template>
 
     <template #actions="{ row }">
-      <div class="flex items-center justify-end gap-1">
-        <Button :as="Link" :href="route('admin.recipes.edit', row.id)" variant="ghost" size="icon">
-          <Pencil class="h-4 w-4" />
-        </Button>
-        <ConfirmDelete
-          :url="route('admin.recipes.destroy', row.id)"
-          :title="`Delete “${row.name}”?`"
-          description="The recipe is soft deleted, so it can be restored later."
-        />
-      </div>
+      <RowActions
+        noun="Recipe"
+        :name="row.name"
+        :deleted-at="row.deleted_at"
+        :edit-url="route('admin.recipes.edit', row.id)"
+        :trash-url="route('admin.recipes.destroy', row.id)"
+        :restore-url="route('admin.recipes.restore', row.id)"
+        :force-url="route('admin.recipes.force-destroy', row.id)"
+        also-removes="Its ingredients, method and sources go with it."
+      />
     </template>
   </DataTable>
 </template>

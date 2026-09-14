@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3'
-import { Pencil, Plus } from 'lucide-vue-next'
+import { Plus } from 'lucide-vue-next'
 import { AdminLayout } from '@/layouts'
 import PageHeading from '@/components/admin/ui/PageHeading.vue'
 import Button from '@/components/admin/ui/Button.vue'
-import ConfirmDelete from '@/components/admin/ui/ConfirmDelete.vue'
+import RowActions from '@/components/admin/ui/RowActions.vue'
 import DataTable from '@/components/admin/ui/DataTable.vue'
 import type { Column, Paginated } from '@/components/admin/ui/table'
 
@@ -21,11 +21,13 @@ interface TripRow {
   campsites_count: number
   is_draft: boolean
   published_at: string | null
+  deleted_at: string | null
 }
 
 defineProps<{
   trips: Paginated<TripRow>
-  filters: { search: string | null; sort: string; direction: string }
+  filters: { search: string | null; sort: string; direction: string; trashed: string | null }
+  trashedCount: number
 }>()
 
 const columns: Column[] = [
@@ -53,9 +55,13 @@ const columns: Column[] = [
     :columns="columns"
     :rows="trips"
     :filters="filters"
+    trashable
+    :trashed-count="trashedCount"
     route-name="admin.trips.index"
     search-placeholder="Search trips…"
-    empty-message="No trips yet. Create your first one."
+    :empty-message="filters.trashed === 'only'
+      ? 'Nothing in the trash.'
+      : 'No trips yet. Create your first one.'"
   >
     <template #cell:name="{ row }">
       <Link
@@ -74,7 +80,13 @@ const columns: Column[] = [
 
     <template #cell:is_draft="{ row }">
       <span
-        v-if="row.is_draft"
+        v-if="row.deleted_at"
+        class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/40 dark:text-red-300"
+      >
+        In the trash
+      </span>
+      <span
+        v-else-if="row.is_draft"
         class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
       >
         Draft
@@ -88,16 +100,18 @@ const columns: Column[] = [
     </template>
 
     <template #actions="{ row }">
-      <div class="flex items-center justify-end gap-1">
-        <Button :as="Link" :href="route('admin.trips.edit', row.id)" variant="ghost" size="icon">
-          <Pencil class="h-4 w-4" />
-        </Button>
-        <ConfirmDelete
-          :url="route('admin.trips.destroy', row.id)"
-          :title="`Delete “${row.name}”?`"
-          description="The trip is soft deleted, so it can be restored later. Its campsites are kept."
-        />
-      </div>
+      <RowActions
+        noun="Trip"
+        :name="row.name"
+        :deleted-at="row.deleted_at"
+        :edit-url="route('admin.trips.edit', row.id)"
+        :trash-url="route('admin.trips.destroy', row.id)"
+        :restore-url="route('admin.trips.restore', row.id)"
+        :force-url="route('admin.trips.force-destroy', row.id)"
+        :also-removes="row.campsites_count
+          ? `Its ${row.campsites_count} campsite${row.campsites_count === 1 ? '' : 's'} go with it, so the pins leave the map for good.`
+          : ''"
+      />
     </template>
   </DataTable>
 </template>

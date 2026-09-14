@@ -19,6 +19,7 @@ class TripController extends Controller
     public function index(Request $request): Response
     {
         $table = AdminTable::for(Trip::query()->withCount(['campsites', 'images']), $request)
+            ->trashable()
             ->searchable(['name', 'headline', 'slug'])
             ->sortable(['name', 'start_date', 'end_date', 'published_at', 'created_at'], 'start_date');
 
@@ -35,8 +36,10 @@ class TripController extends Controller
                 'images_count' => $trip->images_count,
                 'is_draft' => $trip->is_draft,
                 'published_at' => $trip->published_at?->toDateTimeString(),
+                'deleted_at' => $trip->deleted_at?->toDateTimeString(),
             ]),
             'filters' => $table->state(),
+            'trashedCount' => Trip::onlyTrashed()->count(),
         ]);
     }
 
@@ -130,13 +133,47 @@ class TripController extends Controller
         return back()->with('success', 'Trip updated.');
     }
 
+    /**
+     * Moves the trip to the trash.
+     *
+     * Its campsites stay in the database but drop off the public map, which
+     * queries through the trip and so inherits the soft delete. Restoring
+     * the trip brings the pins back exactly as they were.
+     */
     public function destroy(Trip $trip): RedirectResponse
     {
         $trip->delete();
 
         return redirect()
             ->route('admin.trips.index')
-            ->with('success', "Trip \"{$trip->name}\" deleted.");
+            ->with('success', "\"{$trip->name}\" is in the trash. You can still restore it.");
+    }
+
+    public function restore(Trip $trip): RedirectResponse
+    {
+        $trip->restore();
+
+        return redirect()
+            ->route('admin.trips.index')
+            ->with('success', "\"{$trip->name}\" is back.");
+    }
+
+    /**
+     * Deletes the trip for good, and with it every campsite, photo link and
+     * recipe link hanging off it. The database cascades those, so nothing is
+     * left behind to show up on the map later.
+     */
+    public function forceDestroy(Trip $trip): RedirectResponse
+    {
+        $campsites = $trip->campsites()->count();
+        $trip->forceDelete();
+
+        $also = $campsites === 1 ? ' Its campsite went with it.'
+            : ($campsites > 1 ? " Its {$campsites} campsites went with it." : '');
+
+        return redirect()
+            ->route('admin.trips.index', ['trashed' => 'only'])
+            ->with('success', "\"{$trip->name}\" is gone for good.".$also);
     }
 
     /**

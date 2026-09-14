@@ -22,7 +22,28 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
         Route::get('/', DashboardController::class)->name('dashboard');
 
+        /*
+         * Trips and recipes go to the trash rather than straight out. The
+         * restore and force routes have to resolve a record that is already
+         * soft deleted, hence `withTrashed` on the binding.
+         */
+        Route::put('trips/{trip}/restore', [TripController::class, 'restore'])
+            ->withTrashed()
+            ->name('trips.restore');
+
+        Route::delete('trips/{trip}/force', [TripController::class, 'forceDestroy'])
+            ->withTrashed()
+            ->name('trips.force-destroy');
+
         Route::resource('trips', TripController::class)->except('show');
+
+        Route::put('recipes/{recipe}/restore', [RecipeController::class, 'restore'])
+            ->withTrashed()
+            ->name('recipes.restore');
+
+        Route::delete('recipes/{recipe}/force', [RecipeController::class, 'forceDestroy'])
+            ->withTrashed()
+            ->name('recipes.force-destroy');
 
         Route::resource('recipes', RecipeController::class)->except('show');
 

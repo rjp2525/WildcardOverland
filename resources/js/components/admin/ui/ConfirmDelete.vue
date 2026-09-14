@@ -13,15 +13,24 @@ import {
   AlertDialogTrigger,
 } from 'reka-ui'
 import { Trash2 } from 'lucide-vue-next'
+import type { Component } from 'vue'
 import Button from './Button.vue'
 
-const props = defineProps<{
-  /** Resolved URL to DELETE. */
-  url: string
-  title?: string
-  description?: string
-  label?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** Resolved URL to DELETE. */
+    url: string
+    title?: string
+    description?: string
+    label?: string
+    /** Icon on the trigger. Defaults to a bin. */
+    icon?: Component
+    /** Wording on the confirming button, e.g. "Delete for good". */
+    confirmLabel?: string
+    busyLabel?: string
+  }>(),
+  { confirmLabel: 'Delete', busyLabel: 'Deleting…' },
+)
 
 const open = ref(false)
 const processing = ref(false)
@@ -42,7 +51,7 @@ function confirm() {
   <AlertDialogRoot v-model:open="open">
     <AlertDialogTrigger as-child>
       <Button variant="ghost" size="icon" :aria-label="label ?? 'Delete'">
-        <Trash2 class="h-4 w-4 text-red-600" />
+        <component :is="icon ?? Trash2" class="h-4 w-4 text-red-600" />
       </Button>
     </AlertDialogTrigger>
 
@@ -66,7 +75,7 @@ function confirm() {
           </AlertDialogCancel>
           <AlertDialogAction as-child>
             <Button variant="destructive" :disabled="processing" @click.prevent="confirm">
-              {{ processing ? 'Deleting…' : 'Delete' }}
+              {{ processing ? busyLabel : confirmLabel }}
             </Button>
           </AlertDialogAction>
         </div>
