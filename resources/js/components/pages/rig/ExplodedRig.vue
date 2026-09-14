@@ -69,10 +69,10 @@ function layerStyle(depth: number, layer: string) {
   /*
    * Dropping the top takes the rack and everything on it down with it. The
    * shift lives on the layer rather than inside the drawing so the markers
-   * travel with the parts they are pointing at. 58 of the artwork's 480
-   * units, as a percentage so it holds at any size.
+   * travel with the parts they are pointing at. The lid falls 98 of the
+   * artwork's 480 units, as a percentage so it holds at any size.
    */
-  const stow = layer === 'roof' && !popped.value ? ' translateY(12.083%)' : ''
+  const stow = layer === 'roof' && !popped.value ? ' translateY(20.417%)' : ''
 
   return { transform: `translate3d(${x}px, ${y}px, 0)${stow}` }
 }
