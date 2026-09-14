@@ -1,30 +1,43 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { Head } from '@inertiajs/vue3'
-import { ExternalLink, Wrench, X } from 'lucide-vue-next'
+import { ExternalLink, Wrench } from 'lucide-vue-next'
 import { PageHeader } from '@/components/page-header'
-import ExplodedRig from '@/components/pages/rig/ExplodedRig.vue'
-import type { BuildLayer, BuildPart } from '@/components/pages/rig/types'
+import { AnimatedContent } from '@/components/ui/motion'
+
+interface Part {
+  id: number
+  name: string
+  vendor: string | null
+  description: string | null
+  installed_label: string | null
+  layer: string | null
+  cost: number | null
+  buyUrl: string | null
+  isAffiliate: boolean
+}
+
+interface Layer {
+  value: string
+  label: string
+  depth: number
+}
 
 const props = defineProps<{
-  layers: BuildLayer[]
-  parts: BuildPart[]
-  stats: { parts: number; years: number }
+  layers: Layer[]
+  parts: Part[]
+  stats: { parts: number; years: number; spend: number; priced: number }
 }>()
 
-const selectedId = ref<number | null>(null)
-
-const selected = computed(
-  () => props.parts.find((part) => part.id === selectedId.value) ?? null,
-)
-
 /**
- * Grouped for the list below the illustration. Parts without a layer are
- * collected at the end rather than dropped, so the list is always the whole
- * build even when the artwork is not.
+ * The build, grouped by where each part lives.
+ *
+ * Parts with no layer set are not dropped: they collect at the end, so
+ * forgetting to file one costs it its heading rather than its place on the
+ * page. An empty group is left out entirely.
  */
 const groups = computed(() => {
-  const placed = props.layers
+  const filed = props.layers
     .map((layer) => ({
       key: layer.value,
       label: layer.label,
@@ -32,16 +45,21 @@ const groups = computed(() => {
     }))
     .filter((group) => group.parts.length > 0)
 
-  const rest = props.parts.filter(
+  const unfiled = props.parts.filter(
     (part) => !props.layers.some((layer) => layer.value === part.layer),
   )
 
-  return rest.length > 0
-    ? [...placed, { key: 'other', label: 'Everything else', parts: rest }]
-    : placed
+  return unfiled.length
+    ? [...filed, { key: 'unfiled', label: 'Everything else', parts: unfiled }]
+    : filed
 })
 
-const anyAffiliate = computed(() => props.parts.some((part) => part.isAffiliate))
+const money = (amount: number) => `$${amount.toLocaleString('en-US')}`
+
+/** What a group of parts came to, ignoring the ones with no price on them. */
+function groupSpend(parts: Part[]): number {
+  return parts.reduce((total, part) => total + (part.cost ?? 0), 0)
+}
 </script>
 
 <template>
@@ -49,123 +67,121 @@ const anyAffiliate = computed(() => props.parts.some((part) => part.isAffiliate)
 
   <PageHeader
     title="The Rig"
-    subtitle="Every part on the truck, and where it lives."
+    subtitle="Every part on the truck, where it lives and what it cost."
   />
 
   <div class="container py-12">
-    <div v-if="parts.length === 0" class="py-16 text-center text-slate-500 dark:text-white/60">
+    <p v-if="parts.length === 0" class="py-16 text-center text-slate-500 dark:text-white/60">
       Nothing bolted on yet. The build starts soon.
-    </div>
+    </p>
 
     <template v-else>
-      <div class="mb-8 flex flex-wrap items-baseline gap-x-8 gap-y-2">
-        <p class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-brand">
-          <Wrench class="h-4 w-4" /> {{ stats.parts }} {{ stats.parts === 1 ? 'part' : 'parts' }}
-        </p>
-        <p v-if="stats.years > 0" class="text-sm text-slate-500 dark:text-white/60">
-          {{ stats.years }} {{ stats.years === 1 ? 'year' : 'years' }} in the making
-        </p>
-      </div>
+      <!-- The whole build in three numbers. -->
+      <dl class="mb-10 flex flex-wrap gap-x-10 gap-y-4 border-b border-slate-200 pb-6 dark:border-white/10">
+        <div>
+          <dt class="text-xs font-bold uppercase tracking-widest text-brand">
+            <Wrench class="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />Parts
+          </dt>
+          <dd class="mt-0.5 font-brand text-2xl font-extrabold text-slate-900 dark:text-white">
+            {{ stats.parts }}
+          </dd>
+        </div>
 
-      <ExplodedRig
-        :layers="layers"
-        :parts="parts"
-        :selected-id="selectedId"
-        @select="selectedId = $event"
-      />
+        <div v-if="stats.years > 0">
+          <dt class="text-xs font-bold uppercase tracking-widest text-brand">In the making</dt>
+          <dd class="mt-0.5 font-brand text-2xl font-extrabold text-slate-900 dark:text-white">
+            {{ stats.years }} {{ stats.years === 1 ? 'year' : 'years' }}
+          </dd>
+        </div>
 
-      <!-- The detail for whichever hotspot is open. -->
-      <div
-        v-if="selected"
-        class="mt-6 rounded-xl border border-brand/30 bg-brand/5 p-6"
-      >
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p v-if="selected.vendor" class="text-xs font-bold uppercase tracking-widest text-brand">
-              {{ selected.vendor }}
-            </p>
-            <h2 class="text-2xl font-extrabold uppercase text-black dark:text-white">
-              {{ selected.name }}
+        <div v-if="stats.spend > 0">
+          <dt class="text-xs font-bold uppercase tracking-widest text-brand">Spent so far</dt>
+          <dd class="mt-0.5 font-brand text-2xl font-extrabold text-slate-900 dark:text-white">
+            {{ money(stats.spend) }}
+          </dd>
+          <!--
+            Say what the number is. Counting a part with no price recorded as
+            zero and then calling the result a total would be a lie.
+          -->
+          <dd
+            v-if="stats.priced < stats.parts"
+            class="mt-0.5 text-xs text-slate-500 dark:text-white/50"
+          >
+            across the {{ stats.priced }} I wrote down
+          </dd>
+        </div>
+      </dl>
+
+      <div class="space-y-12">
+        <AnimatedContent v-for="group in groups" :key="group.key" as="section">
+          <div
+            class="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-slate-200 pb-2 dark:border-white/10"
+          >
+            <h2 class="font-brand text-xl font-extrabold uppercase text-brand">
+              {{ group.label }}
             </h2>
+            <p class="text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-white/40">
+              {{ group.parts.length }} {{ group.parts.length === 1 ? 'part' : 'parts' }}
+              <template v-if="groupSpend(group.parts) > 0">
+                · {{ money(groupSpend(group.parts)) }}
+              </template>
+            </p>
           </div>
-          <button
-            type="button"
-            class="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-black/5 dark:text-white/60 dark:hover:bg-white/10"
-            aria-label="Close part details"
-            @click="selectedId = null"
-          >
-            <X class="h-4 w-4" />
-          </button>
-        </div>
 
-        <p v-if="selected.description" class="mt-3 max-w-2xl text-slate-700 dark:text-white/80">
-          {{ selected.description }}
-        </p>
+          <ul class="divide-y divide-slate-200 dark:divide-white/10">
+            <li
+              v-for="part in group.parts"
+              :key="part.id"
+              class="flex flex-wrap items-baseline gap-x-6 gap-y-1 py-4 sm:flex-nowrap"
+            >
+              <div class="min-w-0 flex-1">
+                <p
+                  v-if="part.vendor"
+                  class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-white/40"
+                >
+                  {{ part.vendor }}
+                </p>
 
-        <div class="mt-4 flex flex-wrap items-center gap-5">
-          <a
-            v-if="selected.buyUrl"
-            :href="selected.buyUrl"
-            target="_blank"
-            rel="noopener noreferrer nofollow sponsored"
-            class="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-bold uppercase tracking-wide text-white transition-opacity hover:opacity-90"
-          >
-            Get one <ExternalLink class="h-3.5 w-3.5" />
-          </a>
-          <span v-if="selected.installed_label" class="text-sm text-slate-500 dark:text-white/60">
-            Fitted {{ selected.installed_label }}
-          </span>
-        </div>
+                <h3 class="font-medium text-slate-900 dark:text-white">
+                  <a
+                    v-if="part.buyUrl"
+                    :href="part.buyUrl"
+                    target="_blank"
+                    :rel="part.isAffiliate ? 'sponsored noopener noreferrer' : 'noopener noreferrer'"
+                    class="inline-flex items-baseline gap-1 hover:text-brand"
+                  >
+                    {{ part.name }}
+                    <ExternalLink class="h-3 w-3 shrink-0 self-center" aria-hidden="true" />
+                  </a>
+                  <template v-else>{{ part.name }}</template>
+                </h3>
+
+                <p v-if="part.description" class="mt-1 text-sm text-slate-600 dark:text-white/65">
+                  {{ part.description }}
+                </p>
+              </div>
+
+              <p
+                v-if="part.installed_label"
+                class="w-24 shrink-0 text-sm text-slate-500 tabular-nums dark:text-white/50"
+              >
+                {{ part.installed_label }}
+              </p>
+
+              <p
+                v-if="part.cost"
+                class="w-20 shrink-0 text-sm font-medium text-slate-700 tabular-nums dark:text-white/75 sm:text-right"
+              >
+                {{ money(part.cost) }}
+              </p>
+            </li>
+          </ul>
+        </AnimatedContent>
       </div>
 
-      <!-- The full parts list, so nothing depends on finding a hotspot. -->
-      <section v-for="group in groups" :key="group.key" class="pt-12">
-        <h2 class="mb-5 text-xl font-extrabold uppercase text-brand">{{ group.label }}</h2>
-        <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <li
-            v-for="part in group.parts"
-            :key="part.id"
-            class="flex flex-col rounded-lg bg-slate-50 p-5 transition-colors dark:bg-white/5"
-            :class="{ 'ring-2 ring-brand': selectedId === part.id }"
-          >
-            <p v-if="part.vendor" class="text-xs font-bold uppercase tracking-widest text-brand">
-              {{ part.vendor }}
-            </p>
-            <h3 class="mt-0.5 font-bold text-black dark:text-white">{{ part.name }}</h3>
-            <p v-if="part.description" class="mt-2 grow text-sm text-slate-600 dark:text-white/70">
-              {{ part.description }}
-            </p>
-
-            <div class="mt-4 flex flex-wrap items-center gap-4 text-xs">
-              <a
-                v-if="part.buyUrl"
-                :href="part.buyUrl"
-                target="_blank"
-                rel="noopener noreferrer nofollow sponsored"
-                class="inline-flex items-center gap-1 font-bold uppercase tracking-wide text-brand hover:underline"
-              >
-                Buy it <ExternalLink class="h-3 w-3" />
-              </a>
-              <button
-                v-if="part.hotspot"
-                type="button"
-                class="font-medium uppercase tracking-wide text-slate-500 hover:text-brand dark:text-white/50"
-                @click="selectedId = selectedId === part.id ? null : part.id"
-              >
-                Show on the truck
-              </button>
-              <span v-if="part.installed_label" class="ml-auto text-slate-400 dark:text-white/40">
-                {{ part.installed_label }}
-              </span>
-            </div>
-          </li>
-        </ul>
-      </section>
-
-      <p v-if="anyAffiliate" class="pt-12 text-xs text-slate-500 dark:text-white/50">
+      <p class="mt-10 text-xs text-slate-500 dark:text-white/45">
         Some of these are affiliate links. They cost you nothing extra and they help
-        pay for fuel. Everything on this truck earned its place first. No part of it
-        is here because of a commission.
+        pay for the next thing that breaks.
       </p>
     </template>
   </div>

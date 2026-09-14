@@ -13,9 +13,10 @@ use Inertia\Response;
 /**
  * The rig, part by part.
  *
- * Every modification is listed; the ones that have been given a layer and a
- * position also appear as a hotspot on the illustration, so an unplaced part
- * degrades to a list entry rather than disappearing.
+ * A plain list grouped by where each part lives. There was an exploded
+ * drawing of the truck here; it was not good enough to keep, and a list you
+ * can actually read beats a picture that is nearly right. The artwork and
+ * the hotspot columns are still in the repository for when it comes back.
  */
 class RigController extends Controller
 {
@@ -30,7 +31,7 @@ class RigController extends Controller
         return Inertia::render('Rig', [
             'seo' => Seo::make(
                 title: 'The Rig',
-                description: 'Every part on the Tacoma and where it sits, from the Tune M1L camper down to the sliders. Pull the whole thing apart and see what it cost.',
+                description: 'Every part on the Tacoma and where it sits, from the Tune M1L camper down to the sliders, with what each one cost.',
                 card: route('og.card', ['kind' => 'page', 'slug' => 'rig']),
             ),
             'layers' => array_map(fn (BuildLayer $layer) => [
@@ -47,17 +48,22 @@ class RigController extends Controller
                     ? date('M Y', strtotime((string) $mod->install_date))
                     : null,
                 'layer' => $mod->build_layer?->value,
-                // Percentages of the illustration box, so the markup does not
-                // need to know anything about the artwork's dimensions.
-                'hotspot' => $mod->isPlaced()
-                    ? ['x' => $mod->hotspot_x, 'y' => $mod->hotspot_y]
-                    : null,
+                // Stored as integer cents, presented as whole dollars: nobody
+                // needs to know a set of sliders was 899 dollars and 47 cents.
+                'cost' => $mod->cost === null ? null : (int) round($mod->cost / 100),
                 'buyUrl' => $mod->buyUrl(),
                 'isAffiliate' => (bool) $mod->affiliate_url,
             ])->all(),
             'stats' => [
                 'parts' => $modifications->count(),
                 'years' => $this->yearsBuilding($modifications),
+                /*
+                 * What is actually known, not a guess at the whole build.
+                 * Parts with no price recorded are counted so the number can
+                 * be honest about being a floor rather than a total.
+                 */
+                'spend' => (int) round($modifications->sum('cost') / 100),
+                'priced' => $modifications->whereNotNull('cost')->count(),
             ],
         ]);
     }

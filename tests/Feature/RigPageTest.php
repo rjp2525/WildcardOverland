@@ -32,17 +32,18 @@ class RigPageTest extends TestCase
                 ->has('parts', 0)
                 ->has('layers', 5)
                 ->where('stats.parts', 0)
-                ->where('stats.years', 0));
+                ->where('stats.years', 0)
+                ->where('stats.spend', 0)
+                ->where('stats.priced', 0));
     }
 
-    public function test_a_placed_part_carries_its_layer_and_hotspot(): void
+    public function test_a_part_carries_what_the_list_shows(): void
     {
         $this->part('Prinsu Roof Rack', [
             'vendor' => 'Prinsu',
             'build_layer' => BuildLayer::Roof,
-            'hotspot_x' => 58.6,
-            'hotspot_y' => 15.4,
             'install_date' => '2024-04-12',
+            'cost' => 89900,
         ]);
 
         $this->get(route('rig'))
@@ -50,28 +51,42 @@ class RigPageTest extends TestCase
                 ->where('parts.0.name', 'Prinsu Roof Rack')
                 ->where('parts.0.vendor', 'Prinsu')
                 ->where('parts.0.layer', 'roof')
-                ->where('parts.0.hotspot.x', 58.6)
-                ->where('parts.0.hotspot.y', 15.4)
-                ->where('parts.0.installed_label', 'Apr 2024'));
+                ->where('parts.0.installed_label', 'Apr 2024')
+                // Stored as cents, listed as whole dollars.
+                ->where('parts.0.cost', 899));
     }
 
-    public function test_an_unplaced_part_is_still_listed(): void
+    public function test_a_part_with_no_layer_is_still_listed(): void
     {
-        $this->part('A sticker', ['build_layer' => BuildLayer::Body]);
+        // The page files it under "everything else" rather than losing it.
+        $this->part('A sticker');
 
         $this->get(route('rig'))
             ->assertInertia(fn ($page) => $page
                 ->has('parts', 1)
-                ->where('parts.0.hotspot', null)
-                ->where('parts.0.layer', 'body'));
+                ->where('parts.0.layer', null));
     }
 
-    public function test_a_part_needs_both_coordinates_to_be_placed(): void
+    public function test_a_part_with_no_price_is_listed_without_one(): void
     {
-        $this->part('Half placed', ['build_layer' => BuildLayer::Body, 'hotspot_x' => 40]);
+        $this->part('Free sticker', ['build_layer' => BuildLayer::Body]);
 
         $this->get(route('rig'))
-            ->assertInertia(fn ($page) => $page->where('parts.0.hotspot', null));
+            ->assertInertia(fn ($page) => $page->where('parts.0.cost', null));
+    }
+
+    public function test_the_spend_says_how_much_of_the_build_it_covers(): void
+    {
+        $this->part('Priced', ['cost' => 120000]);
+        $this->part('Also priced', ['cost' => 30050]);
+        $this->part('No price on it');
+
+        $this->get(route('rig'))
+            ->assertInertia(fn ($page) => $page
+                ->where('stats.parts', 3)
+                // 1200 + 300.50, rounded, and honest about covering two of three.
+                ->where('stats.spend', 1501)
+                ->where('stats.priced', 2));
     }
 
     public function test_the_buy_link_prefers_the_affiliate_url(): void

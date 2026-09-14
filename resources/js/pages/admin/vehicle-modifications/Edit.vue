@@ -125,15 +125,18 @@ function submit() {
       </div>
     </Card>
 
-    <Card title="Build page placement" description="Where this part sits on the interactive truck. Leave blank to keep it off that page.">
+    <Card
+      title="Where it lives"
+      description="The layer groups this part on the build page. The two positions are for the exploded drawing, which is off for now; they are kept so it can come back without replacing them."
+    >
       <div class="grid gap-5 sm:grid-cols-3">
-        <Field label="Layer" for="build_layer" :error="form.errors.build_layer">
-          <Select id="build_layer" v-model="form.build_layer" :options="buildLayers" placeholder="Not placed" :invalid="!!form.errors.build_layer" />
+        <Field label="Layer" for="build_layer" :error="form.errors.build_layer" hint="Groups it on the build page.">
+          <Select id="build_layer" v-model="form.build_layer" :options="buildLayers" placeholder="Everything else" :invalid="!!form.errors.build_layer" />
         </Field>
-        <Field label="Position X" for="hotspot_x" :error="form.errors.hotspot_x" hint="0–100, left to right.">
+        <Field label="Position X" for="hotspot_x" :error="form.errors.hotspot_x" hint="0–100. Unused at the moment.">
           <Input id="hotspot_x" v-model="form.hotspot_x" type="number" step="0.1" min="0" max="100" :invalid="!!form.errors.hotspot_x" />
         </Field>
-        <Field label="Position Y" for="hotspot_y" :error="form.errors.hotspot_y" hint="0–100, top to bottom.">
+        <Field label="Position Y" for="hotspot_y" :error="form.errors.hotspot_y" hint="0–100. Unused at the moment.">
           <Input id="hotspot_y" v-model="form.hotspot_y" type="number" step="0.1" min="0" max="100" :invalid="!!form.errors.hotspot_y" />
         </Field>
       </div>
