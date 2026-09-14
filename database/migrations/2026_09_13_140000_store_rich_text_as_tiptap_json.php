@@ -35,10 +35,15 @@ return new class extends Migration
         /*
          * The section lead sentence was a second, plainer body. One rich
          * field says the same thing and is one less decision to make.
+         *
+         * Guarded, like everything else here, because this migration failed
+         * partway through once and has to be safe to run again.
          */
-        Schema::table('recipe_sections', function (Blueprint $table) {
-            $table->dropColumn('intro');
-        });
+        if (Schema::hasColumn('recipe_sections', 'intro')) {
+            Schema::table('recipe_sections', function (Blueprint $table) {
+                $table->dropColumn('intro');
+            });
+        }
 
         foreach ($this->columns as $table => $columns) {
             foreach ($columns as $column) {
@@ -60,23 +65,46 @@ return new class extends Migration
 
     /**
      * Rewrites one column in place, converting whatever is already in it.
+     *
+     * The data is converted first and the type changed afterwards, and the
+     * order is the whole point. MySQL validates every existing row while it
+     * runs the ALTER, so a column still holding "<p>hello</p>" cannot become
+     * json: the statement fails and takes the deploy with it. SQLite does
+     * not check, which is exactly why the wrong order looked fine in tests.
      */
     protected function convert(string $table, string $column): void
     {
-        $existing = DB::table($table)
-            ->whereNotNull($column)
-            ->where($column, '!=', '')
-            ->pluck($column, 'id');
+        // An empty string is not valid JSON either, and means nothing here.
+        DB::table($table)->where($column, '')->update([$column => null]);
 
+        DB::table($table)
+            ->whereNotNull($column)
+            ->orderBy('id')
+            ->each(function (object $row) use ($table, $column): void {
+                $value = (string) $row->{$column};
+
+                // Safe to run twice: a row already converted is left alone
+                // rather than being re-encoded as a paragraph of JSON.
+                if (static::isDocument($value)) {
+                    return;
+                }
+
+                DB::table($table)->where('id', $row->id)->update([
+                    $column => json_encode(HtmlToTipTap::convert($value)),
+                ]);
+            });
+
+        // Every row is now valid JSON or null, so the type change is safe.
         Schema::table($table, function (Blueprint $blueprint) use ($column) {
             $blueprint->json($column)->nullable()->change();
         });
+    }
 
-        foreach ($existing as $id => $value) {
-            DB::table($table)->where('id', $id)->update([
-                $column => json_encode(HtmlToTipTap::convert((string) $value)),
-            ]);
-        }
+    protected static function isDocument(string $value): bool
+    {
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) && ($decoded['type'] ?? null) === 'doc';
     }
 
     public function down(): void
