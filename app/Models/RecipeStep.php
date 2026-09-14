@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RichText\TipTap;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,7 @@ class RecipeStep extends Model
 
     protected function casts(): array
     {
-        return ['order' => 'integer'];
+        return ['order' => 'integer', 'body' => 'array'];
     }
 
     public function recipe(): BelongsTo
@@ -34,20 +35,9 @@ class RecipeStep extends Model
         return $this->hasMany(RecipeStepTip::class)->orderBy('order');
     }
 
-    /**
-     * The step's own instructions, split into paragraphs.
-     *
-     * Real steps are several beats long. Rendering the lot as one block
-     * turns "sear, wait, flip, push aside" into a paragraph nobody can
-     * follow with a spatula in one hand.
-     *
-     * @return array<int, string>
-     */
-    public function paragraphs(): array
+    /** The instructions as markup, from the stored document. */
+    public function bodyHtml(): string
     {
-        return array_values(array_filter(array_map(
-            trim(...),
-            preg_split('/\R{2,}/', (string) $this->body) ?: [],
-        ), fn (string $part) => $part !== ''));
+        return TipTap::html($this->body);
     }
 }

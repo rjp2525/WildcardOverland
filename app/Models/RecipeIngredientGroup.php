@@ -22,7 +22,7 @@ class RecipeIngredientGroup extends Model
 
     protected function casts(): array
     {
-        return ['order' => 'integer'];
+        return ['order' => 'integer', 'note' => 'array'];
     }
 
     public function recipe(): BelongsTo

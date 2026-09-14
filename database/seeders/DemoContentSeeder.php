@@ -10,6 +10,7 @@ use App\Models\Recipe;
 use App\Models\Trip;
 use App\Models\VehicleModification;
 use App\Services\FileUploadService;
+use App\Support\RichText\TipTap;
 use Database\Seeders\Demo\DemoContent;
 use Database\Seeders\Demo\DemoImageFactory;
 use Illuminate\Database\Seeder;
@@ -87,7 +88,7 @@ class DemoContentSeeder extends Seeder
                         'name' => $data['name'],
                         'headline' => $data['headline'],
                         'summary' => $data['summary'],
-                        'content' => $data['content'],
+                        'content' => TipTap::fromText($data['content']),
                         'start_date' => $data['start_date'],
                         'end_date' => $data['end_date'],
                         'miles' => $data['miles'],
@@ -138,7 +139,7 @@ class DemoContentSeeder extends Seeder
                         'name' => $data['name'],
                         'headline' => $data['headline'],
                         'summary' => $data['summary'],
-                        'notes' => $data['notes'],
+                        'notes' => TipTap::fromText((string) $data['notes']),
                         'meal_type' => $data['meal_type'],
                         'difficulty' => $data['difficulty'],
                         'dietary' => $data['dietary'],
@@ -184,14 +185,18 @@ class DemoContentSeeder extends Seeder
 
                     $created = $recipe->steps()->create([
                         'order' => $order,
-                        'body' => $body,
+                        'body' => TipTap::fromText($body),
                         // Reuse the hero as the step photo so the layout is
                         // exercised; real steps get their own.
                         'image_id' => $order === 0 ? ($images[$data['image']] ?? null) : null,
                     ]);
 
                     if ($note !== null) {
-                        $created->tips()->create(['order' => 0, 'kind' => 'tip', 'body' => $note]);
+                        $created->tips()->create([
+                            'order' => 0,
+                            'kind' => 'tip',
+                            'body' => TipTap::fromText($note),
+                        ]);
                     }
                 }
             });

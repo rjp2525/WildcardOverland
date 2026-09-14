@@ -8,7 +8,7 @@ import Card from '@/components/admin/ui/Card.vue'
 import Field from '@/components/admin/ui/Field.vue'
 import Input from '@/components/admin/ui/Input.vue'
 import Repeater from '@/components/admin/ui/Repeater.vue'
-import RichTextEditor from '@/components/admin/ui/RichTextEditor.vue'
+import RichTextEditor, { type RichTextDoc } from '@/components/admin/ui/RichTextEditor.vue'
 import Select from '@/components/admin/ui/Select.vue'
 import ImagePicker from '@/components/admin/ui/ImagePicker.vue'
 import ImageDropzone from '@/components/admin/ui/ImageDropzone.vue'
@@ -49,7 +49,7 @@ interface TripPayload {
   images: GalleryRow[]
   recipes: RecipeRow[]
   summary: string | null
-  content: string | null
+  content: RichTextDoc
   start_date: string | null
   end_date: string | null
   miles: number | null
@@ -207,8 +207,13 @@ function campsiteError(index: number, field: string): string | undefined {
       </div>
     </Card>
 
-    <Card title="Summary" description="Shown in trip listings.">
-      <RichTextEditor v-model="form.summary" placeholder="A short teaser…" />
+    <Card
+      title="Summary"
+      description="Plain text. It is the card teaser and the description search engines show."
+    >
+      <Field :error="form.errors.summary">
+        <Textarea v-model="form.summary" :rows="3" :invalid="!!form.errors.summary" />
+      </Field>
     </Card>
 
     <Card title="Content" description="The full trip write-up.">

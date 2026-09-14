@@ -7,6 +7,7 @@ use App\Enums\SectionPlacement;
 use App\Enums\TipKind;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Support\RichText\TipTap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -37,7 +38,7 @@ class RecipeStructureTest extends TestCase
         $steak = $recipe->ingredientGroups()->create([
             'order' => 0,
             'name' => 'Steak',
-            'note' => 'The cornstarch is worth bringing.',
+            'note' => TipTap::fromText('The cornstarch is worth bringing.'),
         ]);
         $steak->ingredients()->create([
             'recipe_id' => $recipe->id,
@@ -63,7 +64,7 @@ class RecipeStructureTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->has('recipe.ingredient_groups', 2)
                 ->where('recipe.ingredient_groups.0.name', 'Steak')
-                ->where('recipe.ingredient_groups.0.note', 'The cornstarch is worth bringing.')
+                ->where('recipe.ingredient_groups.0.note', '<p>The cornstarch is worth bringing.</p>')
                 ->where('recipe.ingredient_groups.0.items.0.label', '3 lb steak')
                 ->where('recipe.ingredient_groups.0.items.0.details', [
                     'Sirloin is the best balance',
@@ -93,15 +94,19 @@ class RecipeStructureTest extends TestCase
         $step = $recipe->steps()->create([
             'order' => 0,
             'title' => 'Garlic and ginger',
-            'body' => 'Stir constantly for 30 to 45 seconds.',
+            'body' => TipTap::fromText('Stir constantly for 30 to 45 seconds.'),
         ]);
 
-        $step->tips()->create(['order' => 1, 'kind' => TipKind::Tip, 'body' => 'Two spatulas helps.']);
+        $step->tips()->create([
+            'order' => 1,
+            'kind' => TipKind::Tip,
+            'body' => TipTap::fromText('Two spatulas helps.'),
+        ]);
         $step->tips()->create([
             'order' => 0,
             'kind' => TipKind::Warning,
             'title' => 'Do not walk away',
-            'body' => 'Burnt garlic ruins the lot.',
+            'body' => TipTap::fromText('Burnt garlic ruins the lot.'),
         ]);
 
         $this->get(route('recipes.show', $recipe->slug))
@@ -114,20 +119,29 @@ class RecipeStructureTest extends TestCase
                 ->where('recipe.steps.0.tips.1.kind', 'tip'));
     }
 
-    public function test_a_step_body_is_split_into_paragraphs(): void
+    public function test_a_step_body_renders_as_markup_the_server_wrote(): void
     {
         $recipe = $this->recipe();
         $recipe->steps()->create([
             'order' => 0,
-            'body' => "Put down enough steak that every piece touches metal.\n\nLeave it alone for 60 seconds.\n\nFlip and cook another minute.",
+            'body' => [
+                'type' => 'doc',
+                'content' => [
+                    ['type' => 'paragraph', 'content' => [
+                        ['type' => 'text', 'text' => 'Leave it alone for '],
+                        ['type' => 'text', 'text' => '60 seconds', 'marks' => [['type' => 'bold']]],
+                        ['type' => 'text', 'text' => '.'],
+                    ]],
+                    ['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => 'Then flip it.']]],
+                ],
+            ],
         ]);
 
         $this->get(route('recipes.show', $recipe->slug))
-            ->assertInertia(fn ($page) => $page->where('recipe.steps.0.paragraphs', [
-                'Put down enough steak that every piece touches metal.',
-                'Leave it alone for 60 seconds.',
-                'Flip and cook another minute.',
-            ]));
+            ->assertInertia(fn ($page) => $page->where(
+                'recipe.steps.0.body',
+                '<p>Leave it alone for <strong>60 seconds</strong>.</p><p>Then flip it.</p>',
+            ));
     }
 
     public function test_sections_are_split_by_where_they_are_read(): void
@@ -139,8 +153,7 @@ class RecipeStructureTest extends TestCase
             'kind' => SectionKind::Prep,
             'placement' => SectionPlacement::BeforeMethod,
             'title' => 'Prep before you leave home',
-            'intro' => 'Camping is easier if you do this in your kitchen.',
-            'body' => '<ol><li>Cook the rice the day before.</li></ol>',
+            'body' => TipTap::fromText('Camping is easier if you do this in your kitchen.'),
         ]);
 
         $recipe->sections()->create([
@@ -181,7 +194,11 @@ class RecipeStructureTest extends TestCase
             'item' => 'soy sauce',
         ]);
         $recipe->ingredients()->create(['order' => 0, 'item' => 'neutral oil']);
-        $recipe->steps()->create(['order' => 0, 'title' => 'Sear the steak', 'body' => 'Get it hot.']);
+        $recipe->steps()->create([
+            'order' => 0,
+            'title' => 'Sear the steak',
+            'body' => TipTap::fromText('Get it hot.'),
+        ]);
 
         $response = $this->get(route('recipes.show', $recipe->slug))->assertOk();
 
@@ -201,14 +218,14 @@ class RecipeStructureTest extends TestCase
             'meal_type' => 'dinner',
             'yield' => '10 to 12 big servings',
             'method_title' => 'Cooking it on the Skottle',
-            'method_intro' => 'Dead centre is screaming hot.',
+            'method_intro' => TipTap::fromText('Dead centre is screaming hot.'),
             'ingredients' => [
                 ['item' => 'neutral oil', 'in_shopping_list' => true],
             ],
             'ingredient_groups' => [
                 [
                     'name' => 'Steak',
-                    'note' => 'The cornstarch is worth bringing.',
+                    'note' => TipTap::fromText('The cornstarch is worth bringing.'),
                     'ingredients' => [
                         ['quantity' => '3', 'unit' => 'lb', 'item' => 'steak', 'detail' => "Sirloin\nRibeye", 'optional' => false],
                         ['item' => 'cornstarch', 'optional' => true, 'in_shopping_list' => false],
@@ -218,9 +235,13 @@ class RecipeStructureTest extends TestCase
             'steps' => [
                 [
                     'title' => 'Sear the steak',
-                    'body' => "Cook in batches.\n\nLeave it alone for 60 seconds.",
+                    'body' => TipTap::fromText("Cook in batches.\n\nLeave it alone for 60 seconds."),
                     'tips' => [
-                        ['kind' => 'warning', 'title' => 'Do not crowd it', 'body' => 'You will steam it.'],
+                        [
+                            'kind' => 'warning',
+                            'title' => 'Do not crowd it',
+                            'body' => TipTap::fromText('You will steam it.'),
+                        ],
                     ],
                 ],
             ],
@@ -229,7 +250,7 @@ class RecipeStructureTest extends TestCase
                     'kind' => 'prep',
                     'placement' => 'before_method',
                     'title' => 'Prep before you leave home',
-                    'body' => '<ol><li>Cook the rice.</li></ol>',
+                    'body' => TipTap::fromText('Cook the rice.'),
                 ],
             ],
         ])->assertRedirect();
@@ -255,7 +276,7 @@ class RecipeStructureTest extends TestCase
 
         $step = $recipe->steps->first();
         $this->assertSame('Sear the steak', $step->title);
-        $this->assertCount(2, $step->paragraphs());
+        $this->assertStringContainsString('<p>Cook in batches.</p>', $step->bodyHtml());
         $this->assertCount(1, $step->tips);
         $this->assertSame(TipKind::Warning, $step->tips->first()->kind);
 
@@ -276,7 +297,10 @@ class RecipeStructureTest extends TestCase
                 ['name' => 'Steak', 'ingredients' => [['item' => 'steak']]],
             ],
             'steps' => [
-                ['body' => 'Cook it.', 'tips' => [['kind' => 'tip', 'body' => 'Two spatulas.']]],
+                [
+                    'body' => TipTap::fromText('Cook it.'),
+                    'tips' => [['kind' => 'tip', 'body' => TipTap::fromText('Two spatulas.')]],
+                ],
             ],
         ];
 

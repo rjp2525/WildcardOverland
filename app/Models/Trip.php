@@ -39,6 +39,7 @@ class Trip extends Model
     protected function casts(): array
     {
         return [
+            'content' => 'array',
             'start_date' => 'date',
             'end_date' => 'date',
             'miles' => 'integer',

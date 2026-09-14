@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Check } from 'lucide-vue-next'
+import RichText from '@/components/ui/RichText.vue'
 
 export interface Ingredient {
   label: string
@@ -14,7 +15,8 @@ export interface Ingredient {
 
 export interface IngredientGroup {
   name: string
-  note: string | null
+  /** Rendered from the stored document by the server. */
+  note: string
   items: Ingredient[]
 }
 
@@ -35,7 +37,7 @@ const blocks = computed(() => {
   if (props.loose.length) {
     out.push({
       name: 'Everything else',
-      note: null,
+      note: '',
       items: props.loose,
       headed: props.groups.length > 0,
     })
@@ -115,12 +117,12 @@ function toggle(key: string) {
         </li>
       </ul>
 
-      <p
+      <RichText
         v-if="block.note"
-        class="mt-3 border-l-2 border-brand/40 pl-3 text-sm leading-relaxed text-slate-600 dark:text-white/65"
-      >
-        {{ block.note }}
-      </p>
+        :html="block.note"
+        compact
+        class="mt-3 border-l-2 border-brand/40 pl-3 text-sm text-slate-600 dark:text-white/65"
+      />
     </section>
   </div>
 </template>

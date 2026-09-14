@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Recipe;
 use App\Models\Trip;
+use App\Support\RichText\TipTap;
 
 /**
  * JSON-LD for the public pages.
@@ -119,7 +120,8 @@ class StructuredData
                     '@type' => 'HowToStep',
                     'position' => $i + 1,
                     'name' => $step->title,
-                    'text' => $step->body,
+                    // Words only. The spec wants an instruction, not markup.
+                    'text' => TipTap::text($step->body),
                 ], fn ($value) => $value !== null))
                 ->values()
                 ->all(),

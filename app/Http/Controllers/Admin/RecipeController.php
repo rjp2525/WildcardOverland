@@ -122,7 +122,6 @@ class RecipeController extends Controller
                     'kind' => $section->kind->value,
                     'placement' => $section->placement->value,
                     'title' => $section->title,
-                    'intro' => $section->intro,
                     'body' => $section->body,
                 ]),
                 'sources' => $recipe->sources->map(fn ($source) => [

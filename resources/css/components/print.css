@@ -165,6 +165,18 @@
         padding: 5pt 7pt !important;
     }
 
+    /* Editor headings inside a section or a write-up. */
+    .rich-text :where(h2),
+    .rich-text :where(h3) {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    .rich-text :where(pre),
+    .rich-text :where(blockquote) {
+        break-inside: avoid;
+    }
+
     h1, h2, h3 {
         break-after: avoid;
         page-break-after: avoid;

@@ -6,6 +6,7 @@ use App\Enums\MealType;
 use App\Models\Recipe;
 use App\Models\RecipeIngredient;
 use App\Support\ImagePresenter;
+use App\Support\RichText\TipTap;
 use App\Support\Seo;
 use App\Support\StructuredData;
 use Illuminate\Http\Request;
@@ -102,7 +103,7 @@ class RecipeController extends Controller
                 'name' => $recipe->name,
                 'headline' => $recipe->headline,
                 'summary' => $recipe->summary,
-                'notes' => $recipe->notes,
+                'notes' => TipTap::html($recipe->notes),
                 'meal_type' => $recipe->meal_type->label(),
                 'difficulty' => $recipe->difficulty?->label(),
                 'dietary' => array_map(fn ($tag) => $tag->label(), $recipe->dietaryTags()),
@@ -116,7 +117,7 @@ class RecipeController extends Controller
                 'servings' => $recipe->servings,
                 'yield' => $recipe->yield,
                 'method_title' => $recipe->method_title ?: 'Method',
-                'method_intro' => $recipe->method_intro,
+                'method_intro' => TipTap::html($recipe->method_intro),
                 'hero' => $hero,
                 /*
                  * Parts first, then anything that belongs to no part. A
@@ -126,19 +127,19 @@ class RecipeController extends Controller
                 'ingredient_groups' => $recipe->ingredientGroups
                     ->map(fn ($group) => [
                         'name' => $group->name,
-                        'note' => $group->note,
+                        'note' => TipTap::html($group->note),
                         'items' => $group->ingredients->map(static::ingredientPayload(...))->values(),
                     ])
                     ->values(),
                 'ingredients' => $recipe->looseIngredients->map(static::ingredientPayload(...))->values(),
                 'steps' => $recipe->steps->map(fn ($step) => [
                     'title' => $step->title,
-                    'paragraphs' => $step->paragraphs(),
+                    'body' => $step->bodyHtml(),
                     'tips' => $step->tips->map(fn ($tip) => [
                         'kind' => $tip->kind->value,
                         'label' => $tip->kind->label(),
                         'title' => $tip->title,
-                        'body' => $tip->body,
+                        'body' => TipTap::html($tip->body),
                     ])->values(),
                     'image' => ImagePresenter::thumb($step->image, "Step {$step->order}"),
                 ]),
@@ -147,8 +148,7 @@ class RecipeController extends Controller
                     'label' => $section->kind->label(),
                     'placement' => $section->placement->value,
                     'title' => $section->title,
-                    'intro' => $section->intro,
-                    'body' => $section->body,
+                    'body' => TipTap::html($section->body),
                 ]),
                 'sources' => $recipe->sources->map(fn ($source) => [
                     'kind' => $source->kind->label(),

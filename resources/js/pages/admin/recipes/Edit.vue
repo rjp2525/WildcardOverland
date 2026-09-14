@@ -10,7 +10,7 @@ import CheckboxGroup from '@/components/admin/ui/CheckboxGroup.vue'
 import Field from '@/components/admin/ui/Field.vue'
 import Input from '@/components/admin/ui/Input.vue'
 import Repeater from '@/components/admin/ui/Repeater.vue'
-import RichTextEditor from '@/components/admin/ui/RichTextEditor.vue'
+import RichTextEditor, { type RichTextDoc } from '@/components/admin/ui/RichTextEditor.vue'
 import Select from '@/components/admin/ui/Select.vue'
 import ImagePicker from '@/components/admin/ui/ImagePicker.vue'
 import IngredientFields, {
@@ -27,22 +27,21 @@ defineOptions({ layout: AdminLayout })
 
 interface IngredientGroupRow {
   name: string
-  note: string | null
+  note: RichTextDoc
   ingredients: IngredientRow[]
 }
 
 interface Tip {
   kind: string
   title: string | null
-  body: string
+  body: RichTextDoc
 }
 
 interface SectionRow {
   kind: string
   placement: string
   title: string
-  intro: string | null
-  body: string | null
+  body: RichTextDoc
 }
 
 interface Source {
@@ -55,7 +54,7 @@ interface Source {
 interface Step {
   id?: number | null
   title: string | null
-  body: string
+  body: RichTextDoc
   image_id: number | null
   tips: Tip[]
 }
@@ -67,7 +66,7 @@ interface RecipePayload {
   headline: string | null
   hero_image_id: number | null
   summary: string | null
-  notes: string | null
+  notes: RichTextDoc
   meal_type: string
   difficulty: string | null
   dietary: string[]
@@ -77,7 +76,7 @@ interface RecipePayload {
   servings: number | null
   yield: string | null
   method_title: string | null
-  method_intro: string | null
+  method_intro: RichTextDoc
   is_draft: boolean
   published_at: string | null
   ingredients: IngredientRow[]
@@ -120,7 +119,7 @@ const form = useForm({
   servings: props.recipe?.servings ?? null,
   yield: props.recipe?.yield ?? '',
   method_title: props.recipe?.method_title ?? '',
-  method_intro: props.recipe?.method_intro ?? '',
+  method_intro: props.recipe?.method_intro ?? null,
   is_draft: props.recipe?.is_draft ?? true,
   published_at: props.recipe?.published_at ?? '',
   ingredients: (props.recipe?.ingredients ?? []) as IngredientRow[],
@@ -287,9 +286,9 @@ function submit() {
                     :error="err(`ingredient_groups.${g}.note`)"
                     hint="The paragraph that follows this part."
                   >
-                    <Textarea
+                    <RichTextEditor
                       v-model="group.note"
-                      :rows="2"
+                      compact
                       placeholder="The cornstarch is worth bringing."
                       :invalid="!!err(`ingredient_groups.${g}.note`)"
                     />
@@ -352,14 +351,13 @@ function submit() {
           </Field>
           <Field
             label="Before the first step"
-            for="method_intro"
             :error="form.errors.method_intro"
             hint="What to understand before you start, like how the heat zones work."
           >
-            <Textarea
-              id="method_intro"
+            <RichTextEditor
               v-model="form.method_intro"
-              :rows="3"
+              compact
+              placeholder="Dead centre is screaming hot…"
               :invalid="!!form.errors.method_intro"
             />
           </Field>
@@ -369,7 +367,7 @@ function submit() {
           v-model="form.steps"
           item-label="Step"
           numbered
-          :new-row="(): Step => ({ id: null, title: null, body: '', image_id: null, tips: [] })"
+          :new-row="(): Step => ({ id: null, title: null, body: null, image_id: null, tips: [] })"
           empty-message="No steps yet."
         >
           <template #row="{ row, index }">
@@ -381,10 +379,15 @@ function submit() {
               <Field
                 label="Instructions"
                 :error="err(`steps.${index}.body`)"
-                hint="Leave a blank line between paragraphs and they render as separate beats."
+                hint="Several short paragraphs read better at the burner than one long one."
                 required
               >
-                <Textarea v-model="row.body" :rows="4" :invalid="!!err(`steps.${index}.body`)" />
+                <RichTextEditor
+                  v-model="row.body"
+                  compact
+                  placeholder="Cook the steak in batches…"
+                  :invalid="!!err(`steps.${index}.body`)"
+                />
               </Field>
 
               <Field label="Photo" :error="err(`steps.${index}.image_id`)" hint="What the pan should look like here.">
@@ -403,7 +406,7 @@ function submit() {
                   v-model="row.tips"
                   item-label="Tip"
                   add-label="Add a tip"
-                  :new-row="(): Tip => ({ kind: 'tip', title: null, body: '' })"
+                  :new-row="(): Tip => ({ kind: 'tip', title: null, body: null })"
                   empty-message="No tips on this step."
                 >
                   <template #row="{ row: tip, index: t }">
@@ -417,7 +420,12 @@ function submit() {
                         </Field>
                       </div>
                       <Field :error="err(`steps.${index}.tips.${t}.body`)" required>
-                        <Textarea v-model="tip.body" :rows="2" :invalid="!!err(`steps.${index}.tips.${t}.body`)" />
+                        <RichTextEditor
+                          v-model="tip.body"
+                          compact
+                          placeholder="Burnt garlic ruins the lot…"
+                          :invalid="!!err(`steps.${index}.tips.${t}.body`)"
+                        />
                       </Field>
                     </div>
                   </template>
@@ -437,7 +445,7 @@ function submit() {
         v-model="form.sections"
         item-label="Section"
         add-label="Add a section"
-        :new-row="(): SectionRow => ({ kind: 'prep', placement: 'before_method', title: '', intro: null, body: null })"
+        :new-row="(): SectionRow => ({ kind: 'prep', placement: 'before_method', title: '', body: null })"
         empty-message="No extra sections."
       >
         <template #row="{ row, index }">
@@ -462,10 +470,6 @@ function submit() {
                 placeholder="Prep before you leave home"
                 :invalid="!!err(`sections.${index}.title`)"
               />
-            </Field>
-
-            <Field label="Intro" :error="err(`sections.${index}.intro`)" hint="One or two plain sentences.">
-              <Textarea v-model="row.intro" :rows="2" :invalid="!!err(`sections.${index}.intro`)" />
             </Field>
 
             <Field label="Body" :error="err(`sections.${index}.body`)" hint="Lists, bold, links.">

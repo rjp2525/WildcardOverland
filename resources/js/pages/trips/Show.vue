@@ -5,6 +5,7 @@ import { RecipeCard, TripCard } from '@/components/cards'
 import type { TripCardData } from '@/components/cards/TripCard.vue'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
+import RichText from '@/components/ui/RichText.vue'
 import { AnimatedContent } from '@/components/ui/motion'
 
 type GalleryImage = ResponsiveImageData
@@ -83,11 +84,11 @@ defineProps<{
         {{ trip.summary }}
       </p>
 
-      <!-- Content is authored in the admin's rich text editor. -->
-      <article
+      <!-- Authored in the admin editor and rendered by the server. -->
+      <RichText
         v-if="trip.content"
-        class="trip-content max-w-none text-slate-700 dark:text-white/80"
-        v-html="trip.content"
+        :html="trip.content"
+        class="max-w-none text-slate-700 dark:text-white/80"
       />
       <p v-else class="text-slate-500 dark:text-white/60">The write-up for this trip is still coming.</p>
 
@@ -182,39 +183,4 @@ defineProps<{
 
 <style>
 /* Typography for admin-authored rich text. */
-.trip-content :where(h2) {
-  font-size: 1.5rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  margin: 1.75rem 0 0.75rem;
-}
-.trip-content :where(h3) {
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin: 1.5rem 0 0.5rem;
-}
-.trip-content :where(p) {
-  margin: 0.85rem 0;
-  line-height: 1.75;
-}
-.trip-content :where(ul) {
-  list-style: disc;
-  padding-left: 1.4rem;
-  margin: 0.85rem 0;
-}
-.trip-content :where(ol) {
-  list-style: decimal;
-  padding-left: 1.4rem;
-  margin: 0.85rem 0;
-}
-.trip-content :where(blockquote) {
-  border-left: 3px solid var(--color-brand);
-  padding-left: 1rem;
-  font-style: italic;
-  margin: 1.25rem 0;
-}
-.trip-content :where(a) {
-  color: var(--color-brand);
-  text-decoration: underline;
-}
 </style>

@@ -43,6 +43,8 @@ class Recipe extends Model
     protected function casts(): array
     {
         return [
+            'notes' => 'array',
+            'method_intro' => 'array',
             'meal_type' => MealType::class,
             'difficulty' => Difficulty::class,
             'dietary' => 'array',

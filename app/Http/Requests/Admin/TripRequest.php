@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Rules\RichTextDocument;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -33,8 +34,10 @@ class TripRequest extends FormRequest
             'images.*.caption' => ['nullable', 'string', 'max:255'],
             'recipes' => ['array'],
             'recipes.*.id' => ['required', 'integer', 'exists:recipes,id'],
-            'summary' => ['nullable', 'string'],
-            'content' => ['nullable', 'string'],
+            // Plain: the summary is the card teaser and the meta
+            // description, both of which are read as words not markup.
+            'summary' => ['nullable', 'string', 'max:1000'],
+            'content' => ['nullable', new RichTextDocument(200000)],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'miles' => ['nullable', 'integer', 'min:0', 'max:1000000'],

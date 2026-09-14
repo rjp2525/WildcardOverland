@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
@@ -20,11 +20,36 @@ import {
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 
-const props = defineProps<{ placeholder?: string; invalid?: boolean }>()
-const model = defineModel<string | null>()
+/**
+ * What the editor hands back and takes in: TipTap's own document, not HTML.
+ *
+ * The database stores this, and one renderer on the server turns it into
+ * markup. Storing HTML meant storing a string that something downstream had
+ * to trust, which is a bad shape for content people type.
+ */
+export type RichTextDoc = ReturnType<Editor['getJSON']> | null
+
+const props = withDefaults(
+  defineProps<{
+    placeholder?: string
+    invalid?: boolean
+    /** Shorter, fewer tools. For a step or a tip rather than a whole story. */
+    compact?: boolean
+  }>(),
+  { compact: false },
+)
+
+const model = defineModel<RichTextDoc>()
+
+/** Nothing typed yet, whatever shape the field arrived in. */
+function isBlank(doc: RichTextDoc): boolean {
+  if (!doc || !Array.isArray(doc.content) || doc.content.length === 0) return true
+
+  return JSON.stringify(doc.content) === JSON.stringify([{ type: 'paragraph' }])
+}
 
 const editor = new Editor({
-  content: model.value ?? '',
+  content: model.value ?? undefined,
   extensions: [
     StarterKit.configure({ heading: { levels: [2, 3] } }),
     Link.configure({ openOnClick: false, autolink: true }),
@@ -32,24 +57,27 @@ const editor = new Editor({
   ],
   editorProps: {
     attributes: {
-      class:
-        'prose-admin min-h-[16rem] max-w-none px-4 py-3 focus:outline-hidden text-sm text-zinc-800 dark:text-zinc-200',
+      class: cn(
+        'prose-admin max-w-none px-4 py-3 focus:outline-hidden text-sm text-zinc-800 dark:text-zinc-200',
+        props.compact ? 'min-h-[6rem]' : 'min-h-[16rem]',
+      ),
     },
   },
   onUpdate: ({ editor }) => {
-    // Keep "empty" as null rather than TipTap's empty paragraph markup.
-    const html = editor.getHTML()
-    model.value = html === '<p></p>' ? null : html
+    const doc = editor.getJSON() as RichTextDoc
+    // An empty document is null, not a document holding one empty
+    // paragraph, so "nothing here" looks the same everywhere.
+    model.value = isBlank(doc) ? null : doc
   },
 })
 
 // Reflect external changes (e.g. loading a different record) without
 // clobbering the cursor while the user types.
 watch(model, (value) => {
-  const next = value ?? ''
-  if (next !== editor.getHTML()) {
-    editor.commands.setContent(next, { emitUpdate: false })
-  }
+  if (JSON.stringify(value ?? null) === JSON.stringify(editor.getJSON())) return
+  if (isBlank(value ?? null) && editor.isEmpty) return
+
+  editor.commands.setContent(value ?? '', { emitUpdate: false })
 })
 
 onBeforeUnmount(() => editor.destroy())
@@ -68,7 +96,7 @@ function promptForLink() {
   editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
 }
 
-const tools = [
+const allTools = [
   { icon: Bold, title: 'Bold', run: () => editor.chain().focus().toggleBold().run(), active: () => editor.isActive('bold') },
   { icon: Italic, title: 'Italic', run: () => editor.chain().focus().toggleItalic().run(), active: () => editor.isActive('italic') },
   { icon: Strikethrough, title: 'Strikethrough', run: () => editor.chain().focus().toggleStrike().run(), active: () => editor.isActive('strike') },
@@ -82,6 +110,17 @@ const tools = [
   { icon: Undo2, title: 'Undo', run: () => editor.chain().focus().undo().run(), active: () => false },
   { icon: Redo2, title: 'Redo', run: () => editor.chain().focus().redo().run(), active: () => false },
 ]
+
+/*
+ * A step or a tip is a few sentences with the odd bold number in it. Headings
+ * and block quotes inside one would be strange, and the row is narrow enough
+ * that a full toolbar wraps onto three lines.
+ */
+const compactTools = ['Bold', 'Italic', 'Bullet list', 'Numbered list', 'Link', 'Undo', 'Redo']
+
+const tools = computed(() =>
+  props.compact ? allTools.filter((tool) => compactTools.includes(tool.title)) : allTools,
+)
 </script>
 
 <template>

@@ -7,6 +7,7 @@ use App\Enums\Difficulty;
 use App\Enums\MealType;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Support\RichText\TipTap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -40,8 +41,8 @@ class RecipeTest extends TestCase
                 ['item' => 'salt', 'note' => 'to taste'],
             ],
             'steps' => [
-                ['body' => 'Fry the potatoes.'],
-                ['body' => 'Add the eggs.'],
+                ['body' => TipTap::fromText('Fry the potatoes.')],
+                ['body' => TipTap::fromText('Add the eggs.')],
             ],
             ...$overrides,
         ];
@@ -83,7 +84,7 @@ class RecipeTest extends TestCase
             'difficulty' => 'impossible',
             'dietary' => ['carnivore'],
             'ingredients' => [['item' => '']],
-            'steps' => [['body' => '']],
+            'steps' => [['body' => null]],
         ]))->assertSessionHasErrors([
             'name',
             'meal_type',
@@ -104,7 +105,7 @@ class RecipeTest extends TestCase
         $this->put(route('admin.recipes.update', $recipe), $this->payload([
             'slug' => $recipe->slug,
             'ingredients' => [['item' => 'oats']],
-            'steps' => [['body' => 'Boil water.']],
+            'steps' => [['body' => TipTap::fromText('Boil water.')]],
         ]))->assertRedirect();
 
         $this->assertSame(['oats'], $recipe->fresh()->ingredients->pluck('item')->all());

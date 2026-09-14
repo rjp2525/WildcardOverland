@@ -17,12 +17,13 @@ class RecipeSection extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['recipe_id', 'order', 'kind', 'placement', 'title', 'intro', 'body'];
+    protected $fillable = ['recipe_id', 'order', 'kind', 'placement', 'title', 'body'];
 
     protected function casts(): array
     {
         return [
             'order' => 'integer',
+            'body' => 'array',
             'kind' => SectionKind::class,
             'placement' => SectionPlacement::class,
         ];

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Lightbulb, TriangleAlert, Sparkles } from 'lucide-vue-next'
+import RichText from '@/components/ui/RichText.vue'
 
 export interface Tip {
   kind: string
@@ -47,7 +48,7 @@ const styles = computed(() => {
       <p :class="['font-bold uppercase tracking-wide', styles.mark]">
         {{ tip.title || tip.label }}
       </p>
-      <p class="mt-1 text-slate-700 dark:text-white/75">{{ tip.body }}</p>
+      <RichText :html="tip.body" compact class="mt-1 text-slate-700 dark:text-white/75" />
     </div>
   </div>
 </template>

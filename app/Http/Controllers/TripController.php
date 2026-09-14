@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Trip;
 use App\Support\ImagePresenter;
 use App\Support\LocationAccess;
+use App\Support\RichText\TipTap;
 use App\Support\Seo;
 use App\Support\StructuredData;
 use Illuminate\Http\Request;
@@ -72,7 +73,7 @@ class TripController extends Controller
                 'name' => $trip->name,
                 'headline' => $trip->headline,
                 'summary' => $trip->summary,
-                'content' => $trip->content,
+                'content' => TipTap::html($trip->content),
                 'start_date' => $trip->start_date?->toDateString(),
                 'end_date' => $trip->end_date?->toDateString(),
                 'date_label' => $this->dateLabel($trip),

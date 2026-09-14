@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Backpack, Flame, Home, Scaling, StickyNote, Wand2 } from 'lucide-vue-next'
+import RichText from '@/components/ui/RichText.vue'
 
 export interface Section {
   kind: string
   label: string
   placement: string
   title: string
-  intro: string | null
-  /** Rich text from the editor: lists, bold, the odd link. */
-  body: string | null
+  /** Rendered from the stored document by the server. */
+  body: string
 }
 
 const props = defineProps<{ section: Section }>()
@@ -50,14 +50,6 @@ const featured = computed(() => props.section.kind === 'technique')
       {{ section.title }}
     </h2>
 
-    <p v-if="section.intro" class="mt-3 leading-relaxed text-slate-700 dark:text-white/80">
-      {{ section.intro }}
-    </p>
-
-    <div
-      v-if="section.body"
-      class="recipe-prose mt-4 text-slate-700 dark:text-white/80"
-      v-html="section.body"
-    />
+    <RichText :html="section.body" class="mt-3 text-slate-700 dark:text-white/80" />
   </section>
 </template>

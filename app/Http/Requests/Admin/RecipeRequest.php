@@ -10,6 +10,7 @@ use App\Enums\SectionKind;
 use App\Enums\SectionPlacement;
 use App\Enums\SourceKind;
 use App\Enums\TipKind;
+use App\Rules\RichTextDocument;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -36,10 +37,12 @@ class RecipeRequest extends FormRequest
             ],
             'headline' => ['nullable', 'string', 'max:255'],
             'hero_image_id' => ['nullable', 'integer', 'exists:images,id'],
-            'summary' => ['nullable', 'string'],
-            'notes' => ['nullable', 'string'],
+            // Plain text: it is the card teaser and the meta description,
+            // both of which are read as words rather than markup.
+            'summary' => ['nullable', 'string', 'max:1000'],
+            'notes' => ['nullable', new RichTextDocument],
             'method_title' => ['nullable', 'string', 'max:255'],
-            'method_intro' => ['nullable', 'string', 'max:5000'],
+            'method_intro' => ['nullable', new RichTextDocument(5000)],
 
             'meal_type' => ['required', Rule::enum(MealType::class)],
             'difficulty' => ['nullable', Rule::enum(Difficulty::class)],
@@ -65,25 +68,24 @@ class RecipeRequest extends FormRequest
 
             'ingredient_groups' => ['array'],
             'ingredient_groups.*.name' => ['required', 'string', 'max:255'],
-            'ingredient_groups.*.note' => ['nullable', 'string', 'max:2000'],
+            'ingredient_groups.*.note' => ['nullable', new RichTextDocument(4000)],
             'ingredient_groups.*.ingredients' => ['array'],
             ...$this->ingredientRules('ingredient_groups.*.ingredients.*'),
 
             'steps' => ['array'],
             'steps.*.title' => ['nullable', 'string', 'max:255'],
-            'steps.*.body' => ['required', 'string'],
+            'steps.*.body' => ['required', new RichTextDocument],
             'steps.*.image_id' => ['nullable', 'integer', 'exists:images,id'],
             'steps.*.tips' => ['array'],
             'steps.*.tips.*.kind' => ['required', Rule::enum(TipKind::class)],
             'steps.*.tips.*.title' => ['nullable', 'string', 'max:255'],
-            'steps.*.tips.*.body' => ['required', 'string', 'max:2000'],
+            'steps.*.tips.*.body' => ['required', new RichTextDocument(4000)],
 
             'sections' => ['array'],
             'sections.*.kind' => ['required', Rule::enum(SectionKind::class)],
             'sections.*.placement' => ['required', Rule::enum(SectionPlacement::class)],
             'sections.*.title' => ['required', 'string', 'max:255'],
-            'sections.*.intro' => ['nullable', 'string', 'max:2000'],
-            'sections.*.body' => ['nullable', 'string'],
+            'sections.*.body' => ['nullable', new RichTextDocument],
 
             'cooking_methods' => ['array'],
             'cooking_methods.*' => [Rule::enum(CookingMethod::class)],

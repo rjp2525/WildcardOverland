@@ -14,6 +14,7 @@ import RecipeSection, { type Section } from '@/components/pages/recipe/RecipeSec
 import { RecipeCard } from '@/components/cards'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
+import RichText from '@/components/ui/RichText.vue'
 
 interface Source {
   kind: string
@@ -27,7 +28,7 @@ const props = defineProps<{
     name: string
     headline: string | null
     summary: string | null
-    notes: string | null
+    notes: string
     meal_type: string
     difficulty: string | null
     dietary: string[]
@@ -38,7 +39,7 @@ const props = defineProps<{
     servings: number | null
     yield: string | null
     method_title: string
-    method_intro: string | null
+    method_intro: string
     hero: ResponsiveImageData | null
     ingredient_groups: IngredientGroup[]
     ingredients: Ingredient[]
@@ -185,12 +186,10 @@ const servingLabel = computed(() => {
       <section v-if="recipe.steps.length" class="recipe-method">
         <h2 class="mb-3 text-2xl font-extrabold uppercase text-brand">{{ recipe.method_title }}</h2>
 
-        <p
-          v-if="recipe.method_intro"
-          class="mb-7 max-w-2xl leading-relaxed text-slate-600 dark:text-white/70"
-        >
-          {{ recipe.method_intro }}
-        </p>
+        <RichText
+          :html="recipe.method_intro"
+          class="mb-7 max-w-2xl text-slate-600 dark:text-white/70"
+        />
 
         <MethodSteps :steps="recipe.steps" />
       </section>
@@ -208,7 +207,7 @@ const servingLabel = computed(() => {
       <h2 class="mb-3 flex items-center gap-2 text-xl font-extrabold uppercase text-brand">
         <UtensilsCrossed class="h-5 w-5" aria-hidden="true" /> Notes
       </h2>
-      <div class="recipe-prose text-slate-700 dark:text-white/80" v-html="recipe.notes" />
+      <RichText :html="recipe.notes" class="text-slate-700 dark:text-white/80" />
     </section>
 
     <!-- Credit where it is due. Almost nothing here started with me. -->
@@ -251,30 +250,3 @@ const servingLabel = computed(() => {
   </section>
 </template>
 
-<style>
-/* Rich text from the editor, wherever it appears on a recipe. */
-.recipe-prose :where(p) {
-  margin: 0.7rem 0;
-  line-height: 1.7;
-}
-.recipe-prose :where(ul) {
-  list-style: disc;
-  padding-left: 1.3rem;
-  margin: 0.7rem 0;
-}
-.recipe-prose :where(ol) {
-  list-style: decimal;
-  padding-left: 1.3rem;
-  margin: 0.7rem 0;
-}
-.recipe-prose :where(li) {
-  margin: 0.3rem 0;
-}
-.recipe-prose :where(a) {
-  color: var(--color-brand);
-  text-decoration: underline;
-}
-.recipe-prose :where(strong) {
-  font-weight: 700;
-}
-</style>

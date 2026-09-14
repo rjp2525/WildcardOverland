@@ -21,7 +21,7 @@ class RecipeStepTip extends Model
 
     protected function casts(): array
     {
-        return ['order' => 'integer', 'kind' => TipKind::class];
+        return ['order' => 'integer', 'body' => 'array', 'kind' => TipKind::class];
     }
 
     public function step(): BelongsTo

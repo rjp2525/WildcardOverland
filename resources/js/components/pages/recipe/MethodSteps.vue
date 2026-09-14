@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import StepTip, { type Tip } from './StepTip.vue'
+import RichText from '@/components/ui/RichText.vue'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
 
 export interface Step {
   title: string | null
-  /** Split server side: a real step is several beats, not one block. */
-  paragraphs: string[]
+  /** Rendered from the stored document by the server. */
+  body: string
   tips: Tip[]
   image: ResponsiveImageData | null
 }
@@ -31,15 +32,10 @@ defineProps<{ steps: Step[] }>()
           {{ step.title }}
         </h3>
 
-        <div class="space-y-2.5" :class="step.title ? '' : 'pt-1'">
-          <p
-            v-for="(paragraph, p) in step.paragraphs"
-            :key="p"
-            class="leading-relaxed text-slate-700 dark:text-white/80"
-          >
-            {{ paragraph }}
-          </p>
-        </div>
+        <RichText
+          :html="step.body"
+          :class="['text-slate-700 dark:text-white/80', step.title ? '' : 'pt-1']"
+        />
 
         <div v-if="step.tips.length" class="mt-3 space-y-2">
           <StepTip v-for="(tip, t) in step.tips" :key="t" :tip="tip" />
