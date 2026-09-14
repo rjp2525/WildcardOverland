@@ -2,13 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\User;
 use Database\Seeders\DemoContentSeeder;
 use Database\Seeders\PartnerSeeder;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Hash;
-
-use function Laravel\Prompts\password;
 
 /**
  * One command to bring a fresh deployment up: migrate, seed the partners,
@@ -52,7 +48,11 @@ class SiteSetup extends Command
         }
 
         if ($email = $this->option('admin-email')) {
-            $this->createAdmin($email);
+            $this->call('admin:create', array_filter([
+                'email' => $email,
+                '--name' => $this->option('admin-name'),
+                '--password' => $this->option('admin-password'),
+            ]));
         }
 
         if ($this->option('geocode')) {
@@ -64,36 +64,5 @@ class SiteSetup extends Command
         $this->components->info('Done. Sign in at '.rtrim((string) config('app.url'), '/').'/admin');
 
         return self::SUCCESS;
-    }
-
-    protected function createAdmin(string $email): void
-    {
-        $existing = User::firstWhere('email', $email);
-
-        $plain = $this->option('admin-password')
-            ?: ($this->input->isInteractive()
-                ? password('Password for '.$email, required: true)
-                : null);
-
-        if ($existing && $plain === null) {
-            $this->components->info("Admin {$email} already exists; password left unchanged.");
-
-            return;
-        }
-
-        if ($plain === null) {
-            $this->components->error(
-                'No password given. Pass --admin-password, or run interactively.'
-            );
-
-            return;
-        }
-
-        User::updateOrCreate(
-            ['email' => $email],
-            ['name' => $this->option('admin-name'), 'password' => Hash::make($plain)],
-        );
-
-        $this->components->info(($existing ? 'Updated' : 'Created')." admin {$email}.");
     }
 }
