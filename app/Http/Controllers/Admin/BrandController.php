@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ImageType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BrandRequest;
 use App\Models\Brand;
@@ -64,7 +65,7 @@ class BrandController extends Controller
                 'secondary_color' => $brand->secondary_color,
                 'notes' => $brand->notes,
             ],
-            'images' => $this->imageOptions(),
+            'images' => $this->imageOptions($brand),
         ]);
     }
 
@@ -89,9 +90,18 @@ class BrandController extends Controller
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    protected function imageOptions()
+    /**
+     * Only images typed as a logo or a graphic, because scrolling a list of
+     * every photograph on the site to find a wordmark is no way to add a
+     * partner. Whatever the brand already points at stays in the list, so
+     * editing one cannot silently drop its logo.
+     */
+    protected function imageOptions(?Brand $brand = null)
     {
         return Image::query()
+            ->where(fn ($query) => $query
+                ->whereIn('type', [ImageType::Logo, ImageType::Graphic])
+                ->when($brand?->logo_image_id, fn ($q, $id) => $q->orWhere('id', $id)))
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (Image $image) => [

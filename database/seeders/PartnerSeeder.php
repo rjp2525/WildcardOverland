@@ -22,24 +22,32 @@ class PartnerSeeder extends Seeder
      */
     protected array $partners = [
         [
-            'name' => 'Katadyn Switzerland',
-            'website' => 'https://www.katadyngroup.com/us/en/brands/Katadyn~b4906/overview',
-            'logo' => 'katadyn.png',
-        ],
-        [
-            'name' => 'Oru Designs USA',
-            'website' => 'https://www.orudesignsusa.com/',
-            'logo' => 'oru.png',
-        ],
-        [
             'name' => 'TriPine',
             'website' => 'https://tripine.com/',
             'logo' => 'tripine.png',
         ],
     ];
 
+    /**
+     * Partners this seeder created that are no longer partners.
+     *
+     * Brands are matched on name and updated in place, so dropping one from
+     * the list above leaves the row sitting in the database and on the
+     * homepage. Naming it here takes it out on the next run. Only ever add
+     * names this seeder itself created; anything added by hand in the admin
+     * is not its business.
+     *
+     * @var array<int, string>
+     */
+    protected array $retired = [
+        'Katadyn Switzerland',
+        'Oru Designs USA',
+    ];
+
     public function run(FileUploadService $uploads): void
     {
+        $this->retire();
+
         foreach ($this->partners as $partner) {
             $source = resource_path('img/partners/'.$partner['logo']);
 
@@ -65,6 +73,26 @@ class PartnerSeeder extends Seeder
             );
 
             $this->command?->info("Seeded partner {$partner['name']}");
+        }
+    }
+
+    /**
+     * Removes brands this seeder used to create, unless they have since been
+     * added back to the list by name.
+     */
+    protected function retire(): void
+    {
+        $current = array_column($this->partners, 'name');
+        $gone = array_values(array_diff($this->retired, $current));
+
+        if ($gone === []) {
+            return;
+        }
+
+        $removed = Brand::whereIn('name', $gone)->delete();
+
+        if ($removed > 0) {
+            $this->command?->warn('Removed '.$removed.' former '.str('partner')->plural($removed).': '.implode(', ', $gone));
         }
     }
 }

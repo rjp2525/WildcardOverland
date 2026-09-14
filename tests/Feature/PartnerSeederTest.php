@@ -27,8 +27,8 @@ class PartnerSeederTest extends TestCase
     {
         $this->seed(PartnerSeeder::class);
 
-        $this->assertSame(3, Brand::count());
-        $this->assertNotNull(Brand::firstWhere('name', 'Katadyn Switzerland')?->logo_image_id);
+        $this->assertSame(1, Brand::count());
+        $this->assertNotNull(Brand::firstWhere('name', 'TriPine')?->logo_image_id);
 
         foreach (File::all() as $file) {
             Storage::disk('assets-test')->assertExists($file->stored_path);
@@ -39,8 +39,24 @@ class PartnerSeederTest extends TestCase
     {
         $this->seed(PartnerSeeder::class);
 
-        $this->assertSame(3, Image::where('type', ImageType::Logo)->count());
+        $this->assertSame(1, Image::where('type', ImageType::Logo)->count());
         $this->assertSame(0, Image::publicPhotos()->count());
+    }
+
+    public function test_partners_that_are_no_longer_partners_are_removed(): void
+    {
+        Brand::create(['name' => 'Katadyn Switzerland', 'website' => 'https://example.test']);
+        Brand::create(['name' => 'Oru Designs USA', 'website' => 'https://example.test']);
+        Brand::create(['name' => 'Added by hand', 'website' => 'https://example.test']);
+
+        $this->seed(PartnerSeeder::class);
+
+        $names = Brand::pluck('name');
+
+        $this->assertNotContains('Katadyn Switzerland', $names);
+        $this->assertNotContains('Oru Designs USA', $names);
+        // Anything not created by this seeder is none of its business.
+        $this->assertContains('Added by hand', $names);
     }
 
     public function test_it_can_be_run_twice_without_duplicating_anything(): void
@@ -48,9 +64,9 @@ class PartnerSeederTest extends TestCase
         $this->seed(PartnerSeeder::class);
         $this->seed(PartnerSeeder::class);
 
-        $this->assertSame(3, Brand::count());
+        $this->assertSame(1, Brand::count());
         // Uploads deduplicate on hash, so no second copy of each logo.
-        $this->assertSame(3, File::count());
-        $this->assertSame(3, Image::count());
+        $this->assertSame(1, File::count());
+        $this->assertSame(1, Image::count());
     }
 }
