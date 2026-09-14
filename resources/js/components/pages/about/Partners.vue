@@ -56,7 +56,12 @@ defineProps<{ partners: Partner[] }>()
   transition: filter 300ms ease;
 }
 
-:global(.dark) .partner-logo :deep(img) {
+/*
+ * Plain descendant, not :global(). Vue compiles `:global(X) Y` down to `X`
+ * alone, so this was landing on <html class="dark"> and washing the whole
+ * document out to flat grey.
+ */
+.dark .partner-logo :deep(img) {
   filter: brightness(0) invert(1) saturate(0) opacity(0.5);
 }
 

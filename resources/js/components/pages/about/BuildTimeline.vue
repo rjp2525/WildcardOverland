@@ -183,7 +183,7 @@ const years = computed(() => {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand) 28%, transparent);
 }
 
-:global(.dark) .build-pin {
+.dark .build-pin {
   border-color: #101013;
 }
 
@@ -193,7 +193,7 @@ const years = computed(() => {
   padding: 1rem 1.15rem;
 }
 
-:global(.dark) .build-card {
+.dark .build-card {
   background: rgb(255 255 255 / 0.05);
 }
 
