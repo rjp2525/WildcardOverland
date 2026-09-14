@@ -161,4 +161,26 @@ class HomepageTest extends TestCase
         $this->get(route('homepage'))
             ->assertInertia(fn ($page) => $page->has('trips', 3));
     }
+
+    public function test_an_empty_site_says_so_rather_than_going_blank(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('trips', [])
+                ->where('recipes', [])
+                ->where('campsites', []));
+    }
+
+    public function test_the_theme_is_settled_before_the_page_paints(): void
+    {
+        /*
+         * Applying it from a Vue component flashed the wrong theme on every
+         * load and never ran at all in the admin, which has no navbar.
+         */
+        $this->get('/')
+            ->assertOk()
+            ->assertSee("localStorage.getItem('theme')", escape: false)
+            ->assertSee("classList.toggle('dark'", escape: false);
+    }
 }

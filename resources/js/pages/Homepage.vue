@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import { HomepageBanner } from '@/components/homepage-banner';
 import {
@@ -17,8 +18,9 @@ import type { GalleryImage } from '@/components/homepage/GalleryStrip.vue';
 import type { Modification } from '@/components/homepage/RigTeaser.vue';
 import type { CampsitePoint, MapFocus } from '@/components/homepage/CampsiteMap.vue';
 import { AnimatedContent } from '@/components/ui/motion'
+import NothingYet from '@/components/homepage/NothingYet.vue'
 
-defineProps<{
+const props = defineProps<{
   latestTrip: { name: string; url: string } | null;
   hasRecipes: boolean;
   trips: TripCardData[];
@@ -30,6 +32,15 @@ defineProps<{
   stats: AboutStats;
   partners: Partner[];
 }>();
+
+/*
+ * With nothing published the three main sections each hide themselves and
+ * the page falls away to a stats bar over empty space, which reads as
+ * broken rather than as new. Say so instead.
+ */
+const nothingPublished = computed(
+  () => props.trips.length === 0 && props.recipes.length === 0 && props.campsites.length === 0,
+);
 </script>
 
 <template>
@@ -39,6 +50,7 @@ defineProps<{
 
   <div id="below-the-fold">
     <Statistics :stats="stats" />
+    <NothingYet v-if="nothingPublished" />
     <AnimatedContent><LatestTrips :trips="trips" /></AnimatedContent>
     <AnimatedContent><GalleryStrip :images="gallery" /></AnimatedContent>
     <AnimatedContent><RigTeaser :modifications="modifications" /></AnimatedContent>
