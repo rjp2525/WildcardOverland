@@ -52,6 +52,25 @@
         <script type="application/ld+json">{!! json_encode(\App\Support\StructuredData::graph($seo['schema']), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endif
 
+    {{--
+        Set the theme before anything paints. Doing it from a Vue component
+        meant a flash of the wrong one on every load, and it never ran at all
+        in the admin, which has no navbar.
+    --}}
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('theme');
+                var dark = saved === 'dark' || (saved === null
+                    && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.classList.toggle('dark', dark);
+                document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+            } catch (e) {
+                // Private browsing can refuse localStorage. Light is the default.
+            }
+        })();
+    </script>
+
     @routes
     @vite(['resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
     @inertiaHead

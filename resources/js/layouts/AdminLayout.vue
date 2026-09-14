@@ -12,6 +12,8 @@ import {
   Map,
   ChefHat,
   Menu,
+  Moon,
+  SunMedium,
   Wrench,
   X,
   XCircle,
@@ -20,8 +22,11 @@ import Button from '@/components/admin/ui/Button.vue'
 import type { PageProps } from '@/types/PageProps'
 import { cn } from '@/lib/utils'
 import { useRoute } from '@/lib/route'
+import { useTheme } from '@/composables/useTheme'
 
 const route = useRoute()
+
+const { theme, toggle } = useTheme()
 
 const page = usePage<PageProps>()
 
@@ -123,6 +128,10 @@ function logout() {
           </p>
           <p class="truncate text-xs text-zinc-500 dark:text-zinc-400">{{ user?.email }}</p>
         </div>
+        <Button variant="ghost" class="w-full justify-start" @click="toggle">
+          <component :is="theme === 'dark' ? SunMedium : Moon" class="h-4 w-4" />
+          {{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}
+        </Button>
         <Button variant="ghost" class="w-full justify-start" @click="logout">
           <LogOut class="h-4 w-4" />
           Sign out
@@ -143,6 +152,15 @@ function logout() {
           <Menu class="h-5 w-5" />
         </Button>
         <span class="font-brand text-base font-extrabold uppercase text-brand">Wildcard</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          class="ml-auto"
+          :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+          @click="toggle"
+        >
+          <component :is="theme === 'dark' ? SunMedium : Moon" class="h-5 w-5" />
+        </Button>
       </header>
 
       <main class="p-4 sm:p-6">
