@@ -26,6 +26,8 @@ class Recipe extends Model
         'hero_image_id',
         'summary',
         'notes',
+        'method_intro',
+        'method_title',
         'meal_type',
         'difficulty',
         'dietary',
@@ -33,6 +35,7 @@ class Recipe extends Model
         'prep_minutes',
         'cook_minutes',
         'servings',
+        'yield',
         'is_draft',
         'published_at',
     ];
@@ -70,6 +73,27 @@ class Recipe extends Model
     public function steps(): HasMany
     {
         return $this->hasMany(RecipeStep::class)->orderBy('order');
+    }
+
+    /** The parts of the cook, each with its own ingredients. */
+    public function ingredientGroups(): HasMany
+    {
+        return $this->hasMany(RecipeIngredientGroup::class)->orderBy('order');
+    }
+
+    /** Prep, technique, packing, scaling. Everything that is not a step. */
+    public function sections(): HasMany
+    {
+        return $this->hasMany(RecipeSection::class)->orderBy('order');
+    }
+
+    /**
+     * Ingredients that belong to no part, which is what a short recipe has
+     * and what a long one has left over at the top.
+     */
+    public function looseIngredients(): HasMany
+    {
+        return $this->hasMany(RecipeIngredient::class)->whereNull('group_id')->orderBy('order');
     }
 
     /** Where the recipe came from, and what it started as. */

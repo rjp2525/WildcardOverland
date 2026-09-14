@@ -149,7 +149,8 @@ class PublicPagesTest extends TestCase
     {
         $recipe = $this->recipe('Chili', ['prep_minutes' => 15, 'cook_minutes' => 45, 'servings' => 4]);
         $recipe->ingredients()->create(['order' => 0, 'quantity' => '1', 'unit' => 'lb', 'item' => 'beef']);
-        $recipe->steps()->create(['order' => 0, 'body' => 'Brown the beef.', 'note' => 'Coals, not flame.']);
+        $step = $recipe->steps()->create(['order' => 0, 'body' => 'Brown the beef.']);
+        $step->tips()->create(['order' => 0, 'kind' => 'warning', 'body' => 'Coals, not flame.']);
 
         $this->get(route('recipes.show', $recipe->slug))
             ->assertOk()
@@ -157,8 +158,9 @@ class PublicPagesTest extends TestCase
                 ->component('recipes/Show')
                 ->where('recipe.total_minutes', 60)
                 ->where('recipe.ingredients.0.label', '1 lb beef')
-                ->where('recipe.steps.0.body', 'Brown the beef.')
-                ->where('recipe.steps.0.note', 'Coals, not flame.')
+                ->where('recipe.steps.0.paragraphs', ['Brown the beef.'])
+                ->where('recipe.steps.0.tips.0.body', 'Coals, not flame.')
+                ->where('recipe.steps.0.tips.0.kind', 'warning')
                 ->where('recipe.steps.0.image', null));
     }
 

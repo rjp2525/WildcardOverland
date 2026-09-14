@@ -1,0 +1,202 @@
+/*
+ * Paper.
+ *
+ * A recipe is the one page on here that people actually print, and they
+ * print it to take somewhere with no signal. So this is not a tidied up
+ * version of the screen: it is a different document, laid out for a sheet
+ * you can put on a camp table with a rock on it.
+ *
+ * The site is usually read in the dark theme. Printing that costs a whole
+ * cartridge and comes out unreadable, so everything is forced back to black
+ * on white regardless of which theme the browser is in.
+ */
+@media print {
+    @page {
+        size: auto;
+        margin: 14mm 12mm;
+    }
+
+    /* Force the light theme onto paper whatever the screen was showing. */
+    :root,
+    :root.dark {
+        color-scheme: light;
+    }
+
+    html,
+    body {
+        background: #fff !important;
+        color: #000 !important;
+        font-size: 11pt;
+    }
+
+    /*
+     * Colour is one cartridge away from being a problem, so the page runs on
+     * black text, with the brand orange kept only where it does real work:
+     * headings, step numbers and the rules that separate parts.
+     */
+    body *,
+    body *::before,
+    body *::after {
+        background-image: none !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+        color: #000 !important;
+        border-color: #bbb !important;
+        background-color: transparent !important;
+    }
+
+    /* Anything that is navigation, decoration or an invitation to tap. */
+    nav,
+    footer,
+    .navbar,
+    .print-hide,
+    [data-print="hide"] {
+        display: none !important;
+    }
+
+    /* Reveal animations never run without a viewport to scroll. */
+    [style*="opacity: 0"],
+    .animate-in,
+    .fade-in {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .container {
+        max-width: none !important;
+        width: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /*
+     * The hero is a full bleed photograph on screen. On paper the title is
+     * the only part worth the ink, so the image goes and the words come
+     * back into the normal flow.
+     */
+    .recipe-hero {
+        height: auto !important;
+    }
+
+    .recipe-hero > div {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .recipe-hero img,
+    .recipe-hero .bg-page-header,
+    .recipe-hero .absolute.inset-0 {
+        display: none !important;
+    }
+
+    .recipe-hero .absolute {
+        position: static !important;
+    }
+
+    .recipe-hero h1 {
+        font-size: 24pt !important;
+        line-height: 1.1;
+        color: #000 !important;
+    }
+
+    .recipe-glance {
+        border-top: 1.5pt solid #000 !important;
+        border-bottom: 1.5pt solid #000 !important;
+        padding: 4pt 0 !important;
+        margin-bottom: 12pt;
+    }
+
+    .recipe-glance > div {
+        gap: 0 18pt !important;
+        justify-content: flex-start !important;
+        padding: 0 !important;
+    }
+
+    /*
+     * Two columns on paper means the method runs out of room halfway down
+     * and the ingredients leave a column of white. One column, ingredients
+     * first, which is the order you use them in.
+     */
+    .recipe-body {
+        display: block !important;
+    }
+
+    .recipe-ingredients {
+        margin-bottom: 18pt;
+        /* Keep the shopping list whole if it will fit on what is left. */
+        break-inside: auto;
+    }
+
+    /* An empty tick box is the point of printing it. */
+    .ingredient-tick {
+        border: 1pt solid #000 !important;
+        border-radius: 2pt !important;
+        width: 10pt !important;
+        height: 10pt !important;
+    }
+
+    .ingredient-tick svg {
+        display: none !important;
+    }
+
+    .step-number {
+        border: 1.5pt solid #000 !important;
+        border-radius: 50% !important;
+        font-weight: 700;
+    }
+
+    /* Never split a step, a tip or a section across a page. */
+    .method-step,
+    .step-tip,
+    .recipe-section,
+    .recipe-notes-block {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .step-tip,
+    .recipe-section {
+        border: 0.75pt solid #999 !important;
+    }
+
+    .step-tip {
+        padding: 5pt 7pt !important;
+    }
+
+    h1, h2, h3 {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    h2 {
+        font-size: 14pt !important;
+        margin-top: 10pt;
+    }
+
+    h3 {
+        font-size: 11.5pt !important;
+    }
+
+    /*
+     * Step photographs are the one image worth keeping, small, because
+     * "what it should look like" is hard to say in words.
+     */
+    .method-step img {
+        max-width: 55mm !important;
+        break-inside: avoid;
+    }
+
+    /* Paper has no clipboard, so say where the link went. */
+    a[href^="http"]::after {
+        content: " (" attr(href) ")";
+        font-size: 8pt;
+        word-break: break-all;
+    }
+
+    /* Except where the text already is the address. */
+    .recipe-glance a::after {
+        content: none;
+    }
+}

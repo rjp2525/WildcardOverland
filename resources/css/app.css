@@ -10,6 +10,7 @@
 @import "./components/header-nav.css";
 @import "./components/navbar.css";
 @import "./components/separators.css";
+@import "./components/print.css";
 
 /*
  * Dark mode is toggled by a `dark` class on <html> (Tailwind v3 `darkMode: ["class"]`).

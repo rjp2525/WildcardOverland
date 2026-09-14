@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\MealType;
 use App\Models\Recipe;
+use App\Models\RecipeIngredient;
 use App\Support\ImagePresenter;
 use App\Support\Seo;
 use App\Support\StructuredData;
@@ -47,11 +48,37 @@ class RecipeController extends Controller
         ]);
     }
 
+    /**
+     * One ingredient as the page needs it.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function ingredientPayload(RecipeIngredient $ingredient): array
+    {
+        return [
+            'label' => $ingredient->label(),
+            'note' => $ingredient->note,
+            'details' => $ingredient->details(),
+            'optional' => $ingredient->optional,
+            'shopping' => $ingredient->in_shopping_list,
+        ];
+    }
+
     public function show(Recipe $recipe): Response
     {
         abort_unless($this->isPublished($recipe), 404);
 
-        $recipe->load(['heroImage.file', 'ingredients', 'steps.image.file', 'sources']);
+        $recipe->load([
+            'heroImage.file',
+            'looseIngredients',
+            'ingredientGroups.ingredients',
+            // The flat set, with its part, is what the structured data uses.
+            'ingredients.group',
+            'steps.image.file',
+            'steps.tips',
+            'sections',
+            'sources',
+        ]);
 
         $hero = ImagePresenter::hero($recipe->heroImage, $recipe->name);
 
@@ -87,16 +114,41 @@ class RecipeController extends Controller
                 'cook_minutes' => $recipe->cook_minutes,
                 'total_minutes' => $recipe->totalMinutes(),
                 'servings' => $recipe->servings,
+                'yield' => $recipe->yield,
+                'method_title' => $recipe->method_title ?: 'Method',
+                'method_intro' => $recipe->method_intro,
                 'hero' => $hero,
-                'ingredients' => $recipe->ingredients->map(fn ($i) => [
-                    'label' => $i->label(),
-                    'note' => $i->note,
-                    'shopping' => $i->in_shopping_list,
-                ]),
+                /*
+                 * Parts first, then anything that belongs to no part. A
+                 * recipe with no parts at all still comes out as one plain
+                 * list, which is what a short one should look like.
+                 */
+                'ingredient_groups' => $recipe->ingredientGroups
+                    ->map(fn ($group) => [
+                        'name' => $group->name,
+                        'note' => $group->note,
+                        'items' => $group->ingredients->map(static::ingredientPayload(...))->values(),
+                    ])
+                    ->values(),
+                'ingredients' => $recipe->looseIngredients->map(static::ingredientPayload(...))->values(),
                 'steps' => $recipe->steps->map(fn ($step) => [
-                    'body' => $step->body,
-                    'note' => $step->note,
+                    'title' => $step->title,
+                    'paragraphs' => $step->paragraphs(),
+                    'tips' => $step->tips->map(fn ($tip) => [
+                        'kind' => $tip->kind->value,
+                        'label' => $tip->kind->label(),
+                        'title' => $tip->title,
+                        'body' => $tip->body,
+                    ])->values(),
                     'image' => ImagePresenter::thumb($step->image, "Step {$step->order}"),
+                ]),
+                'sections' => $recipe->sections->map(fn ($section) => [
+                    'kind' => $section->kind->value,
+                    'label' => $section->kind->label(),
+                    'placement' => $section->placement->value,
+                    'title' => $section->title,
+                    'intro' => $section->intro,
+                    'body' => $section->body,
                 ]),
                 'sources' => $recipe->sources->map(fn ($source) => [
                     'kind' => $source->kind->label(),

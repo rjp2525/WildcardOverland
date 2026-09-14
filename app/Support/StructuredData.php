@@ -92,23 +92,35 @@ class StructuredData
             'datePublished' => $recipe->published_at?->toIso8601String(),
             'author' => ['@id' => url('/#reno')],
             'recipeCategory' => $recipe->meal_type->label(),
-            'recipeYield' => $recipe->servings
+            // The prose yield when there is one: "10 to 12 big servings"
+            // tells a reader more than the number 10 does.
+            'recipeYield' => $recipe->yield ?: ($recipe->servings
                 ? $recipe->servings.' '.str('serving')->plural($recipe->servings)
-                : null,
+                : null),
             'prepTime' => static::duration($recipe->prep_minutes),
             'cookTime' => static::duration($recipe->cook_minutes),
             'totalTime' => static::duration($recipe->totalMinutes()),
             'keywords' => static::keywords($recipe),
+            /*
+             * Flat, and with the part folded into the line. The spec has no
+             * grouping for ingredients, so "2 tbsp soy sauce" from the steak
+             * and from the sauce would otherwise read as a duplicate.
+             */
             'recipeIngredient' => $recipe->ingredients
-                ->map(fn ($i) => trim($i->label().($i->note ? ", {$i->note}" : '')))
+                ->map(fn ($i) => trim(implode(', ', array_filter([
+                    $i->label(),
+                    $i->note,
+                    $i->group?->name ? "for the {$i->group->name}" : null,
+                ]))))
                 ->values()
                 ->all(),
             'recipeInstructions' => $recipe->steps
-                ->map(fn ($step, $i) => [
+                ->map(fn ($step, $i) => array_filter([
                     '@type' => 'HowToStep',
                     'position' => $i + 1,
+                    'name' => $step->title,
                     'text' => $step->body,
-                ])
+                ], fn ($value) => $value !== null))
                 ->values()
                 ->all(),
         ], fn ($value) => $value !== null && $value !== []);

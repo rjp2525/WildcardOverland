@@ -182,14 +182,17 @@ class DemoContentSeeder extends Seeder
                     // A step is either a line on its own or a line and an aside.
                     [$body, $note] = is_array($step) ? $step : [$step, null];
 
-                    $recipe->steps()->create([
+                    $created = $recipe->steps()->create([
                         'order' => $order,
                         'body' => $body,
-                        'note' => $note,
                         // Reuse the hero as the step photo so the layout is
                         // exercised; real steps get their own.
                         'image_id' => $order === 0 ? ($images[$data['image']] ?? null) : null,
                     ]);
+
+                    if ($note !== null) {
+                        $created->tips()->create(['order' => 0, 'kind' => 'tip', 'body' => $note]);
+                    }
                 }
             });
         }

@@ -1,26 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { Head } from '@inertiajs/vue3'
-import { Check, Clock, ExternalLink, Flame, Users } from 'lucide-vue-next'
+import { Clock, ExternalLink, Flame, Printer, Users, UtensilsCrossed } from 'lucide-vue-next'
 import { AnimatedContent } from '@/components/ui/motion'
 import ShoppingList from '@/components/pages/recipe/ShoppingList.vue'
 import CookingIcon from '@/components/pages/recipe/CookingIcon.vue'
+import IngredientGroups, {
+  type Ingredient,
+  type IngredientGroup,
+} from '@/components/pages/recipe/IngredientGroups.vue'
+import MethodSteps, { type Step } from '@/components/pages/recipe/MethodSteps.vue'
+import RecipeSection, { type Section } from '@/components/pages/recipe/RecipeSection.vue'
 import { RecipeCard } from '@/components/cards'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
-
-interface Ingredient {
-  label: string
-  note: string | null
-  /** False for things you do not buy: what is left in the cooler, water. */
-  shopping: boolean
-}
-
-interface Step {
-  body: string
-  note: string | null
-  image: ResponsiveImageData | null
-}
 
 interface Source {
   kind: string
@@ -43,39 +36,60 @@ const props = defineProps<{
     cook_minutes: number | null
     total_minutes: number | null
     servings: number | null
+    yield: string | null
+    method_title: string
+    method_intro: string | null
     hero: ResponsiveImageData | null
+    ingredient_groups: IngredientGroup[]
     ingredients: Ingredient[]
     steps: Step[]
+    sections: Section[]
     sources: Source[]
   }
   more: RecipeCardData[]
 }>()
 
-/**
- * Ticking off ingredients while cooking. Deliberately not persisted - it is
- * scratch state for one session at the camp table.
- */
-const checked = ref<Set<number>>(new Set())
+const hasIngredients = computed(
+  () => props.recipe.ingredient_groups.length > 0 || props.recipe.ingredients.length > 0,
+)
 
-function toggle(index: number) {
-  const next = new Set(checked.value)
-  next.has(index) ? next.delete(index) : next.add(index)
-  checked.value = next
+/*
+ * Prep you have to have read days ago, so it sits above the cooking. A tip
+ * about crispy rice is no use after dinner is served, but it would clutter
+ * the top, so it goes below.
+ */
+const before = computed(() => props.recipe.sections.filter((s) => s.placement === 'before_method'))
+const after = computed(() => props.recipe.sections.filter((s) => s.placement === 'after_method'))
+
+/**
+ * Everything you actually have to buy, from every part of the cook.
+ *
+ * Flat rather than grouped: you shop by aisle, not by which part of the
+ * recipe a thing belongs to.
+ */
+const shoppingList = computed(() =>
+  [...props.recipe.ingredient_groups.flatMap((group) => group.items), ...props.recipe.ingredients]
+    .filter((item) => item.shopping)
+    .map((item) => item.label),
+)
+
+function printPage() {
+  window.print()
 }
 
-const shoppingList = computed(() =>
-  props.recipe.ingredients
-    .filter((ingredient) => ingredient.shopping)
-    .map((ingredient) =>
-      ingredient.note ? `${ingredient.label} (${ingredient.note})` : ingredient.label,
-    ),
-)
+/** How much of it there is, in whichever way the recipe says it. */
+const servingLabel = computed(() => {
+  if (props.recipe.yield) return props.recipe.yield
+  if (props.recipe.servings) return `serves ${props.recipe.servings}`
+
+  return null
+})
 </script>
 
 <template>
   <Head :title="recipe.name" />
 
-  <div class="relative w-full bg-dark">
+  <div class="recipe-hero relative w-full bg-dark">
     <div class="relative h-80 w-full overflow-hidden sm:h-[26rem]">
       <ResponsiveImage v-if="recipe.hero" :image="recipe.hero" priority />
       <div v-else class="h-full w-full bg-page-header bg-cover bg-center" />
@@ -98,7 +112,7 @@ const shoppingList = computed(() =>
   </div>
 
   <!-- At a glance -->
-  <div class="bg-brand">
+  <div class="recipe-glance bg-brand">
     <div class="container flex flex-wrap items-center justify-center gap-x-10 gap-y-3 py-4 text-white">
       <span v-if="recipe.prep_minutes" class="inline-flex items-center gap-2 text-sm font-bold uppercase">
         <Clock class="h-4 w-4" /> {{ recipe.prep_minutes }} min prep
@@ -106,15 +120,23 @@ const shoppingList = computed(() =>
       <span v-if="recipe.cook_minutes" class="inline-flex items-center gap-2 text-sm font-bold uppercase">
         <Flame class="h-4 w-4" /> {{ recipe.cook_minutes }} min cook
       </span>
-      <span v-if="recipe.servings" class="inline-flex items-center gap-2 text-sm font-bold uppercase">
-        <Users class="h-4 w-4" /> serves {{ recipe.servings }}
+      <span v-if="servingLabel" class="inline-flex items-center gap-2 text-sm font-bold uppercase">
+        <Users class="h-4 w-4" /> {{ servingLabel }}
       </span>
       <span v-if="recipe.difficulty" class="text-sm font-bold uppercase">{{ recipe.difficulty }}</span>
+
+      <button
+        type="button"
+        class="print-hide inline-flex items-center gap-2 rounded-full border border-white/40 px-3 py-1 text-sm font-bold uppercase transition-colors hover:bg-white/15"
+        @click="printPage"
+      >
+        <Printer class="h-4 w-4" /> Print
+      </button>
     </div>
   </div>
 
   <div class="container py-12">
-    <p v-if="recipe.summary" class="mb-8 max-w-3xl text-lg text-slate-700 dark:text-white/80">
+    <p v-if="recipe.summary" class="recipe-summary mb-8 max-w-3xl text-lg text-slate-700 dark:text-white/80">
       {{ recipe.summary }}
     </p>
 
@@ -143,79 +165,50 @@ const shoppingList = computed(() =>
       </span>
     </div>
 
-    <div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
-      <section v-if="recipe.ingredients.length">
-        <h2 class="mb-4 text-2xl font-extrabold uppercase text-brand">Ingredients</h2>
-        <ul class="space-y-2">
-          <li v-for="(ingredient, i) in recipe.ingredients" :key="i">
-            <label class="group flex cursor-pointer items-start gap-3 text-slate-700 dark:text-white/80">
-              <input
-                type="checkbox"
-                :checked="checked.has(i)"
-                class="peer sr-only"
-                @change="toggle(i)"
-              >
-              <!--
-                Drawn rather than native: accent-color leaves an unfilled box
-                on a dark background, which reads as disabled.
-              -->
-              <span
-                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[0.3rem] border-2 border-slate-300 bg-white transition-colors peer-checked:border-brand peer-checked:bg-brand peer-focus-visible:ring-2 peer-focus-visible:ring-brand/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-white group-hover:border-brand dark:border-white/25 dark:bg-white/5 dark:peer-focus-visible:ring-offset-dark"
-                aria-hidden="true"
-              >
-                <Check
-                  class="h-3.5 w-3.5 text-white transition-opacity"
-                  :class="checked.has(i) ? 'opacity-100' : 'opacity-0'"
-                />
-              </span>
-              <span :class="checked.has(i) ? 'line-through opacity-50' : ''">
-                {{ ingredient.label }}
-                <span v-if="ingredient.note" class="text-slate-500 dark:text-white/60">
-                  ({{ ingredient.note }})
-                </span>
-              </span>
-            </label>
-          </li>
-        </ul>
+    <!-- Prep at home, kit lists. Read days before the burner is lit. -->
+    <div v-if="before.length" class="mb-12 grid gap-6 lg:grid-cols-2">
+      <RecipeSection v-for="(section, i) in before" :key="i" :section="section" />
+    </div>
+
+    <div class="recipe-body grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+      <section v-if="hasIngredients" class="recipe-ingredients">
+        <h2 class="mb-5 text-2xl font-extrabold uppercase text-brand">Ingredients</h2>
+
+        <IngredientGroups
+          :groups="recipe.ingredient_groups"
+          :loose="recipe.ingredients"
+        />
 
         <ShoppingList v-if="shoppingList.length" :name="recipe.name" :items="shoppingList" />
       </section>
 
-      <section v-if="recipe.steps.length">
-        <h2 class="mb-4 text-2xl font-extrabold uppercase text-brand">Method</h2>
-        <ol class="space-y-8">
-            <li v-for="(step, i) in recipe.steps" :key="i" class="flex gap-4">
-              <span
-                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white"
-                aria-hidden="true"
-              >
-                {{ i + 1 }}
-              </span>
-              <div class="min-w-0 flex-1 pt-1">
-                <p class="leading-relaxed text-slate-700 dark:text-white/80">{{ step.body }}</p>
+      <section v-if="recipe.steps.length" class="recipe-method">
+        <h2 class="mb-3 text-2xl font-extrabold uppercase text-brand">{{ recipe.method_title }}</h2>
 
-                <p
-                  v-if="step.note"
-                  class="mt-2 border-l-2 border-brand/50 pl-3 text-sm italic text-slate-500 dark:text-white/60"
-                >
-                  {{ step.note }}
-                </p>
+        <p
+          v-if="recipe.method_intro"
+          class="mb-7 max-w-2xl leading-relaxed text-slate-600 dark:text-white/70"
+        >
+          {{ recipe.method_intro }}
+        </p>
 
-                <ResponsiveImage
-                  v-if="step.image"
-                  :image="step.image"
-                  class="mt-3 aspect-[4/3] max-w-xs rounded-lg sm:max-w-sm"
-                  sizes="(min-width: 640px) 24rem, 20rem"
-                />
-              </div>
-            </li>
-        </ol>
+        <MethodSteps :steps="recipe.steps" />
       </section>
     </div>
 
-    <section v-if="recipe.notes" class="mt-12 max-w-3xl rounded-lg bg-slate-50 p-6 dark:bg-white/5">
-      <h2 class="mb-3 text-xl font-extrabold uppercase text-brand">Notes</h2>
-      <div class="recipe-notes text-slate-700 dark:text-white/80" v-html="recipe.notes" />
+    <!-- Technique, tips, scaling. Everything read after the cook. -->
+    <div v-if="after.length" class="mt-12 grid gap-6 lg:grid-cols-2">
+      <RecipeSection v-for="(section, i) in after" :key="i" :section="section" />
+    </div>
+
+    <section
+      v-if="recipe.notes"
+      class="recipe-notes-block mt-12 max-w-3xl rounded-lg bg-slate-50 p-6 dark:bg-white/5"
+    >
+      <h2 class="mb-3 flex items-center gap-2 text-xl font-extrabold uppercase text-brand">
+        <UtensilsCrossed class="h-5 w-5" aria-hidden="true" /> Notes
+      </h2>
+      <div class="recipe-prose text-slate-700 dark:text-white/80" v-html="recipe.notes" />
     </section>
 
     <!-- Credit where it is due. Almost nothing here started with me. -->
@@ -248,7 +241,7 @@ const shoppingList = computed(() =>
     </AnimatedContent>
   </div>
 
-  <section v-if="more.length" class="border-t border-slate-200 py-12 dark:border-white/10">
+  <section v-if="more.length" class="print-hide border-t border-slate-200 py-12 dark:border-white/10">
     <div class="container">
       <h2 class="mb-6 text-2xl font-extrabold uppercase text-brand">More recipes</h2>
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -259,22 +252,29 @@ const shoppingList = computed(() =>
 </template>
 
 <style>
-.recipe-notes :where(p) {
+/* Rich text from the editor, wherever it appears on a recipe. */
+.recipe-prose :where(p) {
   margin: 0.7rem 0;
   line-height: 1.7;
 }
-.recipe-notes :where(ul) {
+.recipe-prose :where(ul) {
   list-style: disc;
   padding-left: 1.3rem;
   margin: 0.7rem 0;
 }
-.recipe-notes :where(ol) {
+.recipe-prose :where(ol) {
   list-style: decimal;
   padding-left: 1.3rem;
   margin: 0.7rem 0;
 }
-.recipe-notes :where(a) {
+.recipe-prose :where(li) {
+  margin: 0.3rem 0;
+}
+.recipe-prose :where(a) {
   color: var(--color-brand);
   text-decoration: underline;
+}
+.recipe-prose :where(strong) {
+  font-weight: 700;
 }
 </style>

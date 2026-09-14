@@ -106,7 +106,8 @@ onBeforeUnmount(() => clearTimeout(resetTimer))
 </script>
 
 <template>
-  <div class="mt-5">
+  <!-- Buttons that copy or hand off a list mean nothing on paper. -->
+  <div class="print-hide mt-5">
     <div class="flex flex-wrap items-center gap-3">
       <a
         v-if="canRunShortcut"

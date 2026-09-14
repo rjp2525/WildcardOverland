@@ -13,6 +13,9 @@ import Repeater from '@/components/admin/ui/Repeater.vue'
 import RichTextEditor from '@/components/admin/ui/RichTextEditor.vue'
 import Select from '@/components/admin/ui/Select.vue'
 import ImagePicker from '@/components/admin/ui/ImagePicker.vue'
+import IngredientFields, {
+  type IngredientRow,
+} from '@/components/admin/recipe/IngredientFields.vue'
 import { useImageLibrary, type ImageOption } from '@/composables/useImageLibrary'
 import Switch from '@/components/admin/ui/Switch.vue'
 import Textarea from '@/components/admin/ui/Textarea.vue'
@@ -22,13 +25,24 @@ const route = useRoute()
 
 defineOptions({ layout: AdminLayout })
 
-interface Ingredient {
-  id?: number | null
-  quantity: string | null
-  unit: string | null
-  item: string
+interface IngredientGroupRow {
+  name: string
   note: string | null
-  in_shopping_list: boolean
+  ingredients: IngredientRow[]
+}
+
+interface Tip {
+  kind: string
+  title: string | null
+  body: string
+}
+
+interface SectionRow {
+  kind: string
+  placement: string
+  title: string
+  intro: string | null
+  body: string | null
 }
 
 interface Source {
@@ -40,9 +54,10 @@ interface Source {
 
 interface Step {
   id?: number | null
+  title: string | null
   body: string
-  note: string
   image_id: number | null
+  tips: Tip[]
 }
 
 interface RecipePayload {
@@ -60,10 +75,15 @@ interface RecipePayload {
   prep_minutes: number | null
   cook_minutes: number | null
   servings: number | null
+  yield: string | null
+  method_title: string | null
+  method_intro: string | null
   is_draft: boolean
   published_at: string | null
-  ingredients: Ingredient[]
+  ingredients: IngredientRow[]
+  ingredient_groups: IngredientGroupRow[]
   steps: Step[]
+  sections: SectionRow[]
   sources: Source[]
 }
 
@@ -74,6 +94,9 @@ const props = defineProps<{
   dietaryTags: Array<{ value: string; label: string }>
   cookingMethods: Array<{ value: string; label: string }>
   sourceKinds: Array<{ value: string; label: string }>
+  sectionKinds: Array<{ value: string; label: string }>
+  sectionPlacements: Array<{ value: string; label: string }>
+  tipKinds: Array<{ value: string; label: string }>
   images: ImageOption[]
 }>()
 
@@ -95,12 +118,29 @@ const form = useForm({
   prep_minutes: props.recipe?.prep_minutes ?? null,
   cook_minutes: props.recipe?.cook_minutes ?? null,
   servings: props.recipe?.servings ?? null,
+  yield: props.recipe?.yield ?? '',
+  method_title: props.recipe?.method_title ?? '',
+  method_intro: props.recipe?.method_intro ?? '',
   is_draft: props.recipe?.is_draft ?? true,
   published_at: props.recipe?.published_at ?? '',
-  ingredients: (props.recipe?.ingredients ?? []) as Ingredient[],
+  ingredients: (props.recipe?.ingredients ?? []) as IngredientRow[],
+  ingredient_groups: (props.recipe?.ingredient_groups ?? []) as IngredientGroupRow[],
   steps: (props.recipe?.steps ?? []) as Step[],
+  sections: (props.recipe?.sections ?? []) as SectionRow[],
   sources: (props.recipe?.sources ?? []) as Source[],
 })
+
+function blankIngredient(): IngredientRow {
+  return {
+    quantity: null,
+    unit: null,
+    item: '',
+    note: null,
+    detail: null,
+    optional: false,
+    in_shopping_list: true,
+  }
+}
 
 const totalMinutes = computed(() => {
   const total = Number(form.prep_minutes ?? 0) + Number(form.cook_minutes ?? 0)
@@ -198,6 +238,15 @@ function submit() {
           </Field>
         </div>
 
+        <Field
+          label="Yield"
+          for="yield"
+          :error="form.errors.yield"
+          hint="Prose, when a number will not do. Shown instead of the servings count."
+        >
+          <Input id="yield" v-model="form.yield" placeholder="10 to 12 big servings" :invalid="!!form.errors.yield" />
+        </Field>
+
         <Field label="Dietary" :error="form.errors.dietary">
           <CheckboxGroup v-model="form.dietary" :options="dietaryTags" />
         </Field>
@@ -208,56 +257,136 @@ function submit() {
       </div>
     </Card>
 
-    <Card title="Ingredients" description="Quantity and unit are optional — “salt, to taste” works.">
-      <Repeater
-        v-model="form.ingredients"
-        item-label="Ingredient"
-        :new-row="(): Ingredient => ({ id: null, quantity: null, unit: null, item: '', note: null, in_shopping_list: true })"
-        empty-message="No ingredients yet."
-      >
-        <template #row="{ row, index }">
-          <div class="grid gap-4 sm:grid-cols-4">
-            <Field label="Qty" :error="err(`ingredients.${index}.quantity`)">
-              <Input v-model="row.quantity" placeholder="1 1/2" :invalid="!!err(`ingredients.${index}.quantity`)" />
-            </Field>
-            <Field label="Unit" :error="err(`ingredients.${index}.unit`)">
-              <Input v-model="row.unit" placeholder="cups" :invalid="!!err(`ingredients.${index}.unit`)" />
-            </Field>
-            <Field label="Item" :error="err(`ingredients.${index}.item`)" required>
-              <Input v-model="row.item" placeholder="rolled oats" :invalid="!!err(`ingredients.${index}.item`)" />
-            </Field>
-            <Field label="Note" :error="err(`ingredients.${index}.note`)">
-              <Input v-model="row.note" placeholder="drained" :invalid="!!err(`ingredients.${index}.note`)" />
-            </Field>
-            <Field label="Shopping list" :error="err(`ingredients.${index}.in_shopping_list`)">
-              <Switch
-                v-model="row.in_shopping_list"
-                label="Include"
-                description="Off for things you already carry."
-              />
-            </Field>
-          </div>
-        </template>
-      </Repeater>
+    <Card
+      title="Ingredients"
+      description="Split a big cook into its parts. Anything not in a part goes in the loose list."
+    >
+      <div class="space-y-8">
+        <div>
+          <h3 class="mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300">Parts</h3>
+
+          <Repeater
+            v-model="form.ingredient_groups"
+            item-label="Part"
+            add-label="Add a part"
+            :new-row="(): IngredientGroupRow => ({ name: '', note: null, ingredients: [] })"
+            empty-message="No parts yet. A short recipe does not need any."
+          >
+            <template #row="{ row: group, index: g }">
+              <div class="space-y-4">
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <Field label="Part name" :error="err(`ingredient_groups.${g}.name`)" required>
+                    <Input
+                      v-model="group.name"
+                      placeholder="Steak"
+                      :invalid="!!err(`ingredient_groups.${g}.name`)"
+                    />
+                  </Field>
+                  <Field
+                    label="Note"
+                    :error="err(`ingredient_groups.${g}.note`)"
+                    hint="The paragraph that follows this part."
+                  >
+                    <Textarea
+                      v-model="group.note"
+                      :rows="2"
+                      placeholder="The cornstarch is worth bringing."
+                      :invalid="!!err(`ingredient_groups.${g}.note`)"
+                    />
+                  </Field>
+                </div>
+
+                <Repeater
+                  v-model="group.ingredients"
+                  item-label="Ingredient"
+                  :new-row="blankIngredient"
+                  empty-message="Nothing in this part yet."
+                >
+                  <template #row="{ row, index: i }">
+                    <IngredientFields
+                      :row="row"
+                      :path="`ingredient_groups.${g}.ingredients.${i}`"
+                      :error="err"
+                    />
+                  </template>
+                </Repeater>
+              </div>
+            </template>
+          </Repeater>
+        </div>
+
+        <div>
+          <h3 class="mb-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            Not in a part
+          </h3>
+
+          <Repeater
+            v-model="form.ingredients"
+            item-label="Ingredient"
+            :new-row="blankIngredient"
+            empty-message="Nothing loose."
+          >
+            <template #row="{ row, index }">
+              <IngredientFields :row="row" :path="`ingredients.${index}`" :error="err" />
+            </template>
+          </Repeater>
+        </div>
+      </div>
     </Card>
 
-    <Card title="Method" description="One instruction per step; they render numbered.">
-      <Repeater
-        v-model="form.steps"
-        item-label="Step"
-        numbered
-        :new-row="(): Step => ({ id: null, body: '', note: '', image_id: null })"
-        empty-message="No steps yet."
-      >
-        <template #row="{ row, index }">
-          <div class="space-y-4">
-            <Field :error="err(`steps.${index}.body`)" required>
-              <Textarea v-model="row.body" :rows="2" :invalid="!!err(`steps.${index}.body`)" />
-            </Field>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <Field label="Aside" :error="err(`steps.${index}.note`)" hint="Shown beside the step, not as part of it.">
-                <Input v-model="row.note" placeholder="Watch it, this catches fast" :invalid="!!err(`steps.${index}.note`)" />
+    <Card title="Method" description="Give a step a title and it reads like a recipe rather than a list.">
+      <div class="space-y-6">
+        <div class="grid gap-5 sm:grid-cols-2">
+          <Field
+            label="Method heading"
+            for="method_title"
+            :error="form.errors.method_title"
+            hint="Left blank it just says “Method”."
+          >
+            <Input
+              id="method_title"
+              v-model="form.method_title"
+              placeholder="Cooking it on the Skottle"
+              :invalid="!!form.errors.method_title"
+            />
+          </Field>
+          <Field
+            label="Before the first step"
+            for="method_intro"
+            :error="form.errors.method_intro"
+            hint="What to understand before you start, like how the heat zones work."
+          >
+            <Textarea
+              id="method_intro"
+              v-model="form.method_intro"
+              :rows="3"
+              :invalid="!!form.errors.method_intro"
+            />
+          </Field>
+        </div>
+
+        <Repeater
+          v-model="form.steps"
+          item-label="Step"
+          numbered
+          :new-row="(): Step => ({ id: null, title: null, body: '', image_id: null, tips: [] })"
+          empty-message="No steps yet."
+        >
+          <template #row="{ row, index }">
+            <div class="space-y-4">
+              <Field label="Title" :error="err(`steps.${index}.title`)" hint="Optional, e.g. “Sear the steak”.">
+                <Input v-model="row.title" :invalid="!!err(`steps.${index}.title`)" />
               </Field>
+
+              <Field
+                label="Instructions"
+                :error="err(`steps.${index}.body`)"
+                hint="Leave a blank line between paragraphs and they render as separate beats."
+                required
+              >
+                <Textarea v-model="row.body" :rows="4" :invalid="!!err(`steps.${index}.body`)" />
+              </Field>
+
               <Field label="Photo" :error="err(`steps.${index}.image_id`)" hint="What the pan should look like here.">
                 <ImagePicker
                   v-model="row.image_id"
@@ -266,7 +395,82 @@ function submit() {
                   @uploaded="addImage"
                 />
               </Field>
+
+              <div>
+                <h4 class="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">Tips</h4>
+
+                <Repeater
+                  v-model="row.tips"
+                  item-label="Tip"
+                  add-label="Add a tip"
+                  :new-row="(): Tip => ({ kind: 'tip', title: null, body: '' })"
+                  empty-message="No tips on this step."
+                >
+                  <template #row="{ row: tip, index: t }">
+                    <div class="space-y-4">
+                      <div class="grid gap-4 sm:grid-cols-2">
+                        <Field label="Kind" :error="err(`steps.${index}.tips.${t}.kind`)" required>
+                          <Select v-model="tip.kind" :options="tipKinds" />
+                        </Field>
+                        <Field label="Title" :error="err(`steps.${index}.tips.${t}.title`)" hint="Optional heading.">
+                          <Input v-model="tip.title" placeholder="Do not constantly stir it" />
+                        </Field>
+                      </div>
+                      <Field :error="err(`steps.${index}.tips.${t}.body`)" required>
+                        <Textarea v-model="tip.body" :rows="2" :invalid="!!err(`steps.${index}.tips.${t}.body`)" />
+                      </Field>
+                    </div>
+                  </template>
+                </Repeater>
+              </div>
             </div>
+          </template>
+        </Repeater>
+      </div>
+    </Card>
+
+    <Card
+      title="Sections"
+      description="Prep done at home, a technique worth its own heading, packing lists, feeding a crowd."
+    >
+      <Repeater
+        v-model="form.sections"
+        item-label="Section"
+        add-label="Add a section"
+        :new-row="(): SectionRow => ({ kind: 'prep', placement: 'before_method', title: '', intro: null, body: null })"
+        empty-message="No extra sections."
+      >
+        <template #row="{ row, index }">
+          <div class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <Field label="Kind" :error="err(`sections.${index}.kind`)" required>
+                <Select v-model="row.kind" :options="sectionKinds" />
+              </Field>
+              <Field
+                label="Placement"
+                :error="err(`sections.${index}.placement`)"
+                hint="Prep has to be read first. A tip about crisping rice does not."
+                required
+              >
+                <Select v-model="row.placement" :options="sectionPlacements" />
+              </Field>
+            </div>
+
+            <Field label="Title" :error="err(`sections.${index}.title`)" required>
+              <Input
+                v-model="row.title"
+                placeholder="Prep before you leave home"
+                :invalid="!!err(`sections.${index}.title`)"
+              />
+            </Field>
+
+            <Field label="Intro" :error="err(`sections.${index}.intro`)" hint="One or two plain sentences.">
+              <Textarea v-model="row.intro" :rows="2" :invalid="!!err(`sections.${index}.intro`)" />
+            </Field>
+
+            <Field label="Body" :error="err(`sections.${index}.body`)" hint="Lists, bold, links.">
+              <RichTextEditor v-model="row.body" placeholder="The detail…" />
+            </Field>
           </div>
         </template>
       </Repeater>
