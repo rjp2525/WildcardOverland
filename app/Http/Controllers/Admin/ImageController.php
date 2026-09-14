@@ -6,9 +6,13 @@ use App\Enums\ImageType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ImageRequest;
 use App\Models\Image;
+use App\Services\FileUploadService;
 use App\Support\AdminTable;
+use App\Support\ImageOptions;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,6 +29,38 @@ class ImageController extends Controller
             'filters' => $table->state(),
             'imageTypes' => ImageType::options(),
         ]);
+    }
+
+    /**
+     * Uploads one image and hands the new row straight back as JSON.
+     *
+     * The rest of the admin posts through Inertia and gets a redirect, which
+     * is right for a form. A dropzone sitting inside another form cannot
+     * navigate away, and needs the id of what it just made so it can select
+     * it, so this one answers in JSON.
+     */
+    public function upload(Request $request, FileUploadService $uploads): JsonResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'image', 'max:'.config('assets.max_upload_kb')],
+            'name' => ['nullable', 'string', 'max:255'],
+            'image_type' => ['nullable', Rule::enum(ImageType::class)],
+        ]);
+
+        $file = $uploads->store(
+            $request->file('file'),
+            type: 'content',
+            name: $validated['name'] ?? null,
+            imageType: isset($validated['image_type'])
+                ? ImageType::from($validated['image_type'])
+                : ImageType::Photo,
+        );
+
+        $image = $file->image;
+
+        abort_if($image === null, 422, 'That file is not an image.');
+
+        return response()->json(ImageOptions::one($image));
     }
 
     public function edit(Image $image): Response

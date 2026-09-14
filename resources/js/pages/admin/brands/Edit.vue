@@ -7,7 +7,8 @@ import Button from '@/components/admin/ui/Button.vue'
 import Card from '@/components/admin/ui/Card.vue'
 import Field from '@/components/admin/ui/Field.vue'
 import Input from '@/components/admin/ui/Input.vue'
-import Select from '@/components/admin/ui/Select.vue'
+import ImagePicker from '@/components/admin/ui/ImagePicker.vue'
+import { useImageLibrary, type ImageOption } from '@/composables/useImageLibrary'
 import Textarea from '@/components/admin/ui/Textarea.vue'
 import { useRoute } from '@/lib/route'
 
@@ -28,10 +29,12 @@ interface BrandPayload {
 
 const props = defineProps<{
   brand: BrandPayload | null
-  images: Array<{ value: number; label: string }>
+  images: ImageOption[]
 }>()
 
 const isEdit = !!props.brand
+
+const { options: imageOptions, add: addImage } = useImageLibrary(props.images)
 
 const form = useForm({
   name: props.brand?.name ?? '',
@@ -78,14 +81,16 @@ function submit() {
           label="Logo"
           for="logo_image_id"
           :error="form.errors.logo_image_id"
-          hint="Upload images under Files first; they appear here automatically."
+          hint="Drop a logo here, or pick one already in the library. Transparent PNG or SVG works best."
         >
-          <Select
+          <ImagePicker
             id="logo_image_id"
             v-model="form.logo_image_id"
-            :options="images"
+            :options="imageOptions"
             placeholder="No logo"
+            image-type="logo"
             :invalid="!!form.errors.logo_image_id"
+            @uploaded="addImage"
           />
         </Field>
 

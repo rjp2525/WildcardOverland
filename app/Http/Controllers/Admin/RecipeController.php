@@ -9,9 +9,9 @@ use App\Enums\MealType;
 use App\Enums\SourceKind;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RecipeRequest;
-use App\Models\Image;
 use App\Models\Recipe;
 use App\Support\AdminTable;
+use App\Support\ImageOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -179,13 +179,7 @@ class RecipeController extends Controller
             'dietaryTags' => DietaryTag::options(),
             'cookingMethods' => CookingMethod::options(),
             'sourceKinds' => SourceKind::options(),
-            'images' => Image::query()
-                ->orderBy('name')
-                ->get(['id', 'name'])
-                ->map(fn (Image $image) => [
-                    'value' => $image->id,
-                    'label' => $image->name ?: "Image #{$image->id}",
-                ]),
+            'images' => ImageOptions::list(),
         ];
     }
 }

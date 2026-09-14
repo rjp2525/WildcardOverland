@@ -6,8 +6,8 @@ use App\Enums\ImageType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BrandRequest;
 use App\Models\Brand;
-use App\Models\Image;
 use App\Support\AdminTable;
+use App\Support\ImageOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -98,15 +98,9 @@ class BrandController extends Controller
      */
     protected function imageOptions(?Brand $brand = null)
     {
-        return Image::query()
-            ->where(fn ($query) => $query
-                ->whereIn('type', [ImageType::Logo, ImageType::Graphic])
-                ->when($brand?->logo_image_id, fn ($q, $id) => $q->orWhere('id', $id)))
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn (Image $image) => [
-                'value' => $image->id,
-                'label' => $image->name ?: "Image #{$image->id}",
-            ]);
+        return ImageOptions::list(
+            [ImageType::Logo, ImageType::Graphic],
+            keep: $brand?->logo_image_id,
+        );
     }
 }

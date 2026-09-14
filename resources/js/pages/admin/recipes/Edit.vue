@@ -12,6 +12,8 @@ import Input from '@/components/admin/ui/Input.vue'
 import Repeater from '@/components/admin/ui/Repeater.vue'
 import RichTextEditor from '@/components/admin/ui/RichTextEditor.vue'
 import Select from '@/components/admin/ui/Select.vue'
+import ImagePicker from '@/components/admin/ui/ImagePicker.vue'
+import { useImageLibrary, type ImageOption } from '@/composables/useImageLibrary'
 import Switch from '@/components/admin/ui/Switch.vue'
 import Textarea from '@/components/admin/ui/Textarea.vue'
 import { useRoute } from '@/lib/route'
@@ -72,10 +74,12 @@ const props = defineProps<{
   dietaryTags: Array<{ value: string; label: string }>
   cookingMethods: Array<{ value: string; label: string }>
   sourceKinds: Array<{ value: string; label: string }>
-  images: Array<{ value: number; label: string }>
+  images: ImageOption[]
 }>()
 
 const isEdit = !!props.recipe
+
+const { options: imageOptions, add: addImage } = useImageLibrary(props.images)
 
 const form = useForm({
   name: props.recipe?.name ?? '',
@@ -153,12 +157,13 @@ function submit() {
           :error="form.errors.hero_image_id"
           hint="Upload under Files first; images appear here automatically."
         >
-          <Select
+          <ImagePicker
             id="hero_image_id"
             v-model="form.hero_image_id"
-            :options="images"
+            :options="imageOptions"
             placeholder="No image"
             :invalid="!!form.errors.hero_image_id"
+            @uploaded="addImage"
           />
         </Field>
       </div>
@@ -254,7 +259,12 @@ function submit() {
                 <Input v-model="row.note" placeholder="Watch it, this catches fast" :invalid="!!err(`steps.${index}.note`)" />
               </Field>
               <Field label="Photo" :error="err(`steps.${index}.image_id`)" hint="What the pan should look like here.">
-                <Select v-model="row.image_id" :options="images" placeholder="No photo" />
+                <ImagePicker
+                  v-model="row.image_id"
+                  :options="imageOptions"
+                  placeholder="No photo"
+                  @uploaded="addImage"
+                />
               </Field>
             </div>
           </div>

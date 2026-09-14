@@ -10,8 +10,12 @@ import Input from '@/components/admin/ui/Input.vue'
 import Repeater from '@/components/admin/ui/Repeater.vue'
 import RichTextEditor from '@/components/admin/ui/RichTextEditor.vue'
 import Select from '@/components/admin/ui/Select.vue'
+import ImagePicker from '@/components/admin/ui/ImagePicker.vue'
+import ImageDropzone from '@/components/admin/ui/ImageDropzone.vue'
+import { useImageLibrary } from '@/composables/useImageLibrary'
 import Switch from '@/components/admin/ui/Switch.vue'
 import { useRoute } from '@/lib/route'
+import type { ImageOption } from '@/composables/useImageLibrary'
 
 const route = useRoute()
 
@@ -57,11 +61,13 @@ interface TripPayload {
 
 const props = defineProps<{
   trip: TripPayload | null
-  images: Array<{ value: number; label: string }>
+  images: ImageOption[]
   recipeOptions: Array<{ value: number; label: string }>
 }>()
 
 const isEdit = !!props.trip
+
+const { options: imageOptions, add: addImage } = useImageLibrary(props.images)
 
 const form = useForm({
   name: props.trip?.name ?? '',
@@ -79,6 +85,12 @@ const form = useForm({
   published_at: props.trip?.published_at ?? '',
   campsites: (props.trip?.campsites ?? []) as CampsiteRow[],
 })
+
+/** A photo dropped on the gallery joins the library and gets its own row. */
+function attachPhoto(option: ImageOption) {
+  addImage(option)
+  form.images.push({ id: option.value, caption: null })
+}
 
 function addCampsite() {
   form.campsites.push({
@@ -159,12 +171,13 @@ function campsiteError(index: number, field: string): string | undefined {
           :error="form.errors.hero_image_id"
           hint="Used on trip cards and the top of the trip page."
         >
-          <Select
+          <ImagePicker
             id="hero_image_id"
             v-model="form.hero_image_id"
-            :options="images"
+            :options="imageOptions"
             placeholder="No hero image"
             :invalid="!!form.errors.hero_image_id"
+            @uploaded="addImage"
           />
         </Field>
 
@@ -203,6 +216,13 @@ function campsiteError(index: number, field: string): string | undefined {
     </Card>
 
     <Card title="Gallery" description="Photos shown on the trip page, in order.">
+      <ImageDropzone
+        multiple
+        class="mb-4"
+        label="Drop the whole set here, or"
+        @uploaded="attachPhoto"
+      />
+
       <Repeater
         v-model="form.images"
         item-label="Photo"
@@ -212,7 +232,12 @@ function campsiteError(index: number, field: string): string | undefined {
         <template #row="{ row, index }">
           <div class="grid gap-4 sm:grid-cols-2">
             <Field label="Image" :error="err(`images.${index}.id`)" required>
-              <Select v-model="row.id" :options="images" placeholder="Choose an image…" />
+              <ImagePicker
+                v-model="row.id"
+                :options="imageOptions"
+                placeholder="Choose an image…"
+                @uploaded="addImage"
+              />
             </Field>
             <Field label="Caption" :error="err(`images.${index}.caption`)">
               <Input v-model="row.caption" placeholder="Optional caption" />

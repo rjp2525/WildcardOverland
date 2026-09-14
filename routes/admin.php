@@ -36,6 +36,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::resource('brands', BrandController::class)->except('show');
 
         // Images are created by uploading a file, so there is no create/store.
+        // The dropzones post here and get the new image back as JSON.
+        Route::post('images/upload', [ImageController::class, 'upload'])
+            ->name('images.upload');
+
         Route::resource('images', ImageController::class)
             ->only(['index', 'edit', 'update', 'destroy']);
 

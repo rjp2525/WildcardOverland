@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\TripRequest;
-use App\Models\Image;
 use App\Models\Recipe;
 use App\Models\Trip;
 use App\Support\AdminTable;
+use App\Support\ImageOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -54,13 +54,7 @@ class TripController extends Controller
     protected function formOptions(): array
     {
         return [
-            'images' => Image::query()
-                ->orderBy('name')
-                ->get(['id', 'name'])
-                ->map(fn (Image $image) => [
-                    'value' => $image->id,
-                    'label' => $image->name ?: "Image #{$image->id}",
-                ]),
+            'images' => ImageOptions::list(),
             'recipeOptions' => Recipe::query()
                 ->orderBy('name')
                 ->get(['id', 'name'])
