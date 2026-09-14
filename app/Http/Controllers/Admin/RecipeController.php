@@ -106,6 +106,7 @@ class RecipeController extends Controller
                 'meal_type' => $recipe->meal_type->value,
                 'difficulty' => $recipe->difficulty?->value,
                 'dietary' => $recipe->dietary ?? [],
+                'cooking_methods' => $recipe->cooking_methods ?? [],
                 'prep_minutes' => $recipe->prep_minutes,
                 'cook_minutes' => $recipe->cook_minutes,
                 'servings' => $recipe->servings,
