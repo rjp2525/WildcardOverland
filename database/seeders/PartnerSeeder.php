@@ -18,14 +18,22 @@ use Illuminate\Http\UploadedFile;
 class PartnerSeeder extends Seeder
 {
     /**
+     * The logo is the file name to look for in resources/img/partners. Drop
+     * one in under that name and the next run attaches it; until then the
+     * brand exists in the admin but stays off the homepage, which only shows
+     * brands that have a logo to show.
+     *
      * @var array<int, array{name: string, website: string, logo: string}>
      */
     protected array $partners = [
-        [
-            'name' => 'TriPine',
-            'website' => 'https://tripine.com/',
-            'logo' => 'tripine.png',
-        ],
+        ['name' => 'Tune Outdoor', 'website' => 'https://tuneoutdoor.com/', 'logo' => 'tune-outdoor.png'],
+        ['name' => 'Redarc Electronics', 'website' => 'https://www.redarcelectronics.com/us/', 'logo' => 'redarc.png'],
+        ['name' => 'Devos Outdoor', 'website' => 'https://www.devosoutdoor.com/', 'logo' => 'devos-outdoor.png'],
+        ['name' => 'Dometic', 'website' => 'https://www.dometic.com/en-us', 'logo' => 'dometic.png'],
+        ['name' => 'Midland Radio', 'website' => 'https://midlandusa.com/', 'logo' => 'midland-radio.png'],
+        ['name' => 'Baja Designs', 'website' => 'https://bajadesigns.com/', 'logo' => 'baja-designs.png'],
+        ['name' => 'Falken Tires', 'website' => 'https://www.falkentire.com/', 'logo' => 'falken-tires.png'],
+        ['name' => 'TriPine', 'website' => 'https://tripine.com/', 'logo' => 'tripine.png'],
     ];
 
     /**
@@ -48,31 +56,43 @@ class PartnerSeeder extends Seeder
     {
         $this->retire();
 
+        $waiting = [];
+
         foreach ($this->partners as $partner) {
             $source = resource_path('img/partners/'.$partner['logo']);
+            $logoId = null;
 
-            if (! is_file($source)) {
-                $this->command?->warn("Missing logo for {$partner['name']}: {$source}");
-
-                continue;
+            if (is_file($source)) {
+                $logoId = $uploads->store(
+                    new UploadedFile($source, $partner['logo'], 'image/png', null, true),
+                    type: 'static',
+                    name: $partner['name'].' logo',
+                    imageType: ImageType::Logo,
+                )->image?->id;
+            } else {
+                $waiting[] = $partner['logo'];
             }
 
-            $file = $uploads->store(
-                new UploadedFile($source, $partner['logo'], 'image/png', null, true),
-                type: 'static',
-                name: $partner['name'].' logo',
-                imageType: ImageType::Logo,
-            );
+            $brand = Brand::firstOrNew(['name' => $partner['name']]);
+            $brand->website = $partner['website'];
 
-            Brand::updateOrCreate(
-                ['name' => $partner['name']],
-                [
-                    'website' => $partner['website'],
-                    'logo_image_id' => $file->image?->id,
-                ],
-            );
+            // Never clear a logo somebody attached in the admin just because
+            // there is no file for it in the repo.
+            if ($logoId !== null) {
+                $brand->logo_image_id = $logoId;
+            }
 
-            $this->command?->info("Seeded partner {$partner['name']}");
+            $brand->save();
+        }
+
+        $this->command?->info('Seeded '.count($this->partners).' partners.');
+
+        if ($waiting !== []) {
+            $this->command?->newLine();
+            $this->command?->warn('No logo yet for '.count($waiting).' of them. They are in the admin but stay off');
+            $this->command?->warn('the homepage until one is attached. Either upload it there, or drop the file in');
+            $this->command?->warn('resources/img/partners and run this again:');
+            $this->command?->getOutput()->listing($waiting);
         }
     }
 
