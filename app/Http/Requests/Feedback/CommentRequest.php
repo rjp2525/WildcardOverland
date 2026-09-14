@@ -21,7 +21,7 @@ class CommentRequest extends FormRequest
         $rules = [
             'name' => ['required', 'string', 'min:2', 'max:60'],
             'body' => ['required', 'string', 'min:2', 'max:'.config('feedback.comments.max_length')],
-            Honeypot::STAMP => ['required', 'string', new NotABot],
+            Honeypot::STAMP => ['required', 'string', new NotABot('comment')],
             Honeypot::FIELD => ['nullable'],
         ];
 

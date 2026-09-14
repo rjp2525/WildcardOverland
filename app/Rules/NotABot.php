@@ -20,6 +20,9 @@ class NotABot implements ValidationRule, ValidatorAwareRule
 {
     protected Validator $validator;
 
+    /** Which form this stamp had to have been handed out with. */
+    public function __construct(protected string $purpose) {}
+
     public function setValidator(Validator $validator): static
     {
         $this->validator = $validator;
@@ -31,8 +34,14 @@ class NotABot implements ValidationRule, ValidatorAwareRule
     {
         $data = $this->validator->getData();
 
-        if (! Honeypot::passes($data[Honeypot::FIELD] ?? null, $data[Honeypot::STAMP] ?? null)) {
-            $fail('That did not go through. Reload the page and try again.');
+        $passes = Honeypot::passes(
+            $data[Honeypot::FIELD] ?? null,
+            $data[Honeypot::STAMP] ?? null,
+            $this->purpose,
+        );
+
+        if (! $passes) {
+            $fail('That did not go through. Try again - the form has reloaded itself.');
         }
     }
 }

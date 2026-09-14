@@ -58,7 +58,6 @@ class TripController extends Controller
             // Constrained, not just eager loaded: a recipe still in draft is
             // not public, and linking to it from here would 404.
             'recipes' => fn ($query) => $query->published()
-                ->withRatingSummary()
                 ->with('heroImage.file'),
         ]);
 

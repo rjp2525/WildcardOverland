@@ -8,6 +8,7 @@ use App\Http\Requests\Feedback\CommentRequest;
 use App\Http\Requests\Feedback\RatingRequest;
 use App\Models\Recipe;
 use App\Services\FileUploadService;
+use App\Support\Ratings;
 use App\Support\Visitor;
 use Illuminate\Http\RedirectResponse;
 
@@ -24,21 +25,16 @@ class RecipeFeedbackController extends Controller
     /**
      * Stars, one set per person per recipe.
      *
-     * Changing your mind updates what is there. A rating is a number with no
-     * words in it, so unlike a comment there is nothing to moderate: the
-     * defence is that one visitor only ever counts once.
+     * A rating is a number with no words in it, so there is nothing to read
+     * and nothing to moderate. What there is instead is a decision about
+     * whether it counts, made when it arrives and revisable afterwards, and
+     * kept away from the published figure until it is made.
      */
     public function rate(RatingRequest $request, Recipe $recipe): RedirectResponse
     {
         abort_unless($this->isPublished($recipe), 404);
 
-        $recipe->ratings()->updateOrCreate(
-            ['visitor_hash' => Visitor::identify($request)],
-            [
-                'stars' => $request->integer('stars'),
-                'ip_hash' => Visitor::addressHash($request),
-            ],
-        );
+        Ratings::record($recipe, $request->integer('stars'), $request);
 
         return back()->with('success', 'Thanks, that is noted.');
     }

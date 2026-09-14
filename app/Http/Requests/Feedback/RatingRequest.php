@@ -20,7 +20,7 @@ class RatingRequest extends FormRequest
     {
         return [
             'stars' => ['required', 'integer', 'between:1,5'],
-            Honeypot::STAMP => ['required', 'string', new NotABot],
+            Honeypot::STAMP => ['required', 'string', new NotABot('rating')],
             Honeypot::FIELD => ['nullable'],
         ];
     }

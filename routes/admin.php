@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FileController;
 use App\Http\Controllers\Admin\ImageController;
 use App\Http\Controllers\Admin\NavigationLinkController;
+use App\Http\Controllers\Admin\RatingController;
 use App\Http\Controllers\Admin\RecipeController;
 use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\TripController;
@@ -69,6 +70,10 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('comments', [CommentController::class, 'index'])->name('comments.index');
         Route::put('comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
         Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+
+        // The stars nothing published, and the decision about whether to.
+        Route::get('ratings', [RatingController::class, 'index'])->name('ratings.index');
+        Route::put('ratings/{rating}', [RatingController::class, 'update'])->name('ratings.update');
 
         Route::resource('files', FileController::class)
             ->only(['index', 'store', 'destroy']);

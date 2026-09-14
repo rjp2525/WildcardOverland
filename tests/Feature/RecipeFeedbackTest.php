@@ -3,15 +3,17 @@
 namespace Tests\Feature;
 
 use App\Enums\CommentStatus;
+use App\Enums\RatingStatus;
 use App\Models\Recipe;
 use App\Models\RecipeComment;
 use App\Models\User;
 use App\Support\Honeypot;
+use App\Support\Ratings;
 use App\Support\Visitor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -42,12 +44,38 @@ class RecipeFeedbackTest extends TestCase
     }
 
     /** A form handed out long enough ago that a person could have filled it. */
-    protected function filled(array $fields = []): array
+    protected function filled(array $fields = [], string $purpose = 'rating'): array
     {
         return [
-            Honeypot::STAMP => Crypt::encryptString((string) (time() - 30)),
+            Honeypot::STAMP => $this->stampFor($purpose),
             ...$fields,
         ];
+    }
+
+    /**
+     * Ratings put straight into the database, then added up.
+     *
+     * The published figure is stored on the recipe, so anything that writes
+     * ratings without going through the controller has to say so - which is
+     * the point of it being stored rather than worked out on each read.
+     */
+    protected function giveStars(array $stars, ?string $address = null): void
+    {
+        foreach ($stars as $i => $count) {
+            $this->recipe->ratings()->create([
+                'stars' => $count,
+                'visitor_hash' => "visitor-{$i}-".Str::random(6),
+                'ip_hash' => $address,
+            ]);
+        }
+
+        Ratings::recount($this->recipe->refresh());
+    }
+
+    /** Handed out half a minute ago, without moving the clock for anything else. */
+    protected function stampFor(string $purpose): string
+    {
+        return $this->travelTo(now()->subSeconds(30), fn () => Honeypot::stamp($purpose));
     }
 
     /**
@@ -87,16 +115,150 @@ class RecipeFeedbackTest extends TestCase
         $this->assertSame(2, $this->recipe->ratings()->sole()->stars);
     }
 
-    public function test_two_people_both_count(): void
+    public function test_clearing_your_cookies_does_not_buy_a_second_vote(): void
     {
         $url = route('recipes.rate', $this->recipe);
 
-        // Two browsers, each arriving without a cookie of its own.
+        // Two browsers from one address, which is what one person looks
+        // like after they have thrown their cookies away.
+        $this->asSameVisitor($url, $this->filled(['stars' => 5]));
+        $this->asSameVisitor($url, $this->filled(['stars' => 1]));
+
+        // Both kept, one counted, and the published figure untouched.
+        $this->assertSame(2, $this->recipe->ratings()->count());
+        $this->assertSame(1, $this->recipe->ratings()->counted()->count());
+        $this->assertSame(5.0, $this->recipe->refresh()->rating_average);
+        $this->assertSame(1, $this->recipe->rating_count);
+    }
+
+    public function test_two_people_at_different_addresses_both_count(): void
+    {
+        $url = route('recipes.rate', $this->recipe);
+
+        $this->asSameVisitor($url, $this->filled(['stars' => 5]));
+
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.7'])
+            ->post($url, $this->filled(['stars' => 3]));
+
+        $this->assertSame(2, $this->recipe->ratings()->counted()->count());
+        $this->assertSame(4.0, $this->recipe->refresh()->rating_average);
+    }
+
+    public function test_a_run_of_ratings_on_one_recipe_is_held_back(): void
+    {
+        config(['feedback.ratings.burst_limit' => 3, 'feedback.ratings.burst_minutes' => 60]);
+
+        $url = route('recipes.rate', $this->recipe);
+
+        /*
+         * Every one from a different address, so the address rule is not
+         * what catches them. This is the shape of a rating being bought.
+         */
+        foreach (range(1, 6) as $i) {
+            $this->withServerVariables(['REMOTE_ADDR' => "203.0.113.{$i}"])
+                ->post($url, $this->filled(['stars' => 5]));
+        }
+
+        $this->assertSame(6, $this->recipe->ratings()->count());
+        $this->assertSame(3, $this->recipe->ratings()->counted()->count());
+        $this->assertSame(3, $this->recipe->refresh()->rating_count);
+    }
+
+    public function test_a_held_rating_can_be_let_through_by_hand(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $url = route('recipes.rate', $this->recipe);
+
         $this->asSameVisitor($url, $this->filled(['stars' => 5]));
         $this->asSameVisitor($url, $this->filled(['stars' => 3]));
 
-        $this->assertSame(2, $this->recipe->ratings()->count());
-        $this->assertSame(4.0, round($this->recipe->ratings()->avg('stars'), 2));
+        $held = $this->recipe->ratings()->where('status', RatingStatus::Held)->sole();
+
+        $this->put(route('admin.ratings.update', $held), [
+            'status' => RatingStatus::Counted->value,
+        ])->assertRedirect();
+
+        // Counted, and the recipe added up again on the way out.
+        $this->assertSame(2, $this->recipe->refresh()->rating_count);
+        $this->assertSame(4.0, $this->recipe->rating_average);
+    }
+
+    public function test_throwing_a_rating_out_takes_it_off_the_page(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->asSameVisitor(route('recipes.rate', $this->recipe), $this->filled(['stars' => 1]));
+
+        $rating = $this->recipe->ratings()->sole();
+
+        $this->put(route('admin.ratings.update', $rating), [
+            'status' => RatingStatus::Discounted->value,
+        ]);
+
+        $this->assertSame(0, $this->recipe->refresh()->rating_count);
+        $this->assertNull($this->recipe->rating_average);
+    }
+
+    public function test_a_stamp_cannot_be_used_twice(): void
+    {
+        $url = route('recipes.rate', $this->recipe);
+        $stamp = $this->stampFor('rating');
+
+        $this->post($url, ['stars' => 5, Honeypot::STAMP => $stamp])->assertRedirect();
+
+        // The same page, posted from again. One form, one submission.
+        $this->post($url, ['stars' => 1, Honeypot::STAMP => $stamp])
+            ->assertSessionHasErrors(Honeypot::STAMP);
+
+        $this->assertSame(5, $this->recipe->ratings()->sole()->stars);
+    }
+
+    public function test_a_stamp_from_one_form_does_not_work_on_the_other(): void
+    {
+        // A stamp handed out with the comment box, posted to the rating route.
+        $this->post(route('recipes.rate', $this->recipe), [
+            'stars' => 5,
+            Honeypot::STAMP => $this->stampFor('comment'),
+        ])->assertSessionHasErrors(Honeypot::STAMP);
+
+        $this->assertSame(0, $this->recipe->ratings()->count());
+    }
+
+    public function test_the_admin_sees_what_was_held_back_and_why(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $url = route('recipes.rate', $this->recipe);
+
+        $this->asSameVisitor($url, $this->filled(['stars' => 5]));
+        $this->asSameVisitor($url, $this->filled(['stars' => 1]));
+
+        $this->get(route('admin.ratings.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/ratings/Index')
+                ->has('ratings.data', 1)
+                ->where('ratings.data.0.stars', 1)
+                ->where('ratings.data.0.status', RatingStatus::Held->value)
+                // What the recipe is publishing without it.
+                ->where('ratings.data.0.published.count', 1)
+                // And the reason it is here at all.
+                ->where('ratings.data.0.alsoFromAddress', 1)
+                ->where('moderation.held', 1));
+    }
+
+    public function test_the_ratings_queue_is_not_open_to_the_public(): void
+    {
+        $this->asSameVisitor(route('recipes.rate', $this->recipe), $this->filled(['stars' => 5]));
+
+        $this->get(route('admin.ratings.index'))->assertRedirect();
+
+        $this->put(route('admin.ratings.update', $this->recipe->ratings()->sole()), [
+            'status' => RatingStatus::Discounted->value,
+        ])->assertRedirect(route('admin.login'));
+
+        $this->assertSame(1, $this->recipe->refresh()->rating_count);
     }
 
     public function test_one_address_cannot_sit_there_rating_all_day(): void
@@ -145,7 +307,7 @@ class RecipeFeedbackTest extends TestCase
     {
         $this->post(route('recipes.rate', $this->recipe), [
             'stars' => 5,
-            Honeypot::STAMP => Crypt::encryptString((string) time()),
+            Honeypot::STAMP => Honeypot::stamp('rating'),
         ])->assertSessionHasErrors(Honeypot::STAMP);
 
         $this->assertSame(0, $this->recipe->ratings()->count());
@@ -154,9 +316,11 @@ class RecipeFeedbackTest extends TestCase
     public function test_a_stale_form_is_turned_away(): void
     {
         // A day old is a replay, not a slow reader.
+        $stale = $this->travelTo(now()->subDay(), fn () => Honeypot::stamp('rating'));
+
         $this->post(route('recipes.rate', $this->recipe), [
             'stars' => 5,
-            Honeypot::STAMP => Crypt::encryptString((string) (time() - 86400)),
+            Honeypot::STAMP => $stale,
         ])->assertSessionHasErrors(Honeypot::STAMP);
     }
 
@@ -164,7 +328,7 @@ class RecipeFeedbackTest extends TestCase
     {
         $this->post(route('recipes.rate', $this->recipe), [
             'stars' => 5,
-            Honeypot::STAMP => (string) (time() - 30),
+            Honeypot::STAMP => 'not-a-stamp-at-all',
         ])->assertSessionHasErrors(Honeypot::STAMP);
     }
 
@@ -173,7 +337,7 @@ class RecipeFeedbackTest extends TestCase
         $this->post(route('recipes.comment', $this->recipe), $this->filled([
             'name' => 'Alex',
             'body' => 'Made this on the Skottle. Went down well.',
-        ]))->assertRedirect();
+        ], 'comment'))->assertRedirect();
 
         $comment = RecipeComment::sole();
 
@@ -185,7 +349,7 @@ class RecipeFeedbackTest extends TestCase
     {
         $this->post(route('recipes.comment', $this->recipe), $this->filled([
             'name' => 'Alex', 'body' => 'Waiting to be read.',
-        ]));
+        ], 'comment'));
 
         $this->get(route('recipes.show', $this->recipe->slug))
             ->assertOk()
@@ -199,7 +363,7 @@ class RecipeFeedbackTest extends TestCase
 
         $this->post(route('recipes.comment', $this->recipe), $this->filled([
             'name' => 'Alex', 'body' => 'This is genuinely excellent.',
-        ]));
+        ], 'comment'));
 
         $this->put(route('admin.comments.update', RecipeComment::sole()), [
             'status' => CommentStatus::Approved->value,
@@ -219,7 +383,7 @@ class RecipeFeedbackTest extends TestCase
             'name' => 'Alex',
             'body' => 'Here is how mine came out.',
             'photo' => UploadedFile::fake()->image('mine.jpg', 1200, 900),
-        ]))->assertRedirect();
+        ], 'comment'))->assertRedirect();
 
         $comment = RecipeComment::sole();
 
@@ -247,7 +411,7 @@ class RecipeFeedbackTest extends TestCase
             'name' => 'Alex',
             'body' => 'From the campsite.',
             'photo' => new UploadedFile($path, 'mine.jpg', 'image/jpeg', null, true),
-        ]));
+        ], 'comment'));
 
         $stored = Storage::disk('feedback-test')->get(RecipeComment::sole()->image->file->stored_path);
 
@@ -260,7 +424,7 @@ class RecipeFeedbackTest extends TestCase
             'name' => 'Alex',
             'body' => 'Try this.',
             'photo' => UploadedFile::fake()->create('payload.svg', 4, 'image/svg+xml'),
-        ]))->assertSessionHasErrors('photo');
+        ], 'comment'))->assertSessionHasErrors('photo');
 
         $this->assertSame(0, RecipeComment::count());
     }
@@ -272,16 +436,12 @@ class RecipeFeedbackTest extends TestCase
         $this->post(route('recipes.rate', $draft), $this->filled(['stars' => 5]))->assertNotFound();
         $this->post(route('recipes.comment', $draft), $this->filled([
             'name' => 'Alex', 'body' => 'Sneaking in.',
-        ]))->assertNotFound();
+        ], 'comment'))->assertNotFound();
     }
 
     public function test_the_page_shows_the_stars_it_has(): void
     {
-        foreach ([5, 4] as $i => $stars) {
-            $this->recipe->ratings()->create([
-                'stars' => $stars, 'visitor_hash' => "visitor-{$i}",
-            ]);
-        }
+        $this->giveStars([5, 4]);
 
         $this->get(route('recipes.show', $this->recipe->slug))
             ->assertInertia(fn ($page) => $page
@@ -296,9 +456,7 @@ class RecipeFeedbackTest extends TestCase
     {
         config(['feedback.ratings.min_for_schema' => 3]);
 
-        foreach ([5, 4] as $i => $stars) {
-            $this->recipe->ratings()->create(['stars' => $stars, 'visitor_hash' => "visitor-{$i}"]);
-        }
+        $this->giveStars([5, 4]);
 
         // Two ratings. Shown on the page, not claimed in a search result.
         $this->get(route('recipes.show', $this->recipe->slug))
@@ -307,7 +465,7 @@ class RecipeFeedbackTest extends TestCase
                 // Left out of the markup entirely rather than sent as null.
                 ->missing('seo.schema.0.aggregateRating'));
 
-        $this->recipe->ratings()->create(['stars' => 3, 'visitor_hash' => 'visitor-3']);
+        $this->giveStars([3]);
 
         $this->get(route('recipes.show', $this->recipe->slug))
             ->assertInertia(fn ($page) => $page
@@ -325,7 +483,7 @@ class RecipeFeedbackTest extends TestCase
 
         $this->withCookie(Visitor::COOKIE, $token)->post(
             route('recipes.comment', $this->recipe),
-            $this->filled(['name' => 'Alex', 'body' => 'Best thing I have cooked out there.']),
+            $this->filled(['name' => 'Alex', 'body' => 'Best thing I have cooked out there.'], 'comment'),
         );
 
         $this->put(route('admin.comments.update', RecipeComment::sole()), [
@@ -346,7 +504,7 @@ class RecipeFeedbackTest extends TestCase
 
         $this->post(route('recipes.comment', $this->recipe), $this->filled([
             'name' => 'Alex', 'body' => 'No stars from me, just a note.',
-        ]));
+        ], 'comment'));
 
         $this->put(route('admin.comments.update', RecipeComment::sole()), [
             'status' => CommentStatus::Approved->value,
@@ -366,14 +524,12 @@ class RecipeFeedbackTest extends TestCase
     {
         config(['feedback.ratings.min_for_schema' => 3]);
 
-        foreach ([5, 4] as $i => $stars) {
-            $this->recipe->ratings()->create(['stars' => $stars, 'visitor_hash' => "visitor-{$i}"]);
-        }
+        $this->giveStars([5, 4]);
 
         $this->get(route('recipes.index'))
             ->assertInertia(fn ($page) => $page->where('recipes.data.0.rating', null));
 
-        $this->recipe->ratings()->create(['stars' => 3, 'visitor_hash' => 'visitor-3']);
+        $this->giveStars([3]);
 
         $this->get(route('recipes.index'))
             ->assertInertia(fn ($page) => $page
@@ -390,7 +546,7 @@ class RecipeFeedbackTest extends TestCase
             'name' => 'Alex',
             'body' => 'Cheap watches, click here.',
             'photo' => UploadedFile::fake()->image('mine.jpg', 800, 600),
-        ]));
+        ], 'comment'));
 
         $comment = RecipeComment::sole();
 
@@ -413,7 +569,7 @@ class RecipeFeedbackTest extends TestCase
     {
         $this->post(route('recipes.comment', $this->recipe), $this->filled([
             'name' => 'Alex', 'body' => 'Waiting.',
-        ]));
+        ], 'comment'));
 
         $this->get(route('admin.comments.index'))->assertRedirect();
 
@@ -430,7 +586,7 @@ class RecipeFeedbackTest extends TestCase
 
         $this->post(route('recipes.comment', $this->recipe), $this->filled([
             'name' => 'Alex', 'body' => 'Waiting to be read.',
-        ]));
+        ], 'comment'));
 
         $this->get(route('admin.comments.index'))
             ->assertOk()

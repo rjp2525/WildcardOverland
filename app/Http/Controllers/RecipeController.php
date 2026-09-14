@@ -29,7 +29,6 @@ class RecipeController extends Controller
         $meal = isset($validated['meal']) ? MealType::from($validated['meal']) : null;
 
         $recipes = Recipe::published()
-            ->withRatingSummary()
             ->with('heroImage.file')
             ->when($meal, fn ($query) => $query->where('meal_type', $meal))
             ->orderByDesc('published_at')
@@ -219,8 +218,15 @@ class RecipeController extends Controller
                         'full' => ImagePresenter::full($comment->image, "Photo from {$comment->name}"),
                     ],
                 ])->values(),
-                // A fresh stamp per render, which is half of the honeypot.
-                'stamp' => Honeypot::stamp(),
+                /*
+                 * One stamp per form, each good for a single submission.
+                 * Sharing one between the two would mean rating a recipe
+                 * spent the stamp the comment box was going to need.
+                 */
+                'stamps' => [
+                    'rating' => Honeypot::stamp('rating'),
+                    'comment' => Honeypot::stamp('comment'),
+                ],
                 'trap' => Honeypot::FIELD,
                 'stampField' => Honeypot::STAMP,
                 'photos' => (bool) config('feedback.comments.photos'),
@@ -245,15 +251,13 @@ class RecipeController extends Controller
             'url' => route('recipes.show', $recipe->slug),
             'meal_type' => $recipe->meal_type->label(),
             /*
-             * Only where the listing query asked for them, and only once
-             * there are enough of them to be worth showing. A card carrying
+             * The published figure, off the recipe row, so a card can never
+             * show an average the recipe page and the markup disagree with.
+             * Withheld until there are enough behind it: a card carrying
              * "5.0 from 1" is not a recommendation, it is one person.
              */
-            'rating' => Ratings::worthPublishing((int) ($recipe->ratings_count ?? 0))
-                ? [
-                    'average' => round((float) $recipe->ratings_avg_stars, 2),
-                    'count' => (int) $recipe->ratings_count,
-                ]
+            'rating' => Ratings::worthPublishing($recipe->rating_count)
+                ? ['average' => $recipe->rating_average, 'count' => $recipe->rating_count]
                 : null,
             'difficulty' => $recipe->difficulty?->label(),
             'total_minutes' => $recipe->totalMinutes(),

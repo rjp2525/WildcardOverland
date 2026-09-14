@@ -18,6 +18,14 @@ return [
 
     'ratings' => [
         'min_for_schema' => (int) env('FEEDBACK_MIN_RATINGS_FOR_SCHEMA', 3),
+
+        /*
+         * A run of ratings on one recipe inside this window is held back
+         * rather than counted. Set well above a good day, so an ordinary
+         * week never meets it and a bought one does.
+         */
+        'burst_limit' => (int) env('FEEDBACK_RATING_BURST_LIMIT', 10),
+        'burst_minutes' => (int) env('FEEDBACK_RATING_BURST_MINUTES', 60),
     ],
 
     /*

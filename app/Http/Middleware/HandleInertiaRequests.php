@@ -3,7 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Enums\CommentStatus;
+use App\Enums\RatingStatus;
 use App\Models\RecipeComment;
+use App\Models\RecipeRating;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -57,6 +59,9 @@ class HandleInertiaRequests extends Middleware
             'moderation' => fn () => $request->user() === null ? null : [
                 'pending' => RecipeComment::query()
                     ->where('status', CommentStatus::Pending)
+                    ->count(),
+                'held' => RecipeRating::query()
+                    ->where('status', RatingStatus::Held)
                     ->count(),
             ],
             'ziggy' => fn () => [

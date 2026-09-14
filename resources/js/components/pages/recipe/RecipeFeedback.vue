@@ -18,7 +18,8 @@ export interface Feedback {
   rating: RatingSummary
   yours: number | null
   comments: RecipeComment[]
-  stamp: string
+  /** One per form, each good for a single submission. */
+  stamps: { rating: string; comment: string }
   trap: string
   stampField: string
   photos: boolean
@@ -33,11 +34,16 @@ const props = defineProps<{
   commentUrl: string
 }>()
 
-const honeypot = computed<Honeypot>(() => ({
-  stamp: props.feedback.stamp,
-  trap: props.feedback.trap,
-  stampField: props.feedback.stampField,
-}))
+function honeypotFor(form: 'rating' | 'comment'): Honeypot {
+  return {
+    stamp: props.feedback.stamps[form],
+    trap: props.feedback.trap,
+    stampField: props.feedback.stampField,
+  }
+}
+
+const rateHoneypot = computed(() => honeypotFor('rating'))
+const commentHoneypot = computed(() => honeypotFor('comment'))
 
 /*
  * A circle of colour with their initial in it. Nobody has an account, so
@@ -72,7 +78,7 @@ function hue(name: string): number {
           :url="rateUrl"
           :rating="feedback.rating"
           :yours="feedback.yours"
-          :honeypot="honeypot"
+          :honeypot="rateHoneypot"
         />
       </div>
 
@@ -132,7 +138,7 @@ function hue(name: string): number {
         <div class="mt-5">
           <CommentForm
             :url="commentUrl"
-            :honeypot="honeypot"
+            :honeypot="commentHoneypot"
             :photos="feedback.photos"
             :moderated="feedback.moderated"
             :max-length="feedback.maxLength"
