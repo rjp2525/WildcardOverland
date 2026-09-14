@@ -6,6 +6,7 @@ use App\Enums\MealType;
 use App\Models\Recipe;
 use App\Models\RecipeIngredient;
 use App\Support\ImagePresenter;
+use App\Support\RelatedRecipes;
 use App\Support\RichText\TipTap;
 use App\Support\Seo;
 use App\Support\StructuredData;
@@ -38,10 +39,20 @@ class RecipeController extends Controller
                 description: 'Food worth making a long way from a kitchen. One pot where it can be, a skottle or a dutch oven where it cannot.',
                 card: route('og.card', ['kind' => 'page', 'slug' => 'recipes']),
                 canonical: $meal ? route('recipes.index', ['meal' => $meal->value]) : route('recipes.index'),
-                schema: [StructuredData::breadcrumbs([
-                    ['name' => 'Home', 'url' => route('homepage')],
-                    ['name' => 'Camp recipes', 'url' => route('recipes.index')],
-                ])],
+                schema: array_values(array_filter([
+                    StructuredData::breadcrumbs([
+                        ['name' => 'Home', 'url' => route('homepage')],
+                        ['name' => 'Camp recipes', 'url' => route('recipes.index')],
+                    ]),
+                    // What this page of the listing is actually listing.
+                    StructuredData::itemList(
+                        collect($recipes->items())->map(fn ($card) => [
+                            'name' => $card['name'],
+                            'url' => route('recipes.show', $card['slug']),
+                        ])->all(),
+                        $meal ? $meal->label().' recipes' : 'Camp recipes',
+                    ),
+                ])),
             ),
             'recipes' => $recipes,
             'mealTypes' => MealType::options(),
@@ -90,6 +101,15 @@ class RecipeController extends Controller
                 card: route('og.card', ['kind' => 'recipes', 'slug' => $recipe->slug]),
                 type: 'article',
                 canonical: route('recipes.show', $recipe->slug),
+                article: [
+                    'published' => $recipe->published_at?->toIso8601String(),
+                    'modified' => $recipe->updated_at?->toIso8601String(),
+                    'section' => $recipe->meal_type->label(),
+                    'tags' => [
+                        ...array_map(fn ($tag) => $tag->label(), $recipe->dietaryTags()),
+                        ...array_map(fn ($method) => $method->label(), $recipe->cookingMethods()),
+                    ],
+                ],
                 schema: [
                     StructuredData::recipe($recipe, $hero),
                     StructuredData::breadcrumbs([
@@ -157,12 +177,9 @@ class RecipeController extends Controller
                     'note' => $source->note,
                 ]),
             ],
-            'more' => Recipe::published()
-                ->whereKeyNot($recipe->id)
-                ->with('heroImage.file')
-                ->orderByDesc('published_at')
-                ->take(3)
-                ->get()
+            // Scored on what they have in common rather than on which is
+            // newest, which was never a relationship.
+            'more' => RelatedRecipes::for($recipe)
                 ->map(fn (Recipe $other) => static::cardFor($other)),
         ]);
     }

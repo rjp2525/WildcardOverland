@@ -25,6 +25,24 @@ enum DietaryTag: string
     }
 
     /**
+     * The schema.org RestrictedDiet this tag is the same claim as.
+     *
+     * Only the three that map exactly. "Dairy free" is a stricter claim than
+     * LowLactoseDiet and the rest are about how a recipe is cooked rather
+     * than what is in it, so marking any of them up would be saying
+     * something the page does not.
+     */
+    public function schemaDiet(): ?string
+    {
+        return match ($this) {
+            self::Vegetarian => 'https://schema.org/VegetarianDiet',
+            self::Vegan => 'https://schema.org/VeganDiet',
+            self::GlutenFree => 'https://schema.org/GlutenFreeDiet',
+            default => null,
+        };
+    }
+
+    /**
      * @return array<int, array{value: string, label: string}>
      */
     public static function options(): array

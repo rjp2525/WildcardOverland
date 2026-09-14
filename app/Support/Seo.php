@@ -16,12 +16,16 @@ class Seo
 {
     public const SITE = 'Wildcard Overland';
 
+    /** The same name the Person in the structured data carries. */
+    public const AUTHOR = 'Reno';
+
     /** Ends up in the tab, in search results and on the link card. */
     public const DEFAULT_DESCRIPTION = 'A Toyota Tacoma, a camper on the back and whatever road looks interesting. Trip write-ups, camp cooking and the whole build, part by part.';
 
     /**
      * @param  string|null  $card  A route('og.card') URL
      * @param  array<int, array<string, mixed>>  $schema  JSON-LD graph entries
+     * @param  array<string, mixed>|null  $article  published, modified, section, tags
      * @return array<string, mixed>
      */
     public static function make(
@@ -32,6 +36,7 @@ class Seo
         ?string $canonical = null,
         bool $index = true,
         array $schema = [],
+        ?array $article = null,
     ): array {
         return [
             'title' => static::title($title),
@@ -47,6 +52,17 @@ class Seo
                 'alt' => $title.' on Wildcard Overland',
             ],
             'schema' => $schema,
+            /*
+             * Open Graph's article properties. They are what a link unfurler
+             * and a news reader use to say how old a thing is and what it is
+             * about, and they cost nothing on a page that already knows.
+             */
+            'article' => $article === null ? null : array_filter([
+                'published' => $article['published'] ?? null,
+                'modified' => $article['modified'] ?? null,
+                'section' => $article['section'] ?? null,
+                'tags' => array_values(array_filter($article['tags'] ?? [])),
+            ], fn ($value) => $value !== null && $value !== []),
         ];
     }
 

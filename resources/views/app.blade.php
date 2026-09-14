@@ -23,11 +23,28 @@
     <meta property="og:title" content="{{ $seo['title'] }}">
     <meta property="og:description" content="{{ $seo['description'] }}">
     <meta property="og:url" content="{{ $seo['canonical'] }}">
+    <meta property="og:locale" content="en_US">
+    @isset ($seo['article'])
+        @isset ($seo['article']['published'])
+            <meta property="article:published_time" content="{{ $seo['article']['published'] }}">
+        @endisset
+        @isset ($seo['article']['modified'])
+            <meta property="article:modified_time" content="{{ $seo['article']['modified'] }}">
+        @endisset
+        @isset ($seo['article']['section'])
+            <meta property="article:section" content="{{ $seo['article']['section'] }}">
+        @endisset
+        @foreach ($seo['article']['tags'] ?? [] as $tag)
+            <meta property="article:tag" content="{{ $tag }}">
+        @endforeach
+        <meta property="article:author" content="{{ \App\Support\Seo::AUTHOR }}">
+    @endisset
     @if ($seo['image'])
         <meta property="og:image" content="{{ $seo['image']['url'] }}">
         <meta property="og:image:width" content="{{ $seo['image']['width'] }}">
         <meta property="og:image:height" content="{{ $seo['image']['height'] }}">
         <meta property="og:image:alt" content="{{ $seo['image']['alt'] }}">
+        <meta property="og:image:type" content="image/jpeg">
     @endif
 
     <meta name="twitter:card" content="{{ $seo['image'] ? 'summary_large_image' : 'summary' }}">

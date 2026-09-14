@@ -29,10 +29,19 @@ class TripController extends Controller
                 title: 'Trips',
                 description: 'Where the truck has been and what it was like out there. Route notes, campsites and the bits nobody puts in the guidebook.',
                 card: route('og.card', ['kind' => 'page', 'slug' => 'trips']),
-                schema: [StructuredData::breadcrumbs([
-                    ['name' => 'Home', 'url' => route('homepage')],
-                    ['name' => 'Trips', 'url' => route('trips.index')],
-                ])],
+                schema: array_values(array_filter([
+                    StructuredData::breadcrumbs([
+                        ['name' => 'Home', 'url' => route('homepage')],
+                        ['name' => 'Trips', 'url' => route('trips.index')],
+                    ]),
+                    StructuredData::itemList(
+                        collect($trips->items())->map(fn ($card) => [
+                            'name' => $card['name'],
+                            'url' => route('trips.show', $card['slug']),
+                        ])->all(),
+                        'Trips',
+                    ),
+                ])),
             ),
             'trips' => $trips,
         ]);
@@ -60,6 +69,11 @@ class TripController extends Controller
                 card: route('og.card', ['kind' => 'trips', 'slug' => $trip->slug]),
                 type: 'article',
                 canonical: route('trips.show', $trip->slug),
+                article: [
+                    'published' => $trip->published_at?->toIso8601String(),
+                    'modified' => $trip->updated_at?->toIso8601String(),
+                    'section' => 'Trips',
+                ],
                 schema: [
                     StructuredData::trip($trip, $hero),
                     StructuredData::breadcrumbs([

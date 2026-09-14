@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Image;
 use App\Models\Recipe;
 use App\Models\Trip;
 use App\Support\RichText\TipTap;
@@ -89,8 +90,15 @@ class StructuredData
             '@type' => 'Recipe',
             'name' => $recipe->name,
             'description' => $recipe->summary ?: $recipe->headline,
-            'image' => $image['src'] ?? null,
+            /*
+             * Several shapes of the same photograph. Google picks whichever
+             * fits the result it is building, and offering only one means
+             * it either crops ours or uses none.
+             */
+            'image' => static::imageSet($recipe->heroImage, $image),
             'datePublished' => $recipe->published_at?->toIso8601String(),
+            'dateModified' => $recipe->updated_at?->toIso8601String(),
+            'mainEntityOfPage' => route('recipes.show', $recipe->slug),
             'author' => ['@id' => url('/#reno')],
             'recipeCategory' => $recipe->meal_type->label(),
             // The prose yield when there is one: "10 to 12 big servings"
@@ -102,6 +110,17 @@ class StructuredData
             'cookTime' => static::duration($recipe->cook_minutes),
             'totalTime' => static::duration($recipe->totalMinutes()),
             'keywords' => static::keywords($recipe),
+            // The kit, which the page shows and which is half the recipe out
+            // here. cookingMethod is the words, tool is the things.
+            'cookingMethod' => static::cookingMethod($recipe),
+            'tool' => array_map(
+                fn ($method) => ['@type' => 'HowToTool', 'name' => $method->label()],
+                $recipe->cookingMethods(),
+            ),
+            'suitableForDiet' => array_values(array_filter(array_map(
+                fn ($tag) => $tag->schemaDiet(),
+                $recipe->dietaryTags(),
+            ))),
             /*
              * Flat, and with the part folded into the line. The spec has no
              * grouping for ingredients, so "2 tbsp soy sauce" from the steak
@@ -126,6 +145,69 @@ class StructuredData
                 ->values()
                 ->all(),
         ], fn ($value) => $value !== null && $value !== []);
+    }
+
+    /**
+     * The things a listing page is listing, in the order it lists them.
+     *
+     * Describes the page that is actually served, so a paginated listing
+     * describes its own page rather than claiming the whole collection.
+     *
+     * @param  array<int, array{name: string, url: string}>  $items
+     * @return array<string, mixed>|null
+     */
+    public static function itemList(array $items, string $name): ?array
+    {
+        if ($items === []) {
+            return null;
+        }
+
+        return [
+            '@type' => 'ItemList',
+            'name' => $name,
+            'numberOfItems' => count($items),
+            'itemListOrder' => 'https://schema.org/ItemListOrderDescending',
+            'itemListElement' => array_map(fn (array $item, int $i) => [
+                '@type' => 'ListItem',
+                'position' => $i + 1,
+                'name' => $item['name'],
+                'url' => $item['url'],
+            ], $items, array_keys($items)),
+        ];
+    }
+
+    /**
+     * The same photograph at the shapes a rich result might want.
+     *
+     * Nothing when there is no photograph. The drawn link card is a title
+     * over a background rather than a picture of the food, so offering it
+     * here would be describing a dish nobody can see. The cost is that a
+     * recipe without a hero photo gets no recipe rich result, which is the
+     * honest outcome and a reason to go and take one.
+     *
+     * @param  array<string, mixed>|null  $presented
+     * @return array<int, string>|null
+     */
+    protected static function imageSet(?Image $image, ?array $presented): ?array
+    {
+        // Private images are never presented, and this must not go around
+        // that: ImagePresenter returning null is the check.
+        if ($image === null || $presented === null || $image->file === null) {
+            return null;
+        }
+
+        return [
+            AssetUrl::image($image->file, 'hero', 1280),
+            AssetUrl::image($image->file, 'card', 960),
+            AssetUrl::image($image->file, 'thumb', 640),
+        ];
+    }
+
+    protected static function cookingMethod(Recipe $recipe): ?string
+    {
+        $methods = array_map(fn ($method) => $method->label(), $recipe->cookingMethods());
+
+        return $methods === [] ? null : implode(', ', $methods);
     }
 
     /** ISO 8601 duration, which is the only format the spec accepts. */
