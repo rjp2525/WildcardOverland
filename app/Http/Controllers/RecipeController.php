@@ -163,7 +163,15 @@ class RecipeController extends Controller
                         'title' => $tip->title,
                         'body' => TipTap::html($tip->body),
                     ])->values(),
-                    'image' => ImagePresenter::thumb($step->image, "Step {$step->order}"),
+                    /*
+                     * Two renderings of the same photograph: the crop the
+                     * column shows, and the whole frame behind it for when
+                     * someone wants to see what the pan actually looked like.
+                     */
+                    'image' => $step->image === null ? null : [
+                        'crop' => ImagePresenter::step($step->image, $step->title ?? "Step {$step->order}"),
+                        'full' => ImagePresenter::full($step->image, $step->title ?? "Step {$step->order}"),
+                    ],
                 ]),
                 'sections' => $recipe->sections->map(fn ($section) => [
                     'kind' => $section->kind->value,

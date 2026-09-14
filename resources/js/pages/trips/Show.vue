@@ -96,7 +96,9 @@ defineProps<{
         <h2 class="mb-5 text-2xl font-extrabold uppercase text-brand">Photos</h2>
         <div class="grid gap-4 sm:grid-cols-2">
           <figure v-for="(image, i) in trip.gallery" :key="i" class="overflow-hidden rounded-lg">
-            <ResponsiveImage :image="image" class="aspect-square" />
+            <div class="aspect-square overflow-hidden rounded-lg bg-slate-200 dark:bg-white/5">
+              <ResponsiveImage :image="image" class="h-full w-full" />
+            </div>
             <figcaption
               v-if="image.caption"
               class="pt-2 text-sm text-slate-500 dark:text-white/60"

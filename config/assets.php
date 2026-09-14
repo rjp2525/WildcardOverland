@@ -73,6 +73,30 @@ return [
             'sizes' => '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw',
         ],
 
+        /*
+         * A step photograph. Phone shots arrive portrait and landscape in
+         * the same recipe, and a method column whose width jumps around is
+         * harder to follow than one that does not, so they are all cropped
+         * to the same shape. The whole frame is still one tap away.
+         */
+        'step' => [
+            'fit' => 'cover',
+            'ratio' => [4, 3],
+            'widths' => [320, 480, 640, 960],
+            'sizes' => '(min-width: 1024px) 26rem, (min-width: 640px) 60vw, 100vw',
+        ],
+
+        /*
+         * The whole frame, uncropped, for looking at properly. Scale rather
+         * than cover: nothing is cut off, whatever shape it arrived in.
+         */
+        'full' => [
+            'fit' => 'scale',
+            'ratio' => null,
+            'widths' => [640, 960, 1280, 1600],
+            'sizes' => '(min-width: 1024px) 80vw, 100vw',
+        ],
+
         'thumb' => [
             'fit' => 'cover',
             'ratio' => [1, 1],

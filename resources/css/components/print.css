@@ -295,8 +295,22 @@
 
     /*
      * Step photographs are the one image worth the ink: what it should look
-     * like is hard to say in words.
+     * like is hard to say in words. The aspect box has to be told a size,
+     * since on paper there is no column for it to fill.
      */
+    .step-photo {
+        break-inside: avoid;
+        margin: 3pt 0 !important;
+    }
+
+    .step-photo > * > * {
+        max-width: 45mm !important;
+    }
+
+    .step-photo div {
+        aspect-ratio: 4 / 3;
+    }
+
     .method-step img {
         max-width: 45mm !important;
         break-inside: avoid;

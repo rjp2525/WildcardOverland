@@ -29,6 +29,18 @@ class ImagePresenter
         return static::present($image, 'card', $alt);
     }
 
+    /** A method step, cropped so a column of them lines up. */
+    public static function step(?Image $image, ?string $alt = null): ?array
+    {
+        return static::present($image, 'step', $alt);
+    }
+
+    /** The whole frame, uncropped, for looking at properly. */
+    public static function full(?Image $image, ?string $alt = null): ?array
+    {
+        return static::present($image, 'full', $alt);
+    }
+
     /** Square thumbnail for galleries. */
     public static function thumb(?Image $image, ?string $alt = null): ?array
     {

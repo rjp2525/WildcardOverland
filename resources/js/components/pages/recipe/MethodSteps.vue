@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import StepTip, { type Tip } from './StepTip.vue'
+import StepPhoto, { type StepImage } from './StepPhoto.vue'
 import RichText from '@/components/ui/RichText.vue'
-import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
 
 export interface Step {
   title: string | null
   /** Rendered from the stored document by the server. */
   body: string
   tips: Tip[]
-  image: ResponsiveImageData | null
+  image: StepImage | null
 }
 
 defineProps<{ steps: Step[] }>()
@@ -37,16 +37,19 @@ defineProps<{ steps: Step[] }>()
           :class="['text-slate-700 dark:text-white/80', step.title ? '' : 'pt-1']"
         />
 
+        <!--
+          The photograph shows what this step should look like, so it sits
+          with the instructions. The tips are asides and come after it.
+        -->
+        <StepPhoto
+          v-if="step.image"
+          :image="step.image"
+          :label="step.title ?? `Step ${i + 1}`"
+        />
+
         <div v-if="step.tips.length" class="mt-3 flex flex-wrap gap-2 print:block print:space-y-2">
           <StepTip v-for="(tip, t) in step.tips" :key="t" :tip="tip" />
         </div>
-
-        <ResponsiveImage
-          v-if="step.image"
-          :image="step.image"
-          class="mt-3 aspect-[4/3] max-w-xs rounded-lg sm:max-w-sm"
-          sizes="(min-width: 640px) 24rem, 20rem"
-        />
       </div>
     </li>
   </ol>
