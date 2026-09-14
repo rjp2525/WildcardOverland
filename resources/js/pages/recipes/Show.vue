@@ -25,6 +25,7 @@ interface Source {
 
 const props = defineProps<{
   recipe: {
+    slug: string
     name: string
     headline: string | null
     summary: string | null
@@ -238,6 +239,7 @@ const servingLabel = computed(() => {
           :groups="recipe.ingredient_groups"
           :loose="recipe.ingredients"
           :split="splitIngredients"
+          :storage-key="recipe.slug"
         />
 
         <ShoppingList v-if="shoppingList.length" :name="recipe.name" :items="shoppingList" />

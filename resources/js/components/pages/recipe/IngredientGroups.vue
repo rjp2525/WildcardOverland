@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { Check } from 'lucide-vue-next'
 import RichText from '@/components/ui/RichText.vue'
+import { useChecklist } from '@/composables/useChecklist'
 
 export interface Ingredient {
   label: string
@@ -27,6 +28,8 @@ const props = withDefaults(
     loose: Ingredient[]
     /** Allow the parts to run in more than one column when there is room. */
     split?: boolean
+    /** Identifies this recipe's saved ticks. The slug. */
+    storageKey: string
   }>(),
   { split: false },
 )
@@ -37,10 +40,10 @@ const props = withDefaults(
  * "Everything else" above a plain list reads as a mistake.
  */
 const blocks = computed(() => {
-  const out = props.groups.map((group) => ({ ...group, headed: true }))
+  const parts = props.groups.map((group) => ({ ...group, headed: true }))
 
   if (props.loose.length) {
-    out.push({
+    parts.push({
       name: 'Everything else',
       note: '',
       items: props.loose,
@@ -48,21 +51,40 @@ const blocks = computed(() => {
     })
   }
 
-  return out
+  /*
+   * Every line gets an id built from its part and its own words, because the
+   * ticks outlive the page now. Position will not do: add one ingredient to
+   * the top of a part and every tick below it slides onto the wrong line,
+   * and a list that lies about what you already have is worse than one that
+   * forgot. Reword an ingredient and it comes back unticked, which is right:
+   * it is not quite the same thing any more.
+   *
+   * The counter only matters where a part genuinely lists the same words
+   * twice, which happens with "salt, to taste".
+   */
+  const seen = new Map<string, number>()
+
+  return parts.map((part) => ({
+    ...part,
+    items: part.items.map((item) => {
+      const base = `${part.name}|${item.label}`
+      const nth = seen.get(base) ?? 0
+
+      seen.set(base, nth + 1)
+
+      return { ...item, id: nth === 0 ? base : `${base}#${nth}` }
+    }),
+  }))
 })
 
-/*
- * Ticking off while cooking. Deliberately not persisted: it is scratch state
- * for one session at the camp table. Keyed by part and position so adding a
- * part cannot shuffle what is already ticked.
- */
-const checked = ref<Set<string>>(new Set())
+/** Ticking off while shopping and cooking, kept between visits. */
+const { ticked, toggle, clear } = useChecklist(computed(() => props.storageKey))
 
-function toggle(key: string) {
-  const next = new Set(checked.value)
-  next.has(key) ? next.delete(key) : next.add(key)
-  checked.value = next
-}
+const total = computed(() => blocks.value.reduce((n, block) => n + block.items.length, 0))
+
+const tickedCount = computed(
+  () => blocks.value.flatMap((block) => block.items).filter((i) => ticked.value.has(i.id)).length,
+)
 </script>
 
 <template>
@@ -73,7 +95,7 @@ function toggle(key: string) {
     wide one fills up instead of running on for a page and a half.
   -->
   <div :class="['ingredient-parts space-y-8', split && 'sm:columns-[17rem] sm:gap-x-10 sm:space-y-0']">
-    <section v-for="(block, b) in blocks" :key="b" :class="split && 'mb-8 break-inside-avoid'">
+    <section v-for="block in blocks" :key="block.name" :class="split && 'mb-8 break-inside-avoid'">
       <h3
         v-if="block.headed"
         class="font-brand text-sm font-extrabold uppercase tracking-widest text-slate-900 dark:text-white"
@@ -93,13 +115,13 @@ function toggle(key: string) {
       />
 
       <ul class="mt-3 space-y-2.5">
-        <li v-for="(ingredient, i) in block.items" :key="i">
+        <li v-for="ingredient in block.items" :key="ingredient.id">
           <label class="group flex cursor-pointer items-start gap-3 text-slate-700 dark:text-white/80">
             <input
               type="checkbox"
-              :checked="checked.has(`${b}:${i}`)"
+              :checked="ticked.has(ingredient.id)"
               class="peer sr-only"
-              @change="toggle(`${b}:${i}`)"
+              @change="toggle(ingredient.id)"
             >
             <!--
               Drawn rather than native: accent-color leaves an unfilled box
@@ -111,11 +133,11 @@ function toggle(key: string) {
             >
               <Check
                 class="h-3.5 w-3.5 text-white transition-opacity"
-                :class="checked.has(`${b}:${i}`) ? 'opacity-100' : 'opacity-0'"
+                :class="ticked.has(ingredient.id) ? 'opacity-100' : 'opacity-0'"
               />
             </span>
 
-            <span class="min-w-0" :class="checked.has(`${b}:${i}`) ? 'line-through opacity-50' : ''">
+            <span class="min-w-0" :class="ticked.has(ingredient.id) ? 'line-through opacity-50' : ''">
               {{ ingredient.label }}
               <span v-if="ingredient.note" class="text-slate-500 dark:text-white/60">
                 ({{ ingredient.note }})
@@ -138,7 +160,22 @@ function toggle(key: string) {
           </label>
         </li>
       </ul>
-
     </section>
+
+    <!--
+      Ticks are kept between visits now, so there has to be a way out of
+      them. Only shown once there is something to undo, and hidden on paper
+      where it means nothing.
+    -->
+    <p v-if="tickedCount" class="print-hide pt-1 text-sm text-slate-500 dark:text-white/55">
+      {{ tickedCount }} of {{ total }} ticked off.
+      <button
+        type="button"
+        class="font-medium text-brand underline underline-offset-2 hover:no-underline"
+        @click="clear"
+      >
+        Start over
+      </button>
+    </p>
   </div>
 </template>

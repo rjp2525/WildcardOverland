@@ -120,6 +120,8 @@ class RecipeController extends Controller
                 ],
             ),
             'recipe' => [
+                // Identifies this recipe's saved checklist in the browser.
+                'slug' => $recipe->slug,
                 'name' => $recipe->name,
                 'headline' => $recipe->headline,
                 'summary' => $recipe->summary,
