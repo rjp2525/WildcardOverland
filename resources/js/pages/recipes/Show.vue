@@ -177,33 +177,52 @@ const servingLabel = computed(() => {
   </div>
 
   <div class="container py-12">
-    <p v-if="recipe.summary" class="recipe-summary mb-8 max-w-3xl text-lg text-slate-700 dark:text-white/80">
-      {{ recipe.summary }}
-    </p>
-
-    <!-- What it gets cooked on. The kit is half the recipe out here. -->
-    <div v-if="recipe.cooked_on.length" class="recipe-kit mb-10">
-      <h2 class="mb-4 text-sm font-bold uppercase tracking-widest text-brand">Cooked on</h2>
-      <ul class="flex flex-wrap gap-3">
-        <li
-          v-for="method in recipe.cooked_on"
-          :key="method.value"
-          class="flex items-center gap-2.5 rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 dark:border-white/12 dark:text-white/80"
-        >
-          <CookingIcon :method="method.value" class="h-7 w-7 shrink-0 text-brand" />
-          {{ method.label }}
-        </li>
-      </ul>
-    </div>
-
-    <div v-if="recipe.dietary.length" class="mb-10 flex flex-wrap gap-2">
-      <span
-        v-for="tag in recipe.dietary"
-        :key="tag"
-        class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-white/70"
+    <!--
+      The lede and the labels share a row on a wide screen, pushed to
+      opposite edges. A paragraph has to keep a readable line length, so on
+      its own it stopped halfway across and left a ragged gap while
+      everything under it ran the full width. Anchoring the labels to the
+      right gives the row two edges that line up with the rest of the page,
+      and the space between them reads as spacing rather than as a paragraph
+      that gave up early.
+    -->
+    <div
+      v-if="recipe.summary || recipe.cooked_on.length || recipe.dietary.length"
+      class="recipe-intro mb-12 grid items-start gap-x-12 gap-y-6 lg:grid-cols-[minmax(0,1fr)_auto]"
+    >
+      <p
+        v-if="recipe.summary"
+        class="recipe-summary max-w-3xl text-lg leading-relaxed text-slate-700 dark:text-white/80"
       >
-        {{ tag }}
-      </span>
+        {{ recipe.summary }}
+      </p>
+
+      <div class="recipe-intro-meta space-y-5 lg:justify-self-end lg:text-right">
+        <!-- What it gets cooked on. The kit is half the recipe out here. -->
+        <div v-if="recipe.cooked_on.length" class="recipe-kit">
+          <h2 class="mb-3 text-sm font-bold uppercase tracking-widest text-brand">Cooked on</h2>
+          <ul class="flex flex-wrap gap-3 lg:justify-end">
+            <li
+              v-for="method in recipe.cooked_on"
+              :key="method.value"
+              class="flex items-center gap-2.5 rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 dark:border-white/12 dark:text-white/80"
+            >
+              <CookingIcon :method="method.value" class="h-7 w-7 shrink-0 text-brand" />
+              {{ method.label }}
+            </li>
+          </ul>
+        </div>
+
+        <div v-if="recipe.dietary.length" class="flex flex-wrap gap-2 lg:justify-end">
+          <span
+            v-for="tag in recipe.dietary"
+            :key="tag"
+            class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-white/70"
+          >
+            {{ tag }}
+          </span>
+        </div>
+      </div>
     </div>
 
     <!-- Prep at home, kit lists. Read days before the burner is lit. -->

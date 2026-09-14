@@ -135,10 +135,20 @@
         font-size: 8.5pt;
     }
 
+    /* One column on paper; the row only exists to fill a wide screen. */
+    .recipe-intro {
+        display: block !important;
+        margin-bottom: 8pt !important;
+    }
+
     .recipe-summary {
         font-size: 9.5pt !important;
-        margin: 0 0 8pt !important;
+        margin: 0 0 5pt !important;
         max-width: none !important;
+    }
+
+    .recipe-intro-meta > * + * {
+        margin-top: 3pt !important;
     }
 
     /*
