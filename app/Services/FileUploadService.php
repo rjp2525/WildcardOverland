@@ -30,13 +30,14 @@ class FileUploadService
         string $type = 'content',
         ?string $name = null,
         ImageType $imageType = ImageType::Photo,
+        bool $untrusted = false,
     ): File {
         /*
          * An SVG is cleaned before anything else happens, so the hash, the
          * bytes on disk and the recorded size all describe the safe version
          * rather than whatever was handed to us.
          */
-        $contents = $this->contents($upload);
+        $contents = $this->contents($upload, $untrusted);
         $hash = hash('sha256', $contents);
 
         if ($existing = File::where('hash', $hash)->first()) {
@@ -189,12 +190,12 @@ class FileUploadService
      * The bytes to store. Raster files go through untouched; an SVG is
      * sanitised, and one that will not parse is refused outright.
      */
-    protected function contents(UploadedFile $upload): string
+    protected function contents(UploadedFile $upload, bool $untrusted = false): string
     {
         $raw = (string) file_get_contents($upload->getRealPath());
 
         if (! $this->isSvg($upload)) {
-            return $raw;
+            return $untrusted ? $this->stripMetadata($upload, $raw) : $raw;
         }
 
         $clean = $this->svg->clean($raw);
@@ -204,6 +205,37 @@ class FileUploadService
         }
 
         return $clean;
+    }
+
+    /**
+     * Re-encodes a photograph so nothing rides along inside it.
+     *
+     * A phone writes where it was standing into every picture it takes. That
+     * is fine for our own photographs, which we chose to publish, and not
+     * fine for one a stranger sent in: the derivatives drop it, but the
+     * original would keep somebody's home address on our disk forever.
+     *
+     * Re-encoding loses a little quality and that is the right trade. If it
+     * cannot be decoded at all the original is kept, because refusing the
+     * upload over a metadata worry would be the worse failure.
+     */
+    protected function stripMetadata(UploadedFile $upload, string $raw): string
+    {
+        try {
+            return LaravelImage::fromPath($upload->getRealPath())
+                // The rotation lives in the metadata being removed, so it
+                // has to be baked into the pixels on the way past.
+                ->orient()
+                ->optimize('jpg', 88)
+                ->toBytes();
+        } catch (Throwable $e) {
+            Log::warning('Could not strip metadata from an upload', [
+                'name' => $upload->getClientOriginalName(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return $raw;
+        }
     }
 
     protected function isSvg(UploadedFile $upload): bool

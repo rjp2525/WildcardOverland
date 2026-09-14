@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CommentController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FileController;
 use App\Http\Controllers\Admin\ImageController;
@@ -63,6 +64,11 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
         Route::resource('images', ImageController::class)
             ->only(['index', 'edit', 'update', 'destroy']);
+
+        // What people who cooked something sent in, waiting to be read.
+        Route::get('comments', [CommentController::class, 'index'])->name('comments.index');
+        Route::put('comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
+        Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
         Route::resource('files', FileController::class)
             ->only(['index', 'store', 'destroy']);

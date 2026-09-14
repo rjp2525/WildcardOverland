@@ -33,5 +33,7 @@ export type PageProps<
         error: string | null;
     };
     site: SiteMeta;
+    /** Null for everybody but a signed-in admin. */
+    moderation: { pending: number } | null;
     ziggy: Config & { location: string };
 };

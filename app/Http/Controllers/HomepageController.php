@@ -44,6 +44,7 @@ class HomepageController extends Controller
                 ->all(),
 
             'recipes' => Recipe::published()
+                ->withRatingSummary()
                 ->with('heroImage.file')
                 ->orderByDesc('published_at')
                 ->take(3)

@@ -4,7 +4,10 @@ namespace App\Providers;
 
 use App\Image\Transformations\OgCard;
 use App\Services\OgCardRenderer;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Image;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 
@@ -23,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->rateLimitFeedback();
+
         /*
          * Shared from here rather than from the Inertia middleware, because
          * the middleware does not run when an error response is rendered and
@@ -51,5 +56,23 @@ class AppServiceProvider extends ServiceProvider
         }
 
         //
+    }
+
+    /**
+     * How often one address may send something in.
+     *
+     * Keyed on the address rather than the visitor cookie on purpose. A
+     * script that wanted around this would simply not keep the cookie, and
+     * the point of a limit is that it binds the people trying to get past it.
+     */
+    protected function rateLimitFeedback(): void
+    {
+        RateLimiter::for('feedback-ratings', fn (Request $request) => Limit::perHour(
+            (int) config('feedback.throttle.ratings_per_hour'),
+        )->by($request->ip() ?? 'unknown'));
+
+        RateLimiter::for('feedback-comments', fn (Request $request) => Limit::perHour(
+            (int) config('feedback.throttle.comments_per_hour'),
+        )->by($request->ip() ?? 'unknown'));
     }
 }

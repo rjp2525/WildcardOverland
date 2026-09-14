@@ -59,6 +59,7 @@ class RelatedRecipes
     {
         $candidates = Recipe::published()
             ->whereKeyNot($recipe->id)
+            ->withRatingSummary()
             ->with(['heroImage.file', 'ingredients:id,recipe_id,item', 'trips:id'])
             ->get();
 

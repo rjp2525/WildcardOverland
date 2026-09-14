@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Enums\MealType;
 use App\Models\Recipe;
 use App\Models\RecipeIngredient;
+use App\Support\Honeypot;
 use App\Support\ImagePresenter;
+use App\Support\Ratings;
 use App\Support\RelatedRecipes;
 use App\Support\RichText\TipTap;
 use App\Support\Seo;
 use App\Support\StructuredData;
+use App\Support\Visitor;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -26,6 +29,7 @@ class RecipeController extends Controller
         $meal = isset($validated['meal']) ? MealType::from($validated['meal']) : null;
 
         $recipes = Recipe::published()
+            ->withRatingSummary()
             ->with('heroImage.file')
             ->when($meal, fn ($query) => $query->where('meal_type', $meal))
             ->orderByDesc('published_at')
@@ -76,7 +80,7 @@ class RecipeController extends Controller
         ];
     }
 
-    public function show(Recipe $recipe): Response
+    public function show(Request $request, Recipe $recipe): Response
     {
         abort_unless($this->isPublished($recipe), 404);
 
@@ -90,6 +94,9 @@ class RecipeController extends Controller
             'steps.tips',
             'sections',
             'sources',
+            'ratings',
+            // Only what is on the page; the queue is nobody else's business.
+            'comments' => fn ($query) => $query->approved()->with('image.file'),
         ]);
 
         $hero = ImagePresenter::hero($recipe->heroImage, $recipe->name);
@@ -189,6 +196,38 @@ class RecipeController extends Controller
             ],
             // Scored on what they have in common rather than on which is
             // newest, which was never a relationship.
+            'feedback' => [
+                'rating' => Ratings::summary($recipe),
+                /*
+                 * Their own star, if this browser has left one, so the
+                 * widget comes back set rather than empty. Read-only: a
+                 * cookie is issued when somebody sends something in, not
+                 * to everybody who turns up to read.
+                 */
+                'yours' => ($hash = Visitor::existing($request)) === null ? null : $recipe->ratings
+                    ->firstWhere('visitor_hash', $hash)?->stars,
+                'comments' => $recipe->comments->map(fn ($comment) => [
+                    'name' => $comment->name,
+                    'body' => $comment->body,
+                    'posted' => $comment->approved_at?->toDateString()
+                        ?? $comment->created_at?->toDateString(),
+                    // Their stars, if they left some, shown beside their words.
+                    'stars' => $comment->visitor_hash === null ? null : $recipe->ratings
+                        ->firstWhere('visitor_hash', $comment->visitor_hash)?->stars,
+                    'photo' => [
+                        'crop' => ImagePresenter::step($comment->image, "Photo from {$comment->name}"),
+                        'full' => ImagePresenter::full($comment->image, "Photo from {$comment->name}"),
+                    ],
+                ])->values(),
+                // A fresh stamp per render, which is half of the honeypot.
+                'stamp' => Honeypot::stamp(),
+                'trap' => Honeypot::FIELD,
+                'stampField' => Honeypot::STAMP,
+                'photos' => (bool) config('feedback.comments.photos'),
+                'moderated' => (bool) config('feedback.comments.moderate'),
+                'maxLength' => (int) config('feedback.comments.max_length'),
+                'photoMaxKb' => (int) config('feedback.comments.photo_max_kb'),
+            ],
             'more' => RelatedRecipes::for($recipe)
                 ->map(fn (Recipe $other) => static::cardFor($other)),
         ]);
@@ -205,6 +244,17 @@ class RecipeController extends Controller
             'headline' => $recipe->headline,
             'url' => route('recipes.show', $recipe->slug),
             'meal_type' => $recipe->meal_type->label(),
+            /*
+             * Only where the listing query asked for them, and only once
+             * there are enough of them to be worth showing. A card carrying
+             * "5.0 from 1" is not a recommendation, it is one person.
+             */
+            'rating' => Ratings::worthPublishing((int) ($recipe->ratings_count ?? 0))
+                ? [
+                    'average' => round((float) $recipe->ratings_avg_stars, 2),
+                    'count' => (int) $recipe->ratings_count,
+                ]
+                : null,
             'difficulty' => $recipe->difficulty?->label(),
             'total_minutes' => $recipe->totalMinutes(),
             'servings' => $recipe->servings,

@@ -98,6 +98,16 @@ class Recipe extends Model
         return $this->hasMany(RecipeIngredient::class)->whereNull('group_id')->orderBy('order');
     }
 
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(RecipeRating::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(RecipeComment::class)->latest();
+    }
+
     /** Where the recipe came from, and what it started as. */
     public function sources(): HasMany
     {
@@ -114,6 +124,19 @@ class Recipe extends Model
         $query->where('is_draft', false)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now());
+    }
+
+    /**
+     * The stars a card needs, counted in the listing query.
+     *
+     * A card shows an average, and working one out per card is a query per
+     * card. Both aggregates come back on the row instead.
+     *
+     * @param  Builder<Recipe>  $query
+     */
+    public function scopeWithRatingSummary(Builder $query): void
+    {
+        $query->withCount('ratings')->withAvg('ratings', 'stars');
     }
 
     public function totalMinutes(): ?int

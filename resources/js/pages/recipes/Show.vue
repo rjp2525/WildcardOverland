@@ -11,6 +11,7 @@ import IngredientGroups, {
 } from '@/components/pages/recipe/IngredientGroups.vue'
 import MethodSteps, { type Step } from '@/components/pages/recipe/MethodSteps.vue'
 import RecipeSection, { type Section } from '@/components/pages/recipe/RecipeSection.vue'
+import RecipeFeedback, { type Feedback } from '@/components/pages/recipe/RecipeFeedback.vue'
 import { RecipeCard } from '@/components/cards'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
@@ -49,6 +50,7 @@ const props = defineProps<{
     sources: Source[]
   }
   more: RecipeCardData[]
+  feedback: Feedback
 }>()
 
 const hasIngredients = computed(
@@ -301,6 +303,12 @@ const servingLabel = computed(() => {
       </ul>
     </AnimatedContent>
   </div>
+
+  <RecipeFeedback
+    :feedback="feedback"
+    :rate-url="route('recipes.rate', recipe.slug)"
+    :comment-url="route('recipes.comment', recipe.slug)"
+  />
 
   <section v-if="more.length" class="print-hide border-t border-slate-200 py-12 dark:border-white/10">
     <div class="container">

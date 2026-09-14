@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\CommentStatus;
+use App\Models\RecipeComment;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -46,6 +48,16 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+            ],
+            /*
+             * How many comments are waiting to be read, badged on the admin
+             * nav. Only for somebody signed in: nobody else has a queue, and
+             * the count is not the public's business.
+             */
+            'moderation' => fn () => $request->user() === null ? null : [
+                'pending' => RecipeComment::query()
+                    ->where('status', CommentStatus::Pending)
+                    ->count(),
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),

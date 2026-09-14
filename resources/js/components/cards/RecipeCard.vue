@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3'
 import { Clock, Users } from 'lucide-vue-next'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
 import CookingIcon from '@/components/pages/recipe/CookingIcon.vue'
+import RatingStars from '@/components/pages/recipe/RatingStars.vue'
 
 export interface RecipeCardData {
   name: string
@@ -16,6 +17,8 @@ export interface RecipeCardData {
   dietary: string[]
   cooked_on: Array<{ value: string; label: string }>
   image: ResponsiveImageData | null
+  /** Null until enough people have rated it to be worth showing. */
+  rating: { average: number; count: number } | null
 }
 
 defineProps<{ recipe: RecipeCardData }>()
@@ -44,6 +47,11 @@ defineProps<{ recipe: RecipeCardData }>()
       <h3 class="text-lg font-extrabold uppercase text-black transition-colors group-hover:text-brand dark:text-white">
         {{ recipe.name }}
       </h3>
+
+      <p v-if="recipe.rating" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-white/55">
+        <RatingStars :value="recipe.rating.average" size="sm" />
+        <span>{{ recipe.rating.average.toFixed(1) }} from {{ recipe.rating.count }}</span>
+      </p>
       <p v-if="recipe.headline" class="flex-1 text-sm text-slate-600 dark:text-white/70">
         {{ recipe.headline }}
       </p>

@@ -10,6 +10,7 @@ use App\Models\Recipe;
 use App\Models\Trip;
 use App\Models\VehicleModification;
 use App\Services\FileUploadService;
+use App\Support\RichText\HtmlToTipTap;
 use App\Support\RichText\TipTap;
 use Database\Seeders\Demo\DemoContent;
 use Database\Seeders\Demo\DemoImageFactory;
@@ -88,7 +89,10 @@ class DemoContentSeeder extends Seeder
                         'name' => $data['name'],
                         'headline' => $data['headline'],
                         'summary' => $data['summary'],
-                        'content' => TipTap::fromText($data['content']),
+                        // Markup in the fixture, so it is parsed rather than
+                        // taken literally: fromText() would put the tags on
+                        // the page as words.
+                        'content' => HtmlToTipTap::convert($data['content']),
                         'start_date' => $data['start_date'],
                         'end_date' => $data['end_date'],
                         'miles' => $data['miles'],
@@ -139,7 +143,7 @@ class DemoContentSeeder extends Seeder
                         'name' => $data['name'],
                         'headline' => $data['headline'],
                         'summary' => $data['summary'],
-                        'notes' => TipTap::fromText((string) $data['notes']),
+                        'notes' => HtmlToTipTap::convert((string) $data['notes']),
                         'meal_type' => $data['meal_type'],
                         'difficulty' => $data['difficulty'],
                         'dietary' => $data['dietary'],

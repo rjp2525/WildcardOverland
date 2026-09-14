@@ -8,6 +8,7 @@ import {
   Files,
   LayoutDashboard,
   Link2,
+  MessageSquare,
   LogOut,
   Map,
   ChefHat,
@@ -50,10 +51,13 @@ watch(
   { deep: true, immediate: true },
 )
 
+const pending = computed(() => page.props.moderation?.pending ?? 0)
+
 const nav = [
   { label: 'Dashboard', icon: LayoutDashboard, routeName: 'admin.dashboard' },
   { label: 'Trips', icon: Map, routeName: 'admin.trips.index' },
   { label: 'Recipes', icon: ChefHat, routeName: 'admin.recipes.index' },
+  { label: 'Comments', icon: MessageSquare, routeName: 'admin.comments.index', badge: true },
   { label: 'Modifications', icon: Wrench, routeName: 'admin.vehicle-modifications.index' },
   { label: 'Brands', icon: Boxes, routeName: 'admin.brands.index' },
   { label: 'Images', icon: FileImage, routeName: 'admin.images.index' },
@@ -118,6 +122,14 @@ function logout() {
         >
           <component :is="item.icon" class="h-4 w-4 shrink-0" />
           {{ item.label }}
+
+          <!-- What is waiting to be read, so it does not sit for a week. -->
+          <span
+            v-if="item.badge && pending"
+            class="ml-auto rounded-full bg-brand px-1.5 py-0.5 text-[0.65rem] font-bold leading-none text-white"
+          >
+            {{ pending }}
+          </span>
         </Link>
       </nav>
 

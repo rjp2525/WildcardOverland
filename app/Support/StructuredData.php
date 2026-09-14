@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\CommentStatus;
 use App\Models\Image;
 use App\Models\Recipe;
 use App\Models\Trip;
@@ -110,6 +111,19 @@ class StructuredData
             'cookTime' => static::duration($recipe->cook_minutes),
             'totalTime' => static::duration($recipe->totalMinutes()),
             'keywords' => static::keywords($recipe),
+            /*
+             * Only once enough people have rated it. A star in a search
+             * result is a claim that somebody stands behind the number, and
+             * one rating from one browser is not that.
+             */
+            'aggregateRating' => static::aggregateRating($recipe),
+            /*
+             * The comments, but only the ones whose author also left stars.
+             * A review in this markup is a rating with words attached, and
+             * a Review with no reviewRating is the shape Google quietly
+             * drops rather than the extra detail it looks like.
+             */
+            'review' => static::reviews($recipe),
             // The kit, which the page shows and which is half the recipe out
             // here. cookingMethod is the words, tool is the things.
             'cookingMethod' => static::cookingMethod($recipe),
@@ -148,6 +162,54 @@ class StructuredData
     }
 
     /**
+     * Comments that came with a rating, as reviews.
+     *
+     * The two are separate on the page on purpose: rating is one tap and
+     * writing something is not, and demanding both would get far fewer of
+     * either. They are matched back up here by the browser that sent them,
+     * which is the same thing that stops one person rating twice.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected static function reviews(Recipe $recipe): array
+    {
+        $comments = $recipe->relationLoaded('comments')
+            ? $recipe->comments->where('status', CommentStatus::Approved)
+            : $recipe->comments()->approved()->get();
+
+        if ($comments->isEmpty()) {
+            return [];
+        }
+
+        $stars = ($recipe->relationLoaded('ratings') ? $recipe->ratings : $recipe->ratings()->get())
+            ->pluck('stars', 'visitor_hash');
+
+        return $comments
+            ->map(fn ($comment) => [
+                'comment' => $comment,
+                'stars' => $comment->visitor_hash === null
+                    ? null
+                    : ($stars[$comment->visitor_hash] ?? null),
+            ])
+            ->filter(fn (array $pair) => $pair['stars'] !== null)
+            ->map(fn (array $pair) => [
+                '@type' => 'Review',
+                'author' => ['@type' => 'Person', 'name' => $pair['comment']->name],
+                'datePublished' => ($pair['comment']->approved_at ?? $pair['comment']->created_at)
+                    ?->toDateString(),
+                'reviewBody' => $pair['comment']->body,
+                'reviewRating' => [
+                    '@type' => 'Rating',
+                    'ratingValue' => $pair['stars'],
+                    'bestRating' => 5,
+                    'worstRating' => 1,
+                ],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * The things a listing page is listing, in the order it lists them.
      *
      * Describes the page that is actually served, so a paginated listing
@@ -173,6 +235,28 @@ class StructuredData
                 'name' => $item['name'],
                 'url' => $item['url'],
             ], $items, array_keys($items)),
+        ];
+    }
+
+    /**
+     * The stars, if there are enough of them to mean anything.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected static function aggregateRating(Recipe $recipe): ?array
+    {
+        $summary = Ratings::summary($recipe);
+
+        if (! Ratings::worthPublishing($summary['count'])) {
+            return null;
+        }
+
+        return [
+            '@type' => 'AggregateRating',
+            'ratingValue' => $summary['average'],
+            'ratingCount' => $summary['count'],
+            'bestRating' => 5,
+            'worstRating' => 1,
         ];
     }
 
