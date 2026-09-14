@@ -160,7 +160,7 @@ class TipTap
 
         $inner = implode('', array_map(
             fn ($child) => static::node($child, $depth + 1),
-            static::spaceAfterLeadIn(static::content($node)),
+            static::spaceMarkBoundaries(static::content($node)),
         ));
 
         return match ($type) {
@@ -176,21 +176,26 @@ class TipTap
     }
 
     /**
-     * Puts back the space after a bold lead-in that runs into its sentence.
+     * Puts back the spaces that emphasis eats when it is pasted in.
      *
-     * Writing "**Cut the steak.** Dice the sirloin" and pasting it in loses
-     * the space, so it arrives as two text nodes reading "Cut the
-     * steak.Dice the sirloin". It is not worth asking anyone to notice that
-     * while typing, and it happens the same way every time.
+     * Writing "**Cut the steak.** Dice the sirloin" or "makes about **12
+     * solid servings** and already" and pasting it drops the spaces either
+     * side of the bold, so the text arrives as runs that read "Cut the
+     * steak.Dice" and "about12 solid servingsand". It happens the same way
+     * every time and is not worth asking anyone to catch while typing.
      *
-     * Deliberately narrow: the run before has to be marked, has to end a
-     * sentence, and the run after has to start with a word. "un" + "likely"
-     * across a bold boundary is left alone.
+     * Only ever at a mark boundary, only where there is no whitespace
+     * already, and only in two shapes:
+     *
+     *  - the run before ends a sentence, which is the bold lead-in;
+     *  - the emphasised run is a phrase rather than a fragment, since
+     *    "**12 solid servings**" between two words wants spaces and
+     *    "**un**likely" does not.
      *
      * @param  array<int, array<string, mixed>>  $nodes
      * @return array<int, array<string, mixed>>
      */
-    protected static function spaceAfterLeadIn(array $nodes): array
+    protected static function spaceMarkBoundaries(array $nodes): array
     {
         foreach ($nodes as $i => $node) {
             if ($i === 0 || ($node['type'] ?? null) !== 'text') {
@@ -199,21 +204,73 @@ class TipTap
 
             $previous = $nodes[$i - 1];
 
-            if (($previous['type'] ?? null) !== 'text' || ($previous['marks'] ?? []) === []) {
+            if (($previous['type'] ?? null) !== 'text') {
                 continue;
             }
 
             $before = (string) ($previous['text'] ?? '');
             $after = (string) ($node['text'] ?? '');
 
-            if (! preg_match('/[.!?:;,]$/u', $before) || ! preg_match('/^\w/u', $after)) {
+            if (! static::wantsSpace($previous, $node, $before, $after)) {
                 continue;
             }
 
-            $nodes[$i]['text'] = ' '.$after;
+            /*
+             * The space goes on whichever side is not emphasised, so it
+             * never ends up inside the <strong> and underlined along with
+             * the words.
+             */
+            if (($node['marks'] ?? []) !== []) {
+                $nodes[$i - 1]['text'] = $before.' ';
+            } else {
+                $nodes[$i]['text'] = ' '.$after;
+            }
         }
 
         return $nodes;
+    }
+
+    /**
+     * @param  array<string, mixed>  $previous
+     * @param  array<string, mixed>  $node
+     */
+    protected static function wantsSpace(array $previous, array $node, string $before, string $after): bool
+    {
+        // Already spaced, or nothing to space.
+        if ($before === '' || $after === '' || preg_match('/\s$/u', $before) || preg_match('/^\s/u', $after)) {
+            return false;
+        }
+
+        $beforeMarks = $previous['marks'] ?? [];
+        $afterMarks = $node['marks'] ?? [];
+
+        // Two plain runs that happen to be split are not an emphasis join.
+        if ($beforeMarks == $afterMarks) {
+            return false;
+        }
+
+        if (! preg_match('/^\w/u', $after)) {
+            return false;
+        }
+
+        // A bold lead-in: "**Cut the steak.**" then the sentence.
+        if ($beforeMarks !== [] && preg_match('/[.!?:;,]$/u', $before)) {
+            return true;
+        }
+
+        /*
+         * A word or the end of a sentence can both run into an emphasised
+         * phrase. An open bracket cannot: "(**two spatulas**)" is spaced
+         * exactly as its author meant it.
+         */
+        if (! preg_match('/[\w.!?:;,]$/u', $before)) {
+            return false;
+        }
+
+        // Emphasis around a phrase, which always wanted spaces around it.
+        $emphasised = $beforeMarks !== [] ? $before : $after;
+
+        return (bool) preg_match('/\s/u', trim($emphasised));
     }
 
     /**

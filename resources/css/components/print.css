@@ -227,88 +227,15 @@
     }
 
     /*
-     * Sections are shut on screen, because nobody at a burner wants to read
-     * around them. Paper has nothing to click, so all of them are opened.
-     * The closed content is still in the DOM carrying `hidden`, which is
-     * only a UA display rule and so can simply be overridden.
+     * Sections do not go on the paper at all.
+     *
+     * Prep, packing, technique and scaling are what you read at home before
+     * you leave. What goes in the dry bag is the cook itself: what to buy
+     * and what to do with it. Printing the rest was four sheets of things
+     * you have already done by the time you are standing at the burner.
      */
-    .recipe-section [hidden],
-    .recipe-section [data-state="closed"] {
-        display: block !important;
-        /*
-         * `hidden="until-found"` costs two properties, not one: the browser
-         * also sets content-visibility, and overriding display alone leaves
-         * a block that lays out at zero height with nothing in it.
-         */
-        content-visibility: visible !important;
-        height: auto !important;
-        overflow: visible !important;
-        animation: none !important;
-        opacity: 1 !important;
-    }
-
-    .recipe-section-summary {
-        padding: 0 !important;
-    }
-
-    .recipe-section-summary svg {
+    .recipe-sections {
         display: none !important;
-    }
-
-    .recipe-section-body {
-        padding: 0 !important;
-    }
-
-    /*
-     * Cards on screen. On paper a card that will not break jumps to the
-     * next sheet and leaves half a page empty, so they become a ruled
-     * heading and ordinary text that flows.
-     */
-    .recipe-section {
-        border: 0 !important;
-        border-top: 0.75pt solid #999 !important;
-        border-radius: 0 !important;
-        padding: 5pt 0 0 !important;
-        margin: 0 0 8pt !important;
-        break-inside: auto;
-    }
-
-    /* The title already says what it is. */
-    .recipe-section-kind {
-        display: none !important;
-    }
-
-    /* The kit list is a row of bordered chips on screen. On paper it is a
-       line of words, which says the same thing in a tenth of the space. */
-    .recipe-kit li {
-        border: 0 !important;
-        padding: 0 !important;
-        font-size: 8.5pt;
-    }
-
-    .recipe-kit li::after {
-        content: ",";
-    }
-
-    .recipe-kit li:last-child::after {
-        content: "";
-    }
-
-    .recipe-kit svg {
-        display: none !important;
-    }
-
-    .recipe-kit ul {
-        gap: 0 4pt !important;
-    }
-
-    .recipe-kit h2 {
-        display: inline !important;
-        margin-right: 5pt !important;
-    }
-
-    .recipe-kit {
-        margin-bottom: 6pt !important;
     }
 
     .recipe-notes-block {

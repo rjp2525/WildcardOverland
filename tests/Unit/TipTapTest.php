@@ -284,4 +284,67 @@ class TipTapTest extends TestCase
 
         $this->assertSame('<p><strong>pre</strong>heat</p>', $html);
     }
+
+    public function test_emphasis_around_a_phrase_gets_a_space_on_both_sides(): void
+    {
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('The base recipe makes about'),
+            $this->text('12 solid servings', [['type' => 'bold']]),
+            $this->text('and already pushes a lot of food.'),
+        )));
+
+        $this->assertSame(
+            '<p>The base recipe makes about <strong>12 solid servings</strong> and already pushes a lot of food.</p>',
+            $html,
+        );
+    }
+
+    public function test_emphasis_around_a_single_word_is_left_alone(): void
+    {
+        // "un" is a fragment, not a phrase, so the join is deliberate.
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('It is '),
+            $this->text('un', [['type' => 'bold']]),
+            $this->text('likely.'),
+        )));
+
+        $this->assertSame('<p>It is <strong>un</strong>likely.</p>', $html);
+    }
+
+    public function test_emphasis_that_is_already_spaced_is_not_widened(): void
+    {
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('makes about '),
+            $this->text('12 solid servings', [['type' => 'bold']]),
+            $this->text(' and more'),
+        )));
+
+        $this->assertSame('<p>makes about <strong>12 solid servings</strong> and more</p>', $html);
+    }
+
+    public function test_a_phrase_next_to_punctuation_is_left_alone(): void
+    {
+        // "(**two wide spatulas**)" must not gain spaces inside the brackets.
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('Bring one ('),
+            $this->text('two wide spatulas', [['type' => 'bold']]),
+            $this->text(') if you can.'),
+        )));
+
+        $this->assertSame('<p>Bring one (<strong>two wide spatulas</strong>) if you can.</p>', $html);
+    }
+
+    public function test_a_sentence_running_into_an_emphasised_phrase_is_spaced(): void
+    {
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('Resist the temptation to cook larger batches.'),
+            $this->text('Keep the batches small', [['type' => 'bold']]),
+            $this->text(' The Skottle needs hot steel.'),
+        )));
+
+        $this->assertSame(
+            '<p>Resist the temptation to cook larger batches. <strong>Keep the batches small</strong> The Skottle needs hot steel.</p>',
+            $html,
+        );
+    }
 }

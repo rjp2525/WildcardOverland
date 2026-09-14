@@ -71,7 +71,7 @@ const featured = computed(() => props.section.kind === 'technique')
     <CollapsibleContent>
       <RichText
         :html="section.body"
-        class="recipe-section-body px-5 pb-5 text-slate-700 dark:text-white/80 sm:px-6 sm:pb-6"
+        class="recipe-section-body px-5 pb-5 pt-2 text-slate-700 dark:text-white/80 sm:px-6 sm:pb-6 sm:pt-3"
       />
     </CollapsibleContent>
   </Collapsible>
