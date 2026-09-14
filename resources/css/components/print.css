@@ -1,22 +1,27 @@
 /*
  * Paper.
  *
- * A recipe is the one page on here that people actually print, and they
- * print it to take somewhere with no signal. So this is not a tidied up
- * version of the screen: it is a different document, laid out for a sheet
- * you can put on a camp table with a rock on it.
+ * A recipe is the one page here anyone prints, and they print it to take
+ * somewhere with no signal. So this is not a tidied up screen: it is a
+ * different document, laid out to get a whole cook onto as few sheets as
+ * will still read at arm's length on a camp table.
  *
  * The site is usually read in the dark theme. Printing that costs a whole
- * cartridge and comes out unreadable, so everything is forced back to black
- * on white regardless of which theme the browser is in.
+ * cartridge and comes out unreadable, so everything goes back to black on
+ * white whatever the browser was showing.
  */
+
+/* Hidden until there is paper. Its pair, .print-hide, lives below. */
+.print-only {
+    display: none;
+}
+
 @media print {
     @page {
         size: auto;
-        margin: 14mm 12mm;
+        margin: 11mm 10mm;
     }
 
-    /* Force the light theme onto paper whatever the screen was showing. */
     :root,
     :root.dark {
         color-scheme: light;
@@ -26,13 +31,14 @@
     body {
         background: #fff !important;
         color: #000 !important;
-        font-size: 11pt;
+        font-size: 9.5pt;
+        line-height: 1.35;
     }
 
     /*
-     * Colour is one cartridge away from being a problem, so the page runs on
-     * black text, with the brand orange kept only where it does real work:
-     * headings, step numbers and the rules that separate parts.
+     * Colour is a cartridge away from being a problem, so the page runs on
+     * black text and the brand orange is dropped entirely. Rules and boxes
+     * do the separating instead.
      */
     body *,
     body *::before,
@@ -41,17 +47,20 @@
         box-shadow: none !important;
         text-shadow: none !important;
         color: #000 !important;
-        border-color: #bbb !important;
+        border-color: #b0b0b0 !important;
         background-color: transparent !important;
     }
 
-    /* Anything that is navigation, decoration or an invitation to tap. */
     nav,
     footer,
     .navbar,
     .print-hide,
     [data-print="hide"] {
         display: none !important;
+    }
+
+    .print-only {
+        display: block !important;
     }
 
     /* Reveal animations never run without a viewport to scroll. */
@@ -71,15 +80,18 @@
         margin: 0 !important;
     }
 
-    /*
-     * The hero is a full bleed photograph on screen. On paper the title is
-     * the only part worth the ink, so the image goes and the words come
-     * back into the normal flow.
-     */
-    .recipe-hero {
-        height: auto !important;
+    /* Kill the screen's vertical rhythm; paper sets its own below. */
+    .container > .py-12,
+    .container.py-12 {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
     }
 
+    /*
+     * The hero is a full bleed photograph. On paper only the title earns
+     * the ink, so the image goes and the words rejoin the flow.
+     */
+    .recipe-hero,
     .recipe-hero > div {
         height: auto !important;
         overflow: visible !important;
@@ -95,46 +107,83 @@
         position: static !important;
     }
 
+    .recipe-hero .container {
+        padding-bottom: 0 !important;
+    }
+
     .recipe-hero h1 {
-        font-size: 24pt !important;
-        line-height: 1.1;
-        color: #000 !important;
+        font-size: 20pt !important;
+        line-height: 1.05;
+        margin: 0;
+    }
+
+    .recipe-hero p {
+        font-size: 9.5pt !important;
+        margin: 2pt 0 0;
     }
 
     .recipe-glance {
-        border-top: 1.5pt solid #000 !important;
-        border-bottom: 1.5pt solid #000 !important;
-        padding: 4pt 0 !important;
-        margin-bottom: 12pt;
+        border-top: 1.25pt solid #000 !important;
+        border-bottom: 1.25pt solid #000 !important;
+        margin: 5pt 0 8pt;
     }
 
     .recipe-glance > div {
-        gap: 0 18pt !important;
+        gap: 0 14pt !important;
         justify-content: flex-start !important;
-        padding: 0 !important;
+        padding: 3pt 0 !important;
+        font-size: 8.5pt;
+    }
+
+    .recipe-summary {
+        font-size: 9.5pt !important;
+        margin: 0 0 8pt !important;
+        max-width: none !important;
     }
 
     /*
-     * Two columns on paper means the method runs out of room halfway down
-     * and the ingredients leave a column of white. One column, ingredients
-     * first, which is the order you use them in.
+     * Everything below the summary is one column of blocks. Two columns of
+     * page furniture on A4 leaves both of them too narrow to read.
      */
-    .recipe-body {
+    .recipe-body,
+    .recipe-body > section {
         display: block !important;
     }
 
     .recipe-ingredients {
-        margin-bottom: 18pt;
-        /* Keep the shopping list whole if it will fit on what is left. */
-        break-inside: auto;
+        margin-bottom: 10pt;
     }
 
-    /* An empty tick box is the point of printing it. */
+    /*
+     * Ingredients are short lines, so they go two up. This is most of the
+     * saving: a thirty line list stops being most of a page.
+     */
+    .ingredient-parts {
+        columns: 2;
+        column-gap: 10mm;
+    }
+
+    .ingredient-parts > section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin: 0 0 7pt;
+    }
+
+    .ingredient-parts ul {
+        margin-top: 3pt !important;
+    }
+
+    .ingredient-parts li {
+        margin: 0 0 1.5pt;
+    }
+
+    /* An empty tick box is the reason to print it at all. */
     .ingredient-tick {
-        border: 1pt solid #000 !important;
-        border-radius: 2pt !important;
-        width: 10pt !important;
-        height: 10pt !important;
+        border: 0.75pt solid #000 !important;
+        border-radius: 1.5pt !important;
+        width: 8pt !important;
+        height: 8pt !important;
+        margin-top: 1.5pt !important;
     }
 
     .ingredient-tick svg {
@@ -142,72 +191,187 @@
     }
 
     .step-number {
-        border: 1.5pt solid #000 !important;
+        border: 1pt solid #000 !important;
         border-radius: 50% !important;
+        width: 14pt !important;
+        height: 14pt !important;
+        font-size: 8pt !important;
         font-weight: 700;
     }
 
-    /* Never split a step, a tip or a section across a page. */
-    .method-step,
-    .step-tip,
-    .recipe-section,
-    .recipe-notes-block {
+    .method-step {
         break-inside: avoid;
         page-break-inside: avoid;
+        margin-bottom: 7pt !important;
+        gap: 6pt !important;
     }
 
-    .step-tip,
-    .recipe-section {
-        border: 0.75pt solid #999 !important;
-    }
-
+    /*
+     * Tips are a chip you tap on screen and nothing at all on paper, so the
+     * print copy is written out instead: indented, quiet, and attached to
+     * the step it belongs to.
+     */
     .step-tip {
-        padding: 5pt 7pt !important;
+        break-inside: avoid;
+        border-left: 1.5pt solid #999 !important;
+        padding: 0 0 0 6pt !important;
+        margin: 3pt 0 0 !important;
+        font-size: 8.5pt;
     }
 
-    /* Editor headings inside a section or a write-up. */
+    .step-tip-heading {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 7.5pt;
+    }
+
+    /*
+     * Sections are shut on screen, because nobody at a burner wants to read
+     * around them. Paper has nothing to click, so all of them are opened.
+     * The closed content is still in the DOM carrying `hidden`, which is
+     * only a UA display rule and so can simply be overridden.
+     */
+    .recipe-section [hidden],
+    .recipe-section [data-state="closed"] {
+        display: block !important;
+        /*
+         * `hidden="until-found"` costs two properties, not one: the browser
+         * also sets content-visibility, and overriding display alone leaves
+         * a block that lays out at zero height with nothing in it.
+         */
+        content-visibility: visible !important;
+        height: auto !important;
+        overflow: visible !important;
+        animation: none !important;
+        opacity: 1 !important;
+    }
+
+    .recipe-section-summary {
+        padding: 0 !important;
+    }
+
+    .recipe-section-summary svg {
+        display: none !important;
+    }
+
+    .recipe-section-body {
+        padding: 0 !important;
+    }
+
+    /*
+     * Cards on screen. On paper a card that will not break jumps to the
+     * next sheet and leaves half a page empty, so they become a ruled
+     * heading and ordinary text that flows.
+     */
+    .recipe-section {
+        border: 0 !important;
+        border-top: 0.75pt solid #999 !important;
+        border-radius: 0 !important;
+        padding: 5pt 0 0 !important;
+        margin: 0 0 8pt !important;
+        break-inside: auto;
+    }
+
+    /* The title already says what it is. */
+    .recipe-section-kind {
+        display: none !important;
+    }
+
+    /* The kit list is a row of bordered chips on screen. On paper it is a
+       line of words, which says the same thing in a tenth of the space. */
+    .recipe-kit li {
+        border: 0 !important;
+        padding: 0 !important;
+        font-size: 8.5pt;
+    }
+
+    .recipe-kit li::after {
+        content: ",";
+    }
+
+    .recipe-kit li:last-child::after {
+        content: "";
+    }
+
+    .recipe-kit svg {
+        display: none !important;
+    }
+
+    .recipe-kit ul {
+        gap: 0 4pt !important;
+    }
+
+    .recipe-kit h2 {
+        display: inline !important;
+        margin-right: 5pt !important;
+    }
+
+    .recipe-kit {
+        margin-bottom: 6pt !important;
+    }
+
+    .recipe-notes-block {
+        border-top: 0.75pt solid #999 !important;
+        border-radius: 0 !important;
+        padding: 5pt 0 0 !important;
+        margin-top: 8pt !important;
+    }
+
+    h1, h2, h3, h4,
     .rich-text :where(h2),
     .rich-text :where(h3) {
         break-after: avoid;
         page-break-after: avoid;
     }
 
+    h2 {
+        font-size: 12pt !important;
+        margin: 0 0 4pt !important;
+    }
+
+    h3 {
+        font-size: 10pt !important;
+        margin: 0 0 2pt !important;
+    }
+
+    .rich-text :where(p) {
+        margin: 0 0 3pt;
+    }
+
+    .rich-text :where(ul),
+    .rich-text :where(ol) {
+        margin: 3pt 0;
+        padding-left: 4mm;
+    }
+
+    .rich-text :where(li) {
+        margin: 0 0 1.5pt;
+        break-inside: avoid;
+    }
+
+
     .rich-text :where(pre),
     .rich-text :where(blockquote) {
         break-inside: avoid;
     }
 
-    h1, h2, h3 {
-        break-after: avoid;
-        page-break-after: avoid;
-    }
-
-    h2 {
-        font-size: 14pt !important;
-        margin-top: 10pt;
-    }
-
-    h3 {
-        font-size: 11.5pt !important;
-    }
-
     /*
-     * Step photographs are the one image worth keeping, small, because
-     * "what it should look like" is hard to say in words.
+     * Step photographs are the one image worth the ink: what it should look
+     * like is hard to say in words.
      */
     .method-step img {
-        max-width: 55mm !important;
+        max-width: 45mm !important;
         break-inside: avoid;
     }
 
-    /* Paper has no clipboard, so say where the link went. */
+    /* Paper has no clipboard, so say where a link went. */
     a[href^="http"]::after {
         content: " (" attr(href) ")";
-        font-size: 8pt;
+        font-size: 7pt;
         word-break: break-all;
     }
 
-    /* Except where the text already is the address. */
     .recipe-glance a::after {
         content: none;
     }

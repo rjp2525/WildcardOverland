@@ -20,11 +20,16 @@ export interface IngredientGroup {
   items: Ingredient[]
 }
 
-const props = defineProps<{
-  groups: IngredientGroup[]
-  /** Ingredients belonging to no part. A short recipe is all of these. */
-  loose: Ingredient[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    groups: IngredientGroup[]
+    /** Ingredients belonging to no part. A short recipe is all of these. */
+    loose: Ingredient[]
+    /** Allow the parts to run in more than one column when there is room. */
+    split?: boolean
+  }>(),
+  { split: false },
+)
 
 /*
  * Parts first, then whatever belongs to none. The unnamed one only gets a
@@ -61,16 +66,33 @@ function toggle(key: string) {
 </script>
 
 <template>
-  <div class="space-y-8">
-    <section v-for="(block, b) in blocks" :key="b">
+  <!--
+    A column count would be a guess about how wide this ends up. A column
+    width is not: the browser fits as many 17rem columns as the space
+    actually allows, so a narrow sidebar stays a single readable list and a
+    wide one fills up instead of running on for a page and a half.
+  -->
+  <div :class="['ingredient-parts space-y-8', split && 'sm:columns-[17rem] sm:gap-x-10 sm:space-y-0']">
+    <section v-for="(block, b) in blocks" :key="b" :class="split && 'mb-8 break-inside-avoid'">
       <h3
         v-if="block.headed"
-        class="mb-3 font-brand text-sm font-extrabold uppercase tracking-widest text-slate-900 dark:text-white"
+        class="font-brand text-sm font-extrabold uppercase tracking-widest text-slate-900 dark:text-white"
       >
         {{ block.name }}
       </h3>
 
-      <ul class="space-y-2.5">
+      <!--
+        Under the heading, not after the list. It explains the part, so it
+        has to be read before the part rather than found underneath it.
+      -->
+      <RichText
+        v-if="block.note"
+        :html="block.note"
+        compact
+        class="mt-1.5 text-sm text-slate-600 dark:text-white/65"
+      />
+
+      <ul class="mt-3 space-y-2.5">
         <li v-for="(ingredient, i) in block.items" :key="i">
           <label class="group flex cursor-pointer items-start gap-3 text-slate-700 dark:text-white/80">
             <input
@@ -117,12 +139,6 @@ function toggle(key: string) {
         </li>
       </ul>
 
-      <RichText
-        v-if="block.note"
-        :html="block.note"
-        compact
-        class="mt-3 border-l-2 border-brand/40 pl-3 text-sm text-slate-600 dark:text-white/65"
-      />
     </section>
   </div>
 </template>

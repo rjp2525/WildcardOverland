@@ -37,7 +37,7 @@ defineProps<{ steps: Step[] }>()
           :class="['text-slate-700 dark:text-white/80', step.title ? '' : 'pt-1']"
         />
 
-        <div v-if="step.tips.length" class="mt-3 space-y-2">
+        <div v-if="step.tips.length" class="mt-3 flex flex-wrap gap-2 print:block print:space-y-2">
           <StepTip v-for="(tip, t) in step.tips" :key="t" :tip="tip" />
         </div>
 

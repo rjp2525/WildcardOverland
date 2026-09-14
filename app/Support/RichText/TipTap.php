@@ -160,7 +160,7 @@ class TipTap
 
         $inner = implode('', array_map(
             fn ($child) => static::node($child, $depth + 1),
-            static::content($node),
+            static::spaceAfterLeadIn(static::content($node)),
         ));
 
         return match ($type) {
@@ -173,6 +173,47 @@ class TipTap
             'codeBlock' => '<pre><code>'.static::escape(static::text($node)).'</code></pre>',
             default => '',
         };
+    }
+
+    /**
+     * Puts back the space after a bold lead-in that runs into its sentence.
+     *
+     * Writing "**Cut the steak.** Dice the sirloin" and pasting it in loses
+     * the space, so it arrives as two text nodes reading "Cut the
+     * steak.Dice the sirloin". It is not worth asking anyone to notice that
+     * while typing, and it happens the same way every time.
+     *
+     * Deliberately narrow: the run before has to be marked, has to end a
+     * sentence, and the run after has to start with a word. "un" + "likely"
+     * across a bold boundary is left alone.
+     *
+     * @param  array<int, array<string, mixed>>  $nodes
+     * @return array<int, array<string, mixed>>
+     */
+    protected static function spaceAfterLeadIn(array $nodes): array
+    {
+        foreach ($nodes as $i => $node) {
+            if ($i === 0 || ($node['type'] ?? null) !== 'text') {
+                continue;
+            }
+
+            $previous = $nodes[$i - 1];
+
+            if (($previous['type'] ?? null) !== 'text' || ($previous['marks'] ?? []) === []) {
+                continue;
+            }
+
+            $before = (string) ($previous['text'] ?? '');
+            $after = (string) ($node['text'] ?? '');
+
+            if (! preg_match('/[.!?:;,]$/u', $before) || ! preg_match('/^\w/u', $after)) {
+                continue;
+            }
+
+            $nodes[$i]['text'] = ' '.$after;
+        }
+
+        return $nodes;
     }
 
     /**

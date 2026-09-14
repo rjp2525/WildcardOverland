@@ -232,4 +232,56 @@ class TipTapTest extends TestCase
         $this->assertTrue(TipTap::isEmpty(HtmlToTipTap::convert(null)));
         $this->assertTrue(TipTap::isEmpty(HtmlToTipTap::convert('<p></p>')));
     }
+
+    public function test_a_bold_lead_in_that_runs_into_its_sentence_gets_its_space_back(): void
+    {
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('Cut the steak.', [['type' => 'bold']]),
+            $this->text('Dice the sirloin.'),
+        )));
+
+        $this->assertSame('<p><strong>Cut the steak.</strong> Dice the sirloin.</p>', $html);
+    }
+
+    public function test_a_space_that_is_already_there_is_not_doubled(): void
+    {
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('Cut the steak.', [['type' => 'bold']]),
+            $this->text(' Dice the sirloin.'),
+        )));
+
+        $this->assertSame('<p><strong>Cut the steak.</strong> Dice the sirloin.</p>', $html);
+    }
+
+    public function test_bold_in_the_middle_of_a_word_is_left_alone(): void
+    {
+        // No sentence ending, so nothing is inserted.
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('un', [['type' => 'bold']]),
+            $this->text('likely'),
+        )));
+
+        $this->assertSame('<p><strong>un</strong>likely</p>', $html);
+    }
+
+    public function test_an_unmarked_run_before_is_left_alone(): void
+    {
+        // Two plain runs that happen to be split are not a lead-in.
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('Step one.'),
+            $this->text('Step two.'),
+        )));
+
+        $this->assertSame('<p>Step one.Step two.</p>', $html);
+    }
+
+    public function test_punctuation_that_does_not_end_a_sentence_is_left_alone(): void
+    {
+        $html = TipTap::html($this->doc($this->para(
+            $this->text('pre', [['type' => 'bold']]),
+            $this->text('heat'),
+        )));
+
+        $this->assertSame('<p><strong>pre</strong>heat</p>', $html);
+    }
 }

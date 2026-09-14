@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Backpack, Flame, Home, Scaling, StickyNote, Wand2 } from 'lucide-vue-next'
+import { Backpack, ChevronDown, Flame, Home, Scaling, StickyNote, Wand2 } from 'lucide-vue-next'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import RichText from '@/components/ui/RichText.vue'
 
 export interface Section {
@@ -26,30 +27,52 @@ const icon = computed(() => {
 })
 
 /*
- * Technique is the one that earns a highlight. It is the bit that makes the
- * dish, and it gets lost if it reads like another paragraph of notes.
+ * Technique is the one worth a highlight. It is the bit that makes the dish
+ * and it disappears if it reads like another row of notes.
  */
 const featured = computed(() => props.section.kind === 'technique')
 </script>
 
 <template>
-  <section
+  <!--
+    Shut until asked for. These are the paragraphs every recipe site buries
+    the cooking under, and someone standing over a burner wants the steps.
+    The content stays in the DOM while closed, so find-in-page can still
+    reach it and print can put all of it on the paper.
+  -->
+  <Collapsible
     :class="[
-      'recipe-section rounded-xl border px-5 py-6 sm:px-7 sm:py-7',
+      'recipe-section group rounded-xl border transition-colors',
       featured
         ? 'border-brand/35 bg-brand/5 dark:border-brand/30 dark:bg-brand/10'
         : 'border-slate-200 bg-slate-50/60 dark:border-white/12 dark:bg-white/5',
     ]"
   >
-    <div class="flex items-center gap-2.5">
+    <CollapsibleTrigger
+      class="recipe-section-summary flex w-full items-center gap-3 rounded-xl px-5 py-4 text-left transition-colors hover:bg-black/[0.03] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand/50 dark:hover:bg-white/5 sm:px-6"
+    >
       <component :is="icon" class="h-5 w-5 shrink-0 text-brand" aria-hidden="true" />
-      <p class="text-xs font-bold uppercase tracking-widest text-brand">{{ section.label }}</p>
-    </div>
 
-    <h2 class="mt-2 font-brand text-2xl font-extrabold uppercase text-slate-900 dark:text-white">
-      {{ section.title }}
-    </h2>
+      <div class="min-w-0 flex-1">
+        <p class="recipe-section-kind text-xs font-bold uppercase tracking-widest text-brand">
+          {{ section.label }}
+        </p>
+        <h2 class="font-brand text-lg font-extrabold uppercase text-slate-900 dark:text-white sm:text-xl">
+          {{ section.title }}
+        </h2>
+      </div>
 
-    <RichText :html="section.body" class="mt-3 text-slate-700 dark:text-white/80" />
-  </section>
+      <ChevronDown
+        class="print-hide h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 dark:text-white/40"
+        aria-hidden="true"
+      />
+    </CollapsibleTrigger>
+
+    <CollapsibleContent>
+      <RichText
+        :html="section.body"
+        class="recipe-section-body px-5 pb-5 text-slate-700 dark:text-white/80 sm:px-6 sm:pb-6"
+      />
+    </CollapsibleContent>
+  </Collapsible>
 </template>

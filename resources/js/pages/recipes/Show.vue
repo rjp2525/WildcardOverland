@@ -54,6 +54,46 @@ const hasIngredients = computed(
   () => props.recipe.ingredient_groups.length > 0 || props.recipe.ingredients.length > 0,
 )
 
+/**
+ * How much there is of each half of the page.
+ *
+ * A recipe with four ingredients and twelve steps wants a different split
+ * from one with thirty ingredients and three steps, and a fixed ratio gets
+ * one of them wrong. Steps count for more than ingredients because a step
+ * is a paragraph and an ingredient is a line.
+ */
+const ingredientLines = computed(
+  () =>
+    props.recipe.ingredients.length +
+    props.recipe.ingredient_groups.reduce((n, group) => n + group.items.length + 2, 0),
+)
+
+const methodWeight = computed(
+  () => props.recipe.steps.reduce((n, step) => n + 4 + step.tips.length, 0),
+)
+
+/**
+ * The column split, chosen from the content rather than fixed.
+ *
+ * Only three options, because a continuous ratio would mean every recipe
+ * sat at a slightly different width and none of them looked deliberate.
+ */
+const columns = computed(() => {
+  const ratio = ingredientLines.value / Math.max(methodWeight.value, 1)
+
+  if (ratio > 0.85) return 'lg:grid-cols-2'
+  if (ratio < 0.35) return 'lg:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]'
+
+  return 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]'
+})
+
+/*
+ * A long list of short lines is a tall thin ribbon next to a page of
+ * method. Past about twenty it runs in two columns instead, and the parts
+ * are kept whole so a heading never ends up alone at the foot of one.
+ */
+const splitIngredients = computed(() => ingredientLines.value > 20)
+
 /*
  * Prep you have to have read days ago, so it sits above the cooking. A tip
  * about crispy rice is no use after dinner is served, but it would clutter
@@ -142,7 +182,7 @@ const servingLabel = computed(() => {
     </p>
 
     <!-- What it gets cooked on. The kit is half the recipe out here. -->
-    <div v-if="recipe.cooked_on.length" class="mb-10">
+    <div v-if="recipe.cooked_on.length" class="recipe-kit mb-10">
       <h2 class="mb-4 text-sm font-bold uppercase tracking-widest text-brand">Cooked on</h2>
       <ul class="flex flex-wrap gap-3">
         <li
@@ -167,17 +207,18 @@ const servingLabel = computed(() => {
     </div>
 
     <!-- Prep at home, kit lists. Read days before the burner is lit. -->
-    <div v-if="before.length" class="mb-12 grid gap-6 lg:grid-cols-2">
+    <div v-if="before.length" class="recipe-sections mb-12 space-y-3">
       <RecipeSection v-for="(section, i) in before" :key="i" :section="section" />
     </div>
 
-    <div class="recipe-body grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+    <div :class="['recipe-body grid gap-12', columns]">
       <section v-if="hasIngredients" class="recipe-ingredients">
         <h2 class="mb-5 text-2xl font-extrabold uppercase text-brand">Ingredients</h2>
 
         <IngredientGroups
           :groups="recipe.ingredient_groups"
           :loose="recipe.ingredients"
+          :split="splitIngredients"
         />
 
         <ShoppingList v-if="shoppingList.length" :name="recipe.name" :items="shoppingList" />
@@ -196,7 +237,7 @@ const servingLabel = computed(() => {
     </div>
 
     <!-- Technique, tips, scaling. Everything read after the cook. -->
-    <div v-if="after.length" class="mt-12 grid gap-6 lg:grid-cols-2">
+    <div v-if="after.length" class="recipe-sections mt-12 space-y-3">
       <RecipeSection v-for="(section, i) in after" :key="i" :section="section" />
     </div>
 
