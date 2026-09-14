@@ -8,13 +8,18 @@ import type { Config as ZiggyConfig } from "../../vendor/tightenco/ziggy";
 import { MainLayout } from "./layouts";
 import { Head, Link } from "@inertiajs/vue3";
 
-const appName = import.meta.env.VITE_APP_NAME || "Laravel";
+const appName = import.meta.env.VITE_APP_NAME || "Wildcard Overland";
 
 createServer((page) =>
     createInertiaApp({
         page,
         render: renderToString,
-        title: (title) => `${title} - ${appName}`,
+        /*
+         * The same shape app.ts and Seo::title() use. This entry renders the
+         * head that @inertiaHead prints, so a different format here means
+         * two titles in the response that disagree with each other.
+         */
+        title: (title) => (title.includes(appName) ? title : `${title} | ${appName}`),
         resolve: (name) => {
             const page = resolvePageComponent(
                 `./pages/${name}.vue`,

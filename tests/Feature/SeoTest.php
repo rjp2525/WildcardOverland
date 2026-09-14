@@ -195,4 +195,44 @@ class SeoTest extends TestCase
         $this->assertLessThanOrEqual(170, strlen($found[1]));
         $this->assertStringEndsWith('...', $found[1]);
     }
+
+    /**
+     * The head tags are rendered by the layout and then kept in step on the
+     * client from this prop, so a page that ships without it would go stale
+     * the moment someone navigated away from it.
+     */
+    public function test_every_public_page_ships_the_seo_prop_the_client_syncs_from(): void
+    {
+        $recipe = Recipe::create([
+            'name' => 'Fried rice', 'slug' => 'fried-rice',
+            'is_draft' => false, 'published_at' => now()->subDay(),
+        ]);
+        $trip = Trip::create([
+            'name' => 'Baja', 'slug' => 'baja',
+            'is_draft' => false, 'published_at' => now()->subDay(),
+        ]);
+
+        $pages = [
+            route('homepage'),
+            route('trips.index'),
+            route('recipes.index'),
+            route('rig'),
+            route('about'),
+            route('trips.show', $trip->slug),
+            route('recipes.show', $recipe->slug),
+        ];
+
+        foreach ($pages as $url) {
+            $this->get($url)
+                ->assertOk()
+                ->assertInertia(fn ($page) => $page
+                    ->has('seo.title')
+                    ->has('seo.description')
+                    ->has('seo.canonical')
+                    ->has('seo.type')
+                    ->has('seo.index')
+                    ->has('seo.image')
+                    ->where('seo.canonical', $url));
+        }
+    }
 }
