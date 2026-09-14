@@ -20,6 +20,18 @@ class ImageRenderer
      */
     public function render(string $path, ImageVariant $variant, int $width): array
     {
+        /*
+         * A vector has no pixels to resample. Resizing it would mean
+         * rasterising it first, which is the one thing an SVG logo is here
+         * to avoid, so the original bytes go straight out.
+         */
+        if (str_ends_with(strtolower($path), '.svg')) {
+            return [
+                'bytes' => Storage::disk(config('assets.disk'))->get($path),
+                'mime' => 'image/svg+xml',
+            ];
+        }
+
         $mime = match ($variant->extension()) {
             'png' => 'image/png',
             'jpg' => 'image/jpeg',

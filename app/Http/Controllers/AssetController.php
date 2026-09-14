@@ -58,6 +58,28 @@ class AssetController extends Controller
             // Derivatives are immutable: a replaced source is written to a
             // new path, so the URL changes with the bytes.
             'Cache-Control' => 'public, max-age='.config('assets.max_age').', immutable',
+            ...$this->hardening($mime),
         ]);
+    }
+
+    /**
+     * An SVG is a document, so opening one of these URLs directly renders it
+     * as a page on our own origin. The bytes were already sanitised on
+     * upload; this makes sure that even a hole in that cannot reach out,
+     * load anything or run anything.
+     *
+     * @return array<string, string>
+     */
+    protected function hardening(string $mime): array
+    {
+        if ($mime !== 'image/svg+xml') {
+            return [];
+        }
+
+        return [
+            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Disposition' => 'inline',
+        ];
     }
 }

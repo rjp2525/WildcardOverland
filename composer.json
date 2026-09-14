@@ -9,6 +9,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "enshrined/svg-sanitize": "^1.0",
         "inertiajs/inertia-laravel": "^3.3",
         "intervention/image": "^4.3",
         "laravel/framework": "^13.31",

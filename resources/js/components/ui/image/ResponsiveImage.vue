@@ -43,8 +43,8 @@ const style = computed(() =>
   <img
     v-if="image"
     :src="image.src"
-    :srcset="image.srcset"
-    :sizes="sizes ?? image.sizes"
+    :srcset="image.srcset || undefined"
+    :sizes="image.srcset ? (sizes ?? image.sizes) : undefined"
     :width="image.width ?? undefined"
     :height="image.height ?? undefined"
     :alt="alt ?? image.alt"

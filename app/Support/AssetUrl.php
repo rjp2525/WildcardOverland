@@ -35,6 +35,12 @@ class AssetUrl
      */
     public static function srcset(File $file, string $variant): string
     {
+        // One file serves every width, so a list of candidates would offer
+        // the browser the same bytes several times over.
+        if ($file->isVector()) {
+            return '';
+        }
+
         $variant = ImageVariant::make($variant);
 
         return implode(', ', array_map(

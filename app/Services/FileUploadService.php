@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ImageType;
+use App\Exceptions\UnreadableSvg;
 use App\Models\File;
 use App\Models\Image;
 use Illuminate\Http\UploadedFile;
@@ -22,13 +23,21 @@ class FileUploadService
      * Files are de-duplicated on their SHA-256: uploading the same bytes twice
      * returns the existing record rather than writing to the disk again.
      */
+    public function __construct(protected SvgSanitizer $svg) {}
+
     public function store(
         UploadedFile $upload,
         string $type = 'content',
         ?string $name = null,
         ImageType $imageType = ImageType::Photo,
     ): File {
-        $hash = hash_file('sha256', $upload->getRealPath());
+        /*
+         * An SVG is cleaned before anything else happens, so the hash, the
+         * bytes on disk and the recorded size all describe the safe version
+         * rather than whatever was handed to us.
+         */
+        $contents = $this->contents($upload);
+        $hash = hash('sha256', $contents);
 
         if ($existing = File::where('hash', $hash)->first()) {
             /*
@@ -47,27 +56,27 @@ class FileUploadService
         $extension = strtolower($upload->getClientOriginalExtension() ?: $upload->guessExtension() ?: 'bin');
         $storedPath = trim((string) config('assets.upload_path'), '/').'/'.Str::uuid()->toString().'.'.$extension;
 
-        Storage::disk($disk)->put(
-            $storedPath,
-            file_get_contents($upload->getRealPath()),
-            ['visibility' => 'private'],
-        );
+        Storage::disk($disk)->put($storedPath, $contents, ['visibility' => 'private']);
 
-        return DB::transaction(function () use ($upload, $hash, $disk, $extension, $storedPath, $type, $name, $imageType): File {
+        return DB::transaction(function () use ($upload, $contents, $hash, $disk, $extension, $storedPath, $type, $name, $imageType): File {
             $file = File::create([
                 'name' => $name ?: pathinfo($upload->getClientOriginalName(), PATHINFO_FILENAME),
                 'original_filename' => $upload->getClientOriginalName(),
                 'original_extension' => $extension,
-                'mime' => $upload->getClientMimeType(),
+                'mime' => $this->isSvg($upload) ? 'image/svg+xml' : $upload->getClientMimeType(),
                 'hash' => $hash,
                 'type' => $type,
-                'size' => $upload->getSize(),
+                'size' => strlen($contents),
                 'stored_path' => $storedPath,
                 'disk' => $disk,
             ]);
 
             if ($file->isImage()) {
-                [$width, $height] = $this->dimensions($upload);
+                $vector = $file->isVector();
+
+                [$width, $height] = $vector
+                    ? $this->svg->dimensions($contents)
+                    : $this->dimensions($upload);
 
                 Image::create([
                     'name' => $file->name,
@@ -75,7 +84,9 @@ class FileUploadService
                     'file_id' => $file->id,
                     'width' => $width,
                     'height' => $height,
-                    'dominant_color' => $this->dominantColor($upload),
+                    // A vector has no pixels to average, and a logo placeholder
+                    // tinted behind transparency looks worse than nothing.
+                    'dominant_color' => $vector ? null : $this->dominantColor($upload),
                     'private' => false,
                 ]);
             }
@@ -126,7 +137,7 @@ class FileUploadService
 
         Storage::disk($disk)->put(
             $storedPath,
-            file_get_contents($upload->getRealPath()),
+            $this->contents($upload),
             ['visibility' => 'private'],
         );
 
@@ -174,6 +185,33 @@ class FileUploadService
     /**
      * @return array{0: int|null, 1: int|null}
      */
+    /**
+     * The bytes to store. Raster files go through untouched; an SVG is
+     * sanitised, and one that will not parse is refused outright.
+     */
+    protected function contents(UploadedFile $upload): string
+    {
+        $raw = (string) file_get_contents($upload->getRealPath());
+
+        if (! $this->isSvg($upload)) {
+            return $raw;
+        }
+
+        $clean = $this->svg->clean($raw);
+
+        if ($clean === null) {
+            throw new UnreadableSvg($upload->getClientOriginalName());
+        }
+
+        return $clean;
+    }
+
+    protected function isSvg(UploadedFile $upload): bool
+    {
+        return strtolower((string) $upload->getClientOriginalExtension()) === 'svg'
+            || $upload->getClientMimeType() === 'image/svg+xml';
+    }
+
     protected function dimensions(UploadedFile $upload): array
     {
         $size = @getimagesize($upload->getRealPath());

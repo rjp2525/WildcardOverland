@@ -45,6 +45,18 @@ class File extends Model
     }
 
     /**
+     * An SVG, which is drawn rather than sampled.
+     *
+     * It has no pixels to resize, so it skips the derivative pipeline
+     * entirely and is served as it was uploaded.
+     */
+    public function isVector(): bool
+    {
+        return $this->mime === 'image/svg+xml'
+            || strtolower((string) $this->original_extension) === 'svg';
+    }
+
+    /**
      * Human readable size, e.g. "1.4 MB".
      */
     public function getReadableSizeAttribute(): string

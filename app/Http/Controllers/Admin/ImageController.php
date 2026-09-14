@@ -42,7 +42,13 @@ class ImageController extends Controller
     public function upload(Request $request, FileUploadService $uploads): JsonResponse
     {
         $validated = $request->validate([
-            'file' => ['required', 'file', 'image', 'max:'.config('assets.max_upload_kb')],
+            /*
+             * Laravel's `image` rule turns SVG away, which is the wrong
+             * answer for a logo. They are accepted here and sanitised on the
+             * way to disk instead. Listing the types by hand also means the
+             * error names them.
+             */
+            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp,avif,svg', 'max:'.config('assets.max_upload_kb')],
             'name' => ['nullable', 'string', 'max:255'],
             'image_type' => ['nullable', Rule::enum(ImageType::class)],
         ]);

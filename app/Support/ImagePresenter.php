@@ -59,14 +59,23 @@ class ImagePresenter
         $variant = ImageVariant::make($variantName);
         $width = $variant->largestWidth();
 
+        /*
+         * A vector is served as it was drawn, so it keeps its own shape
+         * rather than the variant's box, and there is nothing to pick
+         * between in a srcset.
+         */
+        $vector = $image->file->isVector();
+
         return [
             'src' => AssetUrl::image($image->file, $variant->name, $width),
             'srcset' => AssetUrl::srcset($image->file, $variant->name),
             'sizes' => $variant->sizes,
             // The rendered size, not the source's: it is what stops the page
             // reflowing once the image arrives.
-            'width' => $width,
-            'height' => $variant->heightFor($width) ?? static::scaledHeight($image, $width),
+            'width' => $vector ? $image->width : $width,
+            'height' => $vector
+                ? $image->height
+                : ($variant->heightFor($width) ?? static::scaledHeight($image, $width)),
             'alt' => $alt ?? $image->caption ?? $image->name ?? '',
             'caption' => $image->caption,
             'color' => $image->dominant_color,
