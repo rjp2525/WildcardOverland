@@ -67,12 +67,8 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function rateLimitFeedback(): void
     {
-        RateLimiter::for('feedback-ratings', fn (Request $request) => Limit::perHour(
-            (int) config('feedback.throttle.ratings_per_hour'),
-        )->by($request->ip() ?? 'unknown'));
-
-        RateLimiter::for('feedback-comments', fn (Request $request) => Limit::perHour(
-            (int) config('feedback.throttle.comments_per_hour'),
+        RateLimiter::for('feedback-reviews', fn (Request $request) => Limit::perHour(
+            (int) config('feedback.throttle.reviews_per_hour'),
         )->by($request->ip() ?? 'unknown'));
     }
 }

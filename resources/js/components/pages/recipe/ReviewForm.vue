@@ -3,9 +3,15 @@ import { computed, ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { ImagePlus, Loader2, X } from 'lucide-vue-next'
 import HoneypotField from './HoneypotField.vue'
+import StarPicker from './StarPicker.vue'
 import { Button } from '@/components/ui/button'
 import { useHoneypot } from '@/composables/useHoneypot'
-import type { Honeypot } from './RateThis.vue'
+
+export interface Honeypot {
+  stamp: string
+  trap: string
+  stampField: string
+}
 
 const props = defineProps<{
   url: string
@@ -16,6 +22,8 @@ const props = defineProps<{
   moderated: boolean
   maxLength: number
   photoMaxKb: number
+  /** What this browser already sent in, if it has been here before. */
+  yours: { stars: number | null; waiting: boolean } | null
 }>()
 
 /** Whatever a form filler put in the field nobody can see. */
@@ -23,6 +31,8 @@ const trap = ref('')
 
 const form = useForm({
   name: '',
+  email: '',
+  stars: props.yours?.stars ?? 0,
   body: '',
   photo: null as File | null,
 })
@@ -84,7 +94,7 @@ function submit(): void {
       forceFormData: true,
       onSuccess: () => {
         sent.value = true
-        form.reset('name', 'body', 'photo')
+        form.reset('name', 'email', 'body', 'photo')
         drop()
       },
     }),
@@ -93,10 +103,12 @@ function submit(): void {
 
 const field =
   'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-brand focus:outline-hidden focus:ring-2 focus:ring-brand/30 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/35'
+
+const wrong = 'border-red-500 dark:border-red-500/70'
 </script>
 
 <template>
-  <form class="relative space-y-4" @submit.prevent="submit">
+  <form class="relative space-y-5" @submit.prevent="submit">
     <HoneypotField v-model="trap" :name="honeypot.trap" />
 
     <p
@@ -109,35 +121,82 @@ const field =
         : 'Thanks, that is up.' }}
     </p>
 
+    <!--
+      Somebody who has already written one, coming back to the page. Said
+      before the form rather than after it, so they are not halfway through
+      writing a second before they find out.
+    -->
+    <p
+      v-else-if="yours"
+      class="rounded-md bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-white/5 dark:text-white/70"
+    >
+      {{ yours.waiting
+        ? 'You have already sent one in for this. It will show up once I have read it.'
+        : 'Your review is on this page.' }}
+      Sending another from the same address replaces it.
+    </p>
+
+    <!-- The stars are the review, not a thing you do instead of one. -->
     <div>
-      <label for="comment-name" class="mb-1 block text-sm font-medium text-slate-700 dark:text-white/75">
-        Your name
-      </label>
-      <input
-        id="comment-name"
-        v-model="form.name"
-        type="text"
-        maxlength="60"
-        autocomplete="name"
-        placeholder="However you want to be known"
-        :class="field"
-      >
-      <p v-if="form.errors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">
-        {{ form.errors.name }}
+      <StarPicker v-model="form.stars" :invalid="!!form.errors.stars" />
+      <p v-if="form.errors.stars" class="mt-1 text-sm text-red-600 dark:text-red-400">
+        {{ form.errors.stars }}
       </p>
     </div>
 
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label for="review-name" class="mb-1 block text-sm font-medium text-slate-700 dark:text-white/75">
+          Your name
+        </label>
+        <input
+          id="review-name"
+          v-model="form.name"
+          type="text"
+          maxlength="60"
+          autocomplete="name"
+          placeholder="However you want to be known"
+          :class="[field, form.errors.name && wrong]"
+        >
+        <p v-if="form.errors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">
+          {{ form.errors.name }}
+        </p>
+      </div>
+
+      <div>
+        <label for="review-email" class="mb-1 block text-sm font-medium text-slate-700 dark:text-white/75">
+          Your email
+        </label>
+        <input
+          id="review-email"
+          v-model="form.email"
+          type="email"
+          maxlength="255"
+          autocomplete="email"
+          placeholder="you@example.com"
+          aria-describedby="review-email-note"
+          :class="[field, form.errors.email && wrong]"
+        >
+        <p v-if="form.errors.email" class="mt-1 text-sm text-red-600 dark:text-red-400">
+          {{ form.errors.email }}
+        </p>
+        <p v-else id="review-email-note" class="mt-1 text-xs text-slate-400 dark:text-white/40">
+          Never shown on the page, and never passed on.
+        </p>
+      </div>
+    </div>
+
     <div>
-      <label for="comment-body" class="mb-1 block text-sm font-medium text-slate-700 dark:text-white/75">
+      <label for="review-body" class="mb-1 block text-sm font-medium text-slate-700 dark:text-white/75">
         How did it go?
       </label>
       <textarea
-        id="comment-body"
+        id="review-body"
         v-model="form.body"
         rows="4"
         :maxlength="maxLength"
         placeholder="What you changed, what you would do differently, how it came out."
-        :class="field"
+        :class="[field, form.errors.body && wrong]"
       />
       <div class="mt-1 flex items-baseline justify-between gap-4">
         <p v-if="form.errors.body" class="text-sm text-red-600 dark:text-red-400">

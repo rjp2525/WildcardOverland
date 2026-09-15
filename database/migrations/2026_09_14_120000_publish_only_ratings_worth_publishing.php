@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\RatingStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -17,12 +16,18 @@ use Illuminate\Support\Facades\Schema;
  * One number in one place, because a page that displays an average its
  * markup does not match is the other way to lose a rich result.
  */
+/*
+ * Statuses are written out as strings on purpose. A migration has to keep
+ * working for the life of the repository, and an enum it imports can be
+ * renamed or deleted by a later change - which is exactly what happened to
+ * the one this file used to reference.
+ */
 return new class extends Migration
 {
     public function up(): void
     {
         Schema::table('recipe_ratings', function (Blueprint $table) {
-            $table->string('status', 16)->default(RatingStatus::Counted->value)->after('stars');
+            $table->string('status', 16)->default('counted')->after('stars');
             $table->index(['recipe_id', 'status']);
         });
 
@@ -70,14 +75,14 @@ return new class extends Migration
 
                 DB::table('recipe_ratings')
                     ->where('id', $rating->id)
-                    ->update(['status' => RatingStatus::Held->value]);
+                    ->update(['status' => 'held']);
             });
     }
 
     protected function recount(): void
     {
         $totals = DB::table('recipe_ratings')
-            ->where('status', RatingStatus::Counted->value)
+            ->where('status', 'counted')
             ->groupBy('recipe_id')
             ->selectRaw('recipe_id, count(*) as total, avg(stars) as average')
             ->get();

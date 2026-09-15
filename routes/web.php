@@ -30,13 +30,9 @@ Route::get('recipes/{recipe:slug}', [RecipeController::class, 'show'])->name('re
  * address: the honeypot turns away the scripts that do not look at the page,
  * and this turns away the ones that do.
  */
-Route::post('recipes/{recipe:slug}/rating', [RecipeFeedbackController::class, 'rate'])
-    ->middleware('throttle:feedback-ratings')
-    ->name('recipes.rate');
-
-Route::post('recipes/{recipe:slug}/comments', [RecipeFeedbackController::class, 'comment'])
-    ->middleware('throttle:feedback-comments')
-    ->name('recipes.comment');
+Route::post('recipes/{recipe:slug}/reviews', [RecipeFeedbackController::class, 'review'])
+    ->middleware('throttle:feedback-reviews')
+    ->name('recipes.review');
 
 /*
  * Served rather than kept in public/ so the sitemap line always points at

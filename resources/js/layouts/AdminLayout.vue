@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   Link2,
   MessageSquare,
-  Star,
   LogOut,
   Map,
   ChefHat,
@@ -52,18 +51,14 @@ watch(
   { deep: true, immediate: true },
 )
 
-/** What is waiting on each screen, badged so it does not sit there unread. */
-const waiting = computed(() => ({
-  pending: page.props.moderation?.pending ?? 0,
-  held: page.props.moderation?.held ?? 0,
-}))
+/** What is waiting to be read, badged so it does not sit there for a week. */
+const waiting = computed(() => ({ pending: page.props.moderation?.pending ?? 0 }))
 
 const nav = [
   { label: 'Dashboard', icon: LayoutDashboard, routeName: 'admin.dashboard' },
   { label: 'Trips', icon: Map, routeName: 'admin.trips.index' },
   { label: 'Recipes', icon: ChefHat, routeName: 'admin.recipes.index' },
-  { label: 'Comments', icon: MessageSquare, routeName: 'admin.comments.index', badge: 'pending' },
-  { label: 'Ratings', icon: Star, routeName: 'admin.ratings.index', badge: 'held' },
+  { label: 'Reviews', icon: MessageSquare, routeName: 'admin.comments.index', badge: 'pending' },
   { label: 'Modifications', icon: Wrench, routeName: 'admin.vehicle-modifications.index' },
   { label: 'Brands', icon: Boxes, routeName: 'admin.brands.index' },
   { label: 'Images', icon: FileImage, routeName: 'admin.images.index' },

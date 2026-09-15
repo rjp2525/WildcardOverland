@@ -4,86 +4,102 @@ namespace App\Http\Controllers;
 
 use App\Enums\CommentStatus;
 use App\Enums\ImageType;
-use App\Http\Requests\Feedback\CommentRequest;
-use App\Http\Requests\Feedback\RatingRequest;
+use App\Http\Requests\Feedback\ReviewRequest;
 use App\Models\Recipe;
+use App\Models\RecipeComment;
 use App\Services\FileUploadService;
 use App\Support\Ratings;
 use App\Support\Visitor;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
 
 /**
  * What people who cooked it send back.
  *
- * Nobody signs in, so everything here has to survive being open to the
- * whole internet. Three things do that work: a honeypot on the form, a
- * throttle on the route, and a queue that anything written by a stranger
- * sits in until somebody has read it.
+ * One form and one row: a name, an address to reach them at, stars, what
+ * they thought, and a photograph if they took one. Nobody signs in, so the
+ * whole thing is open to the internet and everything about it assumes so.
+ *
+ * Four things do that work. A honeypot on the form, a throttle on the route,
+ * an address that has to be given before stars can be left at all, and a
+ * queue that everything sits in until somebody has read it. Nothing reaches
+ * the page or the published average before that last one.
  */
 class RecipeFeedbackController extends Controller
 {
-    /**
-     * Stars, one set per person per recipe.
-     *
-     * A rating is a number with no words in it, so there is nothing to read
-     * and nothing to moderate. What there is instead is a decision about
-     * whether it counts, made when it arrives and revisable afterwards, and
-     * kept away from the published figure until it is made.
-     */
-    public function rate(RatingRequest $request, Recipe $recipe): RedirectResponse
-    {
-        abort_unless($this->isPublished($recipe), 404);
-
-        Ratings::record($recipe, $request->integer('stars'), $request);
-
-        return back()->with('success', 'Thanks, that is noted.');
-    }
-
-    /**
-     * A comment, and a photograph with it if they sent one.
-     */
-    public function comment(
-        CommentRequest $request,
+    public function review(
+        ReviewRequest $request,
         Recipe $recipe,
         FileUploadService $uploads,
     ): RedirectResponse {
         abort_unless($this->isPublished($recipe), 404);
 
-        $image = null;
-
-        if ($request->hasFile('photo')) {
-            /*
-             * Untrusted, so the bytes are re-encoded on the way in and
-             * whatever the phone wrote into them does not come with it.
-             * Private until approved, which keeps it off every page that
-             * lists photographs as well as off this one.
-             */
-            $file = $uploads->store(
-                $request->file('photo'),
-                name: "Photo from {$request->string('name')}",
-                imageType: ImageType::Photo,
-                untrusted: true,
-            );
-
-            $image = $file->image;
-            $image?->update(['private' => true]);
-        }
+        /*
+         * Lower-cased so that coming back as Alex@ rather than alex@ is
+         * recognised as the same person rather than counted as a second one.
+         */
+        $email = Str::lower($request->string('email')->trim()->value());
 
         $moderate = (bool) config('feedback.comments.moderate');
 
-        $recipe->comments()->create([
+        $review = $recipe->comments()->firstOrNew(['email' => $email]);
+
+        $review->fill([
             'name' => $request->string('name')->trim()->value(),
+            'stars' => $request->integer('stars'),
             'body' => $request->string('body')->trim()->value(),
-            'image_id' => $image?->id,
+            /*
+             * Back into the queue on every change, including from somebody
+             * whose last one was approved. Otherwise a review is a way to
+             * get words onto the page and then swap them for different ones.
+             */
             'status' => $moderate ? CommentStatus::Pending : CommentStatus::Approved,
             'approved_at' => $moderate ? null : now(),
             'visitor_hash' => Visitor::identify($request),
             'ip_hash' => Visitor::addressHash($request),
         ]);
 
+        if ($request->hasFile('photo')) {
+            $this->attachPhoto($review, $request, $uploads);
+        }
+
+        $review->save();
+
+        // Their stars only move the figure once the review has been read.
+        Ratings::recount($recipe);
+
         return back()->with('success', $moderate
             ? 'Thanks. It will show up once I have read it.'
             : 'Thanks, that is up.');
+    }
+
+    /**
+     * Their photograph, re-encoded and kept out of sight.
+     *
+     * Untrusted, so the bytes are written again on the way in and whatever
+     * the phone put in them does not come with it. Private until the review
+     * is approved, which keeps it off every page that lists photographs as
+     * well as off this one.
+     */
+    protected function attachPhoto(
+        RecipeComment $review,
+        ReviewRequest $request,
+        FileUploadService $uploads,
+    ): void {
+        $file = $uploads->store(
+            $request->file('photo'),
+            name: "Photo from {$request->string('name')}",
+            imageType: ImageType::Photo,
+            untrusted: true,
+        );
+
+        // A replaced photograph goes back out of reach rather than lingering
+        // as a public URL nothing on the site points at any more.
+        $review->hidePhoto();
+
+        $review->image_id = $file->image?->id;
+
+        $file->image?->update(['private' => true]);
     }
 
     /** Draft and future dated recipes take no feedback. */

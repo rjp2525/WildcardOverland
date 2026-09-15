@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RecipeComment;
 use App\Support\AdminTable;
 use App\Support\ImagePresenter;
+use App\Support\Ratings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -41,6 +42,10 @@ class CommentController extends Controller
             'comments' => $table->paginate()->through(fn (RecipeComment $comment) => [
                 'id' => $comment->id,
                 'name' => $comment->name,
+                // Only ever on this screen. It is how to reach them, not
+                // something anybody else gets to see.
+                'email' => $comment->email,
+                'stars' => $comment->stars,
                 'body' => $comment->body,
                 'status' => $comment->status->value,
                 'posted' => $comment->created_at?->toDayDateTimeString(),
@@ -87,7 +92,22 @@ class CommentController extends Controller
             'approved_at' => $status === CommentStatus::Approved ? now() : null,
         ]);
 
-        $comment->image?->update(['private' => $status !== CommentStatus::Approved]);
+        if ($status === CommentStatus::Approved) {
+            $comment->image?->update(['private' => false]);
+        } else {
+            $comment->hidePhoto();
+        }
+
+        /*
+         * Their stars go on or come off the published figure with their
+         * words, because approving a review is the only thing that puts
+         * either of them on the page.
+         */
+        $comment->loadMissing('recipe');
+
+        if ($comment->recipe !== null) {
+            Ratings::recount($comment->recipe);
+        }
 
         return back()->with('success', match ($status) {
             CommentStatus::Approved => "\"{$comment->name}\" is on the page.",
@@ -98,7 +118,14 @@ class CommentController extends Controller
 
     public function destroy(RecipeComment $comment): RedirectResponse
     {
+        $recipe = $comment->recipe;
+
+        $comment->hidePhoto();
         $comment->delete();
+
+        if ($recipe !== null) {
+            Ratings::recount($recipe);
+        }
 
         return back()->with('success', 'Deleted for good.');
     }

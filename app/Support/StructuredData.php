@@ -162,45 +162,30 @@ class StructuredData
     }
 
     /**
-     * Comments that came with a rating, as reviews.
+     * The reviews on the page, as reviews.
      *
-     * The two are separate on the page on purpose: rating is one tap and
-     * writing something is not, and demanding both would get far fewer of
-     * either. They are matched back up here by the browser that sent them,
-     * which is the same thing that stops one person rating twice.
+     * Every one carries its own stars now that leaving them is part of
+     * writing one, which is the shape this markup wants: a Review with no
+     * reviewRating is the thing Google quietly drops rather than the extra
+     * detail it looks like.
      *
      * @return array<int, array<string, mixed>>
      */
     protected static function reviews(Recipe $recipe): array
     {
-        $comments = $recipe->relationLoaded('comments')
-            ? $recipe->comments->where('status', CommentStatus::Approved)
-            : $recipe->comments()->approved()->get();
+        $reviews = $recipe->relationLoaded('comments')
+            ? $recipe->comments->where('status', CommentStatus::Approved)->whereNotNull('stars')
+            : $recipe->comments()->counted()->get();
 
-        if ($comments->isEmpty()) {
-            return [];
-        }
-
-        $stars = ($recipe->relationLoaded('ratings') ? $recipe->ratings : $recipe->ratings()->get())
-            ->pluck('stars', 'visitor_hash');
-
-        return $comments
-            ->map(fn ($comment) => [
-                'comment' => $comment,
-                'stars' => $comment->visitor_hash === null
-                    ? null
-                    : ($stars[$comment->visitor_hash] ?? null),
-            ])
-            ->filter(fn (array $pair) => $pair['stars'] !== null)
-            ->map(fn (array $pair) => [
+        return $reviews
+            ->map(fn ($review) => [
                 '@type' => 'Review',
-                'author' => ['@type' => 'Person', 'name' => $pair['comment']->name],
-                'datePublished' => ($pair['comment']->approved_at ?? $pair['comment']->created_at)
-                    ?->toDateString(),
-                'reviewBody' => $pair['comment']->body,
+                'author' => ['@type' => 'Person', 'name' => $review->name],
+                'datePublished' => ($review->approved_at ?? $review->created_at)?->toDateString(),
+                'reviewBody' => $review->body,
                 'reviewRating' => [
                     '@type' => 'Rating',
-                    'ratingValue' => $pair['stars'],
+                    'ratingValue' => $review->stars,
                     'bestRating' => 5,
                     'worstRating' => 1,
                 ],

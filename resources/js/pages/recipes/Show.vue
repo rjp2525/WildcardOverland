@@ -325,8 +325,7 @@ const servingLabel = computed(() => {
 
   <RecipeFeedback
     :feedback="feedback"
-    :rate-url="route('recipes.rate', recipe.slug)"
-    :comment-url="route('recipes.comment', recipe.slug)"
+    :review-url="route('recipes.review', recipe.slug)"
   />
 
   <section v-if="more.length" class="print-hide border-t border-slate-200 py-12 dark:border-white/10">

@@ -101,11 +101,6 @@ class Recipe extends Model
         return $this->hasMany(RecipeIngredient::class)->whereNull('group_id')->orderBy('order');
     }
 
-    public function ratings(): HasMany
-    {
-        return $this->hasMany(RecipeRating::class);
-    }
-
     public function comments(): HasMany
     {
         return $this->hasMany(RecipeComment::class)->latest();

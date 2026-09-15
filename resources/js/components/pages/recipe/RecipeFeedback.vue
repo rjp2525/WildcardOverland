@@ -1,25 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import RateThis, { type Honeypot, type RatingSummary } from './RateThis.vue'
+import RatingSummary, { type RatingSummaryData } from './RatingSummary.vue'
 import RatingStars from './RatingStars.vue'
-import CommentForm from './CommentForm.vue'
+import ReviewForm, { type Honeypot } from './ReviewForm.vue'
 import StepPhoto, { type StepImage } from './StepPhoto.vue'
 
-export interface RecipeComment {
+export interface Review {
   name: string
   body: string
   posted: string | null
-  /** What they rated it, when the same person also left stars. */
   stars: number | null
   photo: StepImage
 }
 
 export interface Feedback {
-  rating: RatingSummary
-  yours: number | null
-  comments: RecipeComment[]
-  /** One per form, each good for a single submission. */
-  stamps: { rating: string; comment: string }
+  rating: RatingSummaryData
+  /** What this browser already sent in, if it has been here before. */
+  yours: { stars: number | null; waiting: boolean } | null
+  comments: Review[]
+  /** Handed out per render, and good for one submission. */
+  stamp: string
   trap: string
   stampField: string
   photos: boolean
@@ -30,20 +30,14 @@ export interface Feedback {
 
 const props = defineProps<{
   feedback: Feedback
-  rateUrl: string
-  commentUrl: string
+  reviewUrl: string
 }>()
 
-function honeypotFor(form: 'rating' | 'comment'): Honeypot {
-  return {
-    stamp: props.feedback.stamps[form],
-    trap: props.feedback.trap,
-    stampField: props.feedback.stampField,
-  }
-}
-
-const rateHoneypot = computed(() => honeypotFor('rating'))
-const commentHoneypot = computed(() => honeypotFor('comment'))
+const honeypot = computed<Honeypot>(() => ({
+  stamp: props.feedback.stamp,
+  trap: props.feedback.trap,
+  stampField: props.feedback.stampField,
+}))
 
 /*
  * A circle of colour with their initial in it. Nobody has an account, so
@@ -74,12 +68,7 @@ function hue(name: string): number {
       </h2>
 
       <div class="mt-6 rounded-lg border border-slate-200 p-5 dark:border-white/10 sm:p-6">
-        <RateThis
-          :url="rateUrl"
-          :rating="feedback.rating"
-          :yours="feedback.yours"
-          :honeypot="rateHoneypot"
-        />
+        <RatingSummary :rating="feedback.rating" />
       </div>
 
       <ol v-if="feedback.comments.length" class="mt-10 space-y-8">
@@ -132,17 +121,19 @@ function hue(name: string): number {
           {{ feedback.comments.length ? 'Add yours' : 'Be the first' }}
         </h3>
         <p class="mt-1 text-sm text-slate-500 dark:text-white/55">
-          Made it? Say how it went, and put up a photo of yours if you took one.
+          Made it? Give it a rating, say how it went, and put up a photo of yours if
+          you took one.
         </p>
 
         <div class="mt-5">
-          <CommentForm
-            :url="commentUrl"
-            :honeypot="commentHoneypot"
+          <ReviewForm
+            :url="reviewUrl"
+            :honeypot="honeypot"
             :photos="feedback.photos"
             :moderated="feedback.moderated"
             :max-length="feedback.maxLength"
             :photo-max-kb="feedback.photoMaxKb"
+            :yours="feedback.yours"
           />
         </div>
       </div>

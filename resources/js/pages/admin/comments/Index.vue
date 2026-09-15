@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import { Check, ExternalLink, Search, ShieldAlert, Undo2 } from 'lucide-vue-next'
+import RatingStars from '@/components/pages/recipe/RatingStars.vue'
 import { AdminLayout } from '@/layouts'
 import PageHeading from '@/components/admin/ui/PageHeading.vue'
 import Button from '@/components/admin/ui/Button.vue'
@@ -19,6 +20,9 @@ defineOptions({ layout: AdminLayout })
 interface CommentRow {
   id: number
   name: string
+  /** This screen only. It is how to reach them, not something to publish. */
+  email: string | null
+  stars: number | null
   body: string
   status: string
   posted: string | null
@@ -75,9 +79,9 @@ const empty = computed(() =>
 </script>
 
 <template>
-  <Head title="Comments" />
+  <Head title="Reviews" />
 
-  <PageHeading title="Comments" />
+  <PageHeading title="Reviews" />
 
   <div class="mb-6 flex flex-wrap items-center gap-3">
     <div class="flex gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
@@ -127,6 +131,20 @@ const empty = computed(() =>
       <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ comment.name }}</p>
 
+        <RatingStars v-if="comment.stars" :value="comment.stars" size="sm" />
+
+        <!--
+          Approving this puts their stars into the recipe's average, so the
+          address behind them is worth seeing before you do.
+        -->
+        <a
+          v-if="comment.email"
+          :href="`mailto:${comment.email}`"
+          class="text-sm text-zinc-500 hover:text-brand dark:text-zinc-400"
+        >
+          {{ comment.email }}
+        </a>
+
         <a
           v-if="comment.recipeUrl"
           :href="comment.recipeUrl"
@@ -173,7 +191,7 @@ const empty = computed(() =>
           @click="move(comment, 'approved')"
         >
           <Check class="h-3.5 w-3.5" />
-          Put it on the page
+          {{ comment.stars ? 'Publish it and count the stars' : 'Put it on the page' }}
         </Button>
 
         <Button

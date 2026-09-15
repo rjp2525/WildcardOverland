@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CommentStatus;
 use App\Enums\MealType;
 use App\Models\Recipe;
 use App\Models\RecipeIngredient;
@@ -93,7 +94,6 @@ class RecipeController extends Controller
             'steps.tips',
             'sections',
             'sources',
-            'ratings',
             // Only what is on the page; the queue is nobody else's business.
             'comments' => fn ($query) => $query->approved()->with('image.file'),
         ]);
@@ -198,35 +198,27 @@ class RecipeController extends Controller
             'feedback' => [
                 'rating' => Ratings::summary($recipe),
                 /*
-                 * Their own star, if this browser has left one, so the
-                 * widget comes back set rather than empty. Read-only: a
-                 * cookie is issued when somebody sends something in, not
-                 * to everybody who turns up to read.
+                 * Whether this browser has already had its say, so somebody
+                 * coming back is told their review is in the queue rather
+                 * than left to write it again. Read-only: a cookie is issued
+                 * when somebody sends something in, not to everybody who
+                 * turns up to read.
                  */
-                'yours' => ($hash = Visitor::existing($request)) === null ? null : $recipe->ratings
-                    ->firstWhere('visitor_hash', $hash)?->stars,
+                'yours' => static::reviewFrom($recipe, Visitor::existing($request)),
                 'comments' => $recipe->comments->map(fn ($comment) => [
                     'name' => $comment->name,
                     'body' => $comment->body,
                     'posted' => $comment->approved_at?->toDateString()
                         ?? $comment->created_at?->toDateString(),
-                    // Their stars, if they left some, shown beside their words.
-                    'stars' => $comment->visitor_hash === null ? null : $recipe->ratings
-                        ->firstWhere('visitor_hash', $comment->visitor_hash)?->stars,
+                    // Their stars, shown beside their words.
+                    'stars' => $comment->stars,
                     'photo' => [
                         'crop' => ImagePresenter::step($comment->image, "Photo from {$comment->name}"),
                         'full' => ImagePresenter::full($comment->image, "Photo from {$comment->name}"),
                     ],
                 ])->values(),
-                /*
-                 * One stamp per form, each good for a single submission.
-                 * Sharing one between the two would mean rating a recipe
-                 * spent the stamp the comment box was going to need.
-                 */
-                'stamps' => [
-                    'rating' => Honeypot::stamp('rating'),
-                    'comment' => Honeypot::stamp('comment'),
-                ],
+                // Handed out per render, and good for one submission.
+                'stamp' => Honeypot::stamp('review'),
                 'trap' => Honeypot::FIELD,
                 'stampField' => Honeypot::STAMP,
                 'photos' => (bool) config('feedback.comments.photos'),
@@ -237,6 +229,28 @@ class RecipeController extends Controller
             'more' => RelatedRecipes::for($recipe)
                 ->map(fn (Recipe $other) => static::cardFor($other)),
         ]);
+    }
+
+    /**
+     * What this browser already sent in, if anything.
+     *
+     * Only ever their own: found by the token in their own cookie, which
+     * matches nobody else's row.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected static function reviewFrom(Recipe $recipe, ?string $visitor): ?array
+    {
+        if ($visitor === null) {
+            return null;
+        }
+
+        $review = $recipe->comments()->where('visitor_hash', $visitor)->latest('id')->first();
+
+        return $review === null ? null : [
+            'stars' => $review->stars,
+            'waiting' => $review->status !== CommentStatus::Approved,
+        ];
     }
 
     /**

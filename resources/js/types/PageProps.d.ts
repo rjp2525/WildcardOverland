@@ -34,6 +34,6 @@ export type PageProps<
     };
     site: SiteMeta;
     /** Null for everybody but a signed-in admin. */
-    moderation: { pending: number; held: number } | null;
+    moderation: { pending: number } | null;
     ziggy: Config & { location: string };
 };
