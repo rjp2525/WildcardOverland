@@ -12,6 +12,7 @@ import IngredientGroups, {
 import MethodSteps, { type Step } from '@/components/pages/recipe/MethodSteps.vue'
 import RecipeSection, { type Section } from '@/components/pages/recipe/RecipeSection.vue'
 import RecipeFeedback, { type Feedback } from '@/components/pages/recipe/RecipeFeedback.vue'
+import RatingStars from '@/components/pages/recipe/RatingStars.vue'
 import { RecipeCard } from '@/components/cards'
 import type { RecipeCardData } from '@/components/cards/RecipeCard.vue'
 import { ResponsiveImage, type ResponsiveImageData } from '@/components/ui/image'
@@ -168,6 +169,24 @@ const servingLabel = computed(() => {
         <Users class="h-4 w-4" /> {{ servingLabel }}
       </span>
       <span v-if="recipe.difficulty" class="text-sm font-bold uppercase">{{ recipe.difficulty }}</span>
+
+      <!--
+        What people made of it, up here rather than only at the foot of the
+        page. The stars take the band's own colour: amber on orange cannot
+        be read. Anyone tapping it wants the ratings, so it goes there.
+      -->
+      <a
+        v-if="feedback.rating.count"
+        href="#notes"
+        class="inline-flex items-center gap-2 rounded-full px-1 text-sm font-bold uppercase transition-opacity hover:opacity-80 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/70"
+      >
+        <RatingStars :value="feedback.rating.average" size="sm" tone="current" />
+        {{ feedback.rating.average?.toFixed(1) }}
+        <span class="sr-only">out of 5, from {{ feedback.rating.count }} ratings</span>
+        <span aria-hidden="true" class="font-medium normal-case opacity-80">
+          ({{ feedback.rating.count }})
+        </span>
+      </a>
 
       <button
         type="button"

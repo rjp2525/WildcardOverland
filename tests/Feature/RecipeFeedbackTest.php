@@ -452,6 +452,26 @@ class RecipeFeedbackTest extends TestCase
                 ->where('feedback.rating.stars.3', 0));
     }
 
+    public function test_the_spread_on_the_page_only_counts_what_counts(): void
+    {
+        $url = route('recipes.rate', $this->recipe);
+
+        // One that counts, then a one-star from the same address, held.
+        $this->asSameVisitor($url, $this->filled(['stars' => 5]));
+        $this->asSameVisitor($url, $this->filled(['stars' => 1]));
+
+        /*
+         * The bars are drawn from these buckets, so a held rating showing up
+         * in them would put a number on the page that the average, the count
+         * and the markup all disagree with.
+         */
+        $this->get(route('recipes.show', $this->recipe->slug))
+            ->assertInertia(fn ($page) => $page
+                ->where('feedback.rating.count', 1)
+                ->where('feedback.rating.stars.5', 1)
+                ->where('feedback.rating.stars.1', 0));
+    }
+
     public function test_a_search_engine_is_only_told_about_a_rating_worth_showing(): void
     {
         config(['feedback.ratings.min_for_schema' => 3]);
