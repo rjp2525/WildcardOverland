@@ -35,6 +35,13 @@ Route::post('recipes/{recipe:slug}/reviews', [RecipeFeedbackController::class, '
     ->name('recipes.review');
 
 /*
+ * The link in the confirmation email. Signed, and checked in the controller
+ * rather than by middleware so an expired one can say so.
+ */
+Route::get('recipes/{recipe:slug}/reviews/{review}/confirm', [RecipeFeedbackController::class, 'confirm'])
+    ->name('recipes.reviews.confirm');
+
+/*
  * Served rather than kept in public/ so the sitemap line always points at
  * the host the site is actually running on.
  */

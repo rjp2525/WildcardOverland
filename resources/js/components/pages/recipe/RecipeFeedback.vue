@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import RatingSummary, { type RatingSummaryData } from './RatingSummary.vue'
 import RatingStars from './RatingStars.vue'
-import ReviewForm, { type Honeypot } from './ReviewForm.vue'
+import ReviewForm, { type Honeypot, type ReviewState } from './ReviewForm.vue'
 import StepPhoto, { type StepImage } from './StepPhoto.vue'
 
 export interface Review {
@@ -16,7 +16,7 @@ export interface Review {
 export interface Feedback {
   rating: RatingSummaryData
   /** What this browser already sent in, if it has been here before. */
-  yours: { stars: number | null; waiting: boolean } | null
+  yours: { stars: number | null; state: ReviewState } | null
   comments: Review[]
   /** Handed out per render, and good for one submission. */
   stamp: string
@@ -24,6 +24,7 @@ export interface Feedback {
   stampField: string
   photos: boolean
   moderated: boolean
+  confirms: boolean
   maxLength: number
   photoMaxKb: number
 }
@@ -131,6 +132,7 @@ function hue(name: string): number {
             :honeypot="honeypot"
             :photos="feedback.photos"
             :moderated="feedback.moderated"
+            :confirms="feedback.confirms"
             :max-length="feedback.maxLength"
             :photo-max-kb="feedback.photoMaxKb"
             :yours="feedback.yours"

@@ -23,18 +23,35 @@ use Inertia\Response;
  */
 class CommentController extends Controller
 {
+    /**
+     * @return array<int, string>
+     */
+    protected static function tabs(): array
+    {
+        return [...array_column(CommentStatus::cases(), 'value'), 'unconfirmed'];
+    }
+
     public function index(Request $request): Response
     {
         $status = $request->string('status')->value() ?: CommentStatus::Pending->value;
 
-        if (! in_array($status, array_column(CommentStatus::cases(), 'value'), true)) {
+        if (! in_array($status, static::tabs(), true)) {
             $status = CommentStatus::Pending->value;
         }
 
-        $table = AdminTable::for(
-            RecipeComment::query()->where('status', $status)->with(['recipe:id,name,slug', 'image.file']),
-            $request,
-        )
+        /*
+         * Unconfirmed is not a status, it is the absence of somebody having
+         * answered their address. It gets a tab of its own because it is a
+         * different question: these are not waiting on a decision, they are
+         * waiting on the person who wrote them.
+         */
+        $query = RecipeComment::query()->with(['recipe:id,name,slug', 'image.file']);
+
+        $status === 'unconfirmed'
+            ? $query->whereNull('confirmed_at')
+            : $query->confirmed()->where('status', $status);
+
+        $table = AdminTable::for($query, $request)
             ->searchable(['name', 'body'])
             ->sortable(['name', 'created_at'], 'created_at');
 
@@ -54,6 +71,7 @@ class CommentController extends Controller
                     ? route('recipes.show', $comment->recipe->slug)
                     : null,
                 'photo' => ImagePresenter::step($comment->image, "Photo from {$comment->name}"),
+                'confirmed' => $comment->confirmed_at !== null,
                 /*
                  * The same sender's other submissions. Two is a person who
                  * liked two recipes; twenty in an hour is not.
@@ -65,11 +83,19 @@ class CommentController extends Controller
             ]),
             'filters' => $table->state(),
             'status' => $status,
-            'statuses' => CommentStatus::options(),
-            'counts' => RecipeComment::query()
-                ->selectRaw('status, count(*) as total')
-                ->groupBy('status')
-                ->pluck('total', 'status'),
+            'statuses' => [
+                ...CommentStatus::options(),
+                ['value' => 'unconfirmed', 'label' => 'Unconfirmed'],
+            ],
+            'counts' => [
+                ...RecipeComment::query()
+                    ->whereNotNull('confirmed_at')
+                    ->selectRaw('status, count(*) as total')
+                    ->groupBy('status')
+                    ->pluck('total', 'status')
+                    ->all(),
+                'unconfirmed' => RecipeComment::query()->whereNull('confirmed_at')->count(),
+            ],
         ]);
     }
 
@@ -90,6 +116,15 @@ class CommentController extends Controller
         $comment->update([
             'status' => $status,
             'approved_at' => $status === CommentStatus::Approved ? now() : null,
+            /*
+             * Putting something on the page by hand vouches for it, so an
+             * unanswered address stops being a reason to hold it. Without
+             * this, approving an unconfirmed review would file it somewhere
+             * nothing reads from and it would simply vanish.
+             */
+            'confirmed_at' => $status === CommentStatus::Approved
+                ? ($comment->confirmed_at ?? now())
+                : $comment->confirmed_at,
         ]);
 
         if ($status === CommentStatus::Approved) {

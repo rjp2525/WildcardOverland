@@ -13,7 +13,7 @@ class RecipeComment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'recipe_id', 'name', 'stars', 'email', 'body', 'image_id',
+        'recipe_id', 'name', 'stars', 'email', 'confirmed_at', 'body', 'image_id',
         'status', 'approved_at', 'visitor_hash', 'ip_hash',
     ];
 
@@ -22,6 +22,7 @@ class RecipeComment extends Model
         return [
             'stars' => 'integer',
             'status' => CommentStatus::class,
+            'confirmed_at' => 'datetime',
             'approved_at' => 'datetime',
         ];
     }
@@ -55,7 +56,21 @@ class RecipeComment extends Model
      */
     public function scopeApproved(Builder $query): void
     {
-        $query->where('status', CommentStatus::Approved);
+        $query->confirmed()->where('status', CommentStatus::Approved);
+    }
+
+    /**
+     * Whoever wrote it answered the address they gave.
+     *
+     * Everything public goes through here. An unanswered address means
+     * nobody has shown they are reachable, so the review is not in the
+     * queue, not on the page and not in the average.
+     *
+     * @param  Builder<RecipeComment>  $query
+     */
+    public function scopeConfirmed(Builder $query): void
+    {
+        $query->whereNotNull('confirmed_at');
     }
 
     /**

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, usePage } from '@inertiajs/vue3'
 import { ImagePlus, Loader2, X } from 'lucide-vue-next'
 import HoneypotField from './HoneypotField.vue'
 import StarPicker from './StarPicker.vue'
@@ -13,6 +13,9 @@ export interface Honeypot {
   stampField: string
 }
 
+/** Where somebody's own review has got to. */
+export type ReviewState = 'unconfirmed' | 'waiting' | 'published'
+
 const props = defineProps<{
   url: string
   honeypot: Honeypot
@@ -22,9 +25,13 @@ const props = defineProps<{
   moderated: boolean
   maxLength: number
   photoMaxKb: number
+  /** Whether the address given has to be answered before anything happens. */
+  confirms: boolean
   /** What this browser already sent in, if it has been here before. */
-  yours: { stars: number | null; waiting: boolean } | null
+  yours: { stars: number | null; state: ReviewState } | null
 }>()
+
+const page = usePage()
 
 /** Whatever a form filler put in the field nobody can see. */
 const trap = ref('')
@@ -59,6 +66,36 @@ const preview = ref<string | null>(null)
 const sent = ref(false)
 
 const remaining = computed(() => props.maxLength - form.body.length)
+
+/*
+ * Said by the server, which is the only thing that knows whether the email
+ * went out. The fallback is only for a response that carried no message.
+ */
+const outcome = computed(() => {
+  const flash = page.props.flash as { success?: string | null; error?: string | null }
+
+  return {
+    failed: !!flash?.error,
+    message:
+      flash?.error ??
+      flash?.success ??
+      (props.moderated ? 'Thanks. It will show up once I have read it.' : 'Thanks, that is up.'),
+  }
+})
+
+/** Where the review this browser already left has got to. */
+const standing = computed(() => {
+  const states: Record<ReviewState, string> = {
+    unconfirmed:
+      'You have already written one for this. Follow the link in the email to confirm it is you, and it joins the queue. Sending it again emails you a new link.',
+    waiting:
+      'You have already sent one in for this. It will show up once I have read it. Sending another from the same address replaces it.',
+    published:
+      'Your review is on this page. Sending another from the same address replaces it.',
+  }
+
+  return states[props.yours?.state ?? 'waiting']
+})
 
 function choose(event: Event): void {
   const chosen = (event.target as HTMLInputElement).files?.[0] ?? null
@@ -111,14 +148,22 @@ const wrong = 'border-red-500 dark:border-red-500/70'
   <form class="relative space-y-5" @submit.prevent="submit">
     <HoneypotField v-model="trap" :name="honeypot.trap" />
 
+    <!--
+      What the server actually did, in its own words. It knows things the
+      form cannot: whether the email went out, whether this address had
+      already been answered, whether the mailer fell over.
+    -->
     <p
       v-if="sent"
-      class="rounded-md bg-brand/10 px-4 py-3 text-sm font-medium text-brand"
+      :class="[
+        'rounded-md px-4 py-3 text-sm font-medium',
+        outcome.failed
+          ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+          : 'bg-brand/10 text-brand',
+      ]"
       role="status"
     >
-      {{ moderated
-        ? 'Thanks. It will show up here once I have read it.'
-        : 'Thanks, that is up.' }}
+      {{ outcome.message }}
     </p>
 
     <!--
@@ -130,10 +175,7 @@ const wrong = 'border-red-500 dark:border-red-500/70'
       v-else-if="yours"
       class="rounded-md bg-slate-100 px-4 py-3 text-sm text-slate-600 dark:bg-white/5 dark:text-white/70"
     >
-      {{ yours.waiting
-        ? 'You have already sent one in for this. It will show up once I have read it.'
-        : 'Your review is on this page.' }}
-      Sending another from the same address replaces it.
+      {{ standing }}
     </p>
 
     <!-- The stars are the review, not a thing you do instead of one. -->
@@ -181,7 +223,9 @@ const wrong = 'border-red-500 dark:border-red-500/70'
           {{ form.errors.email }}
         </p>
         <p v-else id="review-email-note" class="mt-1 text-xs text-slate-400 dark:text-white/40">
-          Never shown on the page, and never passed on.
+          {{ confirms
+            ? 'You will get one email with a link to confirm it is you. Never shown on the page, and never passed on.'
+            : 'Never shown on the page, and never passed on.' }}
         </p>
       </div>
     </div>

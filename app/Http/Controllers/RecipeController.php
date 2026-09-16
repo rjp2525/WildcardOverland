@@ -223,6 +223,7 @@ class RecipeController extends Controller
                 'stampField' => Honeypot::STAMP,
                 'photos' => (bool) config('feedback.comments.photos'),
                 'moderated' => (bool) config('feedback.comments.moderate'),
+                'confirms' => (bool) config('feedback.comments.confirm'),
                 'maxLength' => (int) config('feedback.comments.max_length'),
                 'photoMaxKb' => (int) config('feedback.comments.photo_max_kb'),
             ],
@@ -247,9 +248,17 @@ class RecipeController extends Controller
 
         $review = $recipe->comments()->where('visitor_hash', $visitor)->latest('id')->first();
 
-        return $review === null ? null : [
+        if ($review === null) {
+            return null;
+        }
+
+        return [
             'stars' => $review->stars,
-            'waiting' => $review->status !== CommentStatus::Approved,
+            'state' => match (true) {
+                $review->confirmed_at === null => 'unconfirmed',
+                $review->status === CommentStatus::Approved => 'published',
+                default => 'waiting',
+            },
         ];
     }
 

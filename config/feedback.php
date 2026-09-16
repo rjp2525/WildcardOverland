@@ -34,6 +34,20 @@ return [
     */
 
     'comments' => [
+        /*
+         * Whether the address given has to be answered before the review
+         * behind it goes anywhere. Asking for an address raises the cost of
+         * inventing a review; answering one is what makes it real, and it
+         * is the only check here that a script cannot simply outwait.
+         *
+         * Turning this off is for a site with no mailer configured. It is
+         * not a setting to reach for because the emails are inconvenient.
+         */
+        'confirm' => (bool) env('FEEDBACK_CONFIRM_EMAIL', true),
+
+        /** How long the link in that email keeps working. */
+        'confirm_days' => (int) env('FEEDBACK_CONFIRM_DAYS', 7),
+
         'moderate' => (bool) env('FEEDBACK_MODERATE_COMMENTS', true),
         'max_length' => 2000,
         'photos' => (bool) env('FEEDBACK_ALLOW_PHOTOS', true),

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Check, ExternalLink, Search, ShieldAlert, Undo2 } from 'lucide-vue-next'
+import { Check, ExternalLink, MailQuestionMark, Search, ShieldAlert, Undo2 } from 'lucide-vue-next'
 import RatingStars from '@/components/pages/recipe/RatingStars.vue'
 import { AdminLayout } from '@/layouts'
 import PageHeading from '@/components/admin/ui/PageHeading.vue'
@@ -22,6 +22,8 @@ interface CommentRow {
   name: string
   /** This screen only. It is how to reach them, not something to publish. */
   email: string | null
+  /** Whether they answered the link sent to that address. */
+  confirmed: boolean
   stars: number | null
   body: string
   status: string
@@ -74,6 +76,7 @@ const empty = computed(() =>
     pending: 'Nothing waiting. Everything sent in has been read.',
     approved: 'Nothing approved yet.',
     spam: 'No spam. The honeypot is doing its job.',
+    unconfirmed: 'Nobody has a review sitting unconfirmed.',
   })[props.status] ?? 'Nothing here.',
 )
 </script>
@@ -156,6 +159,18 @@ const empty = computed(() =>
         </a>
 
         <span class="text-xs text-zinc-400">{{ comment.posted }}</span>
+
+        <!--
+          Nobody has answered the address, so nobody has shown they are
+          reachable. Approving it anyway vouches for it.
+        -->
+        <span
+          v-if="!comment.confirmed"
+          class="inline-flex items-center gap-1 rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
+        >
+          <MailQuestionMark class="h-3 w-3" />
+          Address not confirmed
+        </span>
 
         <!--
           The same address turning up over and over. Two is somebody who

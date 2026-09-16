@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\CommentStatus;
+use App\Mail\ConfirmReview;
 use App\Models\Recipe;
 use App\Models\RecipeComment;
 use App\Models\User;
@@ -10,7 +11,9 @@ use App\Support\Honeypot;
 use App\Support\Visitor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -32,6 +35,7 @@ class RecipeFeedbackTest extends TestCase
 
         config(['assets.disk' => 'feedback-test']);
         Storage::fake('feedback-test');
+        Mail::fake();
 
         $this->recipe = Recipe::create([
             'name' => 'Camp cowboy stew',
@@ -65,9 +69,26 @@ class RecipeFeedbackTest extends TestCase
         return route('recipes.review', $this->recipe);
     }
 
+    /** Follows the link from the confirmation email. */
+    protected function confirm(RecipeComment $review): void
+    {
+        $this->get($this->confirmationLink($review))->assertRedirect();
+    }
+
+    protected function confirmationLink(RecipeComment $review, ?string $expires = null): string
+    {
+        return URL::temporarySignedRoute(
+            'recipes.reviews.confirm',
+            $expires ?? now()->addDays(7),
+            ['recipe' => $review->recipe->slug, 'review' => $review->getKey()],
+        );
+    }
+
     /** Signs in and puts a review on the page, the way the admin screen does. */
     protected function approve(RecipeComment $review): void
     {
+        $this->confirm($review);
+
         $this->actingAs(User::factory()->create())
             ->put(route('admin.comments.update', $review), [
                 'status' => CommentStatus::Approved->value,
@@ -326,13 +347,15 @@ class RecipeFeedbackTest extends TestCase
     {
         $response = $this->post($this->url(), $this->review(['stars' => 4]));
 
+        $this->confirm(RecipeComment::sole());
+
         $cookie = $response->getCookie(Visitor::COOKIE)?->getValue();
 
         $this->withCookie(Visitor::COOKIE, $cookie)
             ->get(route('recipes.show', $this->recipe->slug))
             ->assertInertia(fn ($page) => $page
                 ->where('feedback.yours.stars', 4)
-                ->where('feedback.yours.waiting', true));
+                ->where('feedback.yours.state', 'waiting'));
     }
 
     public function test_somebody_who_has_not_been_here_is_told_nothing(): void
@@ -554,6 +577,177 @@ class RecipeFeedbackTest extends TestCase
                 ->where('recipes.data.0.rating.count', 3));
     }
 
+    public function test_a_review_goes_nowhere_until_the_address_is_answered(): void
+    {
+        $this->post($this->url(), $this->review(['stars' => 5]));
+
+        $review = RecipeComment::sole();
+
+        $this->assertNull($review->confirmed_at);
+        Mail::assertQueuedCount(0);
+        Mail::assertSent(ConfirmReview::class, fn ($mail) => $mail->hasTo('alex@example.com'));
+
+        // Not in the queue the admin reads, and not on the page.
+        $this->actingAs(User::factory()->create())
+            ->get(route('admin.comments.index'))
+            ->assertInertia(fn ($page) => $page
+                ->has('comments.data', 0)
+                ->where('counts.unconfirmed', 1)
+                ->where('moderation.pending', 0));
+
+        $this->confirm($review);
+
+        $this->assertNotNull($review->fresh()->confirmed_at);
+
+        $this->get(route('admin.comments.index'))
+            ->assertInertia(fn ($page) => $page
+                ->has('comments.data', 1)
+                ->where('moderation.pending', 1));
+    }
+
+    public function test_an_unconfirmed_review_is_not_on_the_page_even_if_approved(): void
+    {
+        $this->post($this->url(), $this->review(['stars' => 5]));
+
+        $review = RecipeComment::sole();
+
+        // Straight past the email, the way nothing is supposed to be able to.
+        $review->update(['status' => CommentStatus::Approved, 'approved_at' => now()]);
+
+        $this->get(route('recipes.show', $this->recipe->slug))
+            ->assertInertia(fn ($page) => $page
+                ->has('feedback.comments', 0)
+                ->where('feedback.rating.count', 0));
+    }
+
+    public function test_the_link_only_works_signed(): void
+    {
+        $this->post($this->url(), $this->review());
+
+        $review = RecipeComment::sole();
+
+        // The same URL with the signature taken off it.
+        $unsigned = route('recipes.reviews.confirm', [
+            'recipe' => $this->recipe->slug, 'review' => $review->getKey(),
+        ]);
+
+        $this->get($unsigned)->assertRedirect();
+
+        $this->assertNull($review->fresh()->confirmed_at, 'An unsigned link must confirm nothing.');
+    }
+
+    public function test_an_expired_link_says_so_rather_than_failing(): void
+    {
+        $this->post($this->url(), $this->review());
+
+        $review = RecipeComment::sole();
+        $link = $this->confirmationLink($review, now()->addDays(7));
+
+        $this->travel(8)->days();
+
+        $this->get($link)
+            ->assertRedirect()
+            ->assertSessionHas('error', fn ($message) => str_contains($message, 'expired'));
+
+        $this->assertNull($review->fresh()->confirmed_at);
+    }
+
+    public function test_a_link_for_one_review_does_not_confirm_another(): void
+    {
+        $this->post($this->url(), $this->review(['email' => 'first@example.com']));
+        $first = RecipeComment::sole();
+
+        $this->post($this->url(), $this->review(['email' => 'second@example.com']));
+        $second = RecipeComment::where('email', 'second@example.com')->sole();
+
+        // First review's signature, second review's id.
+        $tampered = str_replace(
+            "/reviews/{$first->getKey()}/",
+            "/reviews/{$second->getKey()}/",
+            $this->confirmationLink($first),
+        );
+
+        $this->get($tampered);
+
+        $this->assertNull($second->fresh()->confirmed_at);
+    }
+
+    public function test_following_the_link_twice_is_not_an_error(): void
+    {
+        $this->post($this->url(), $this->review());
+
+        $review = RecipeComment::sole();
+        $link = $this->confirmationLink($review);
+
+        $this->get($link)->assertRedirect();
+        $confirmed = $review->fresh()->confirmed_at;
+
+        // Mail clients fetch links on their own, and people forward them.
+        $this->travel(1)->minute();
+        $this->get($link)->assertRedirect();
+
+        $this->assertEquals($confirmed, $review->fresh()->confirmed_at);
+    }
+
+    public function test_an_answered_address_is_not_asked_again(): void
+    {
+        $this->post($this->url(), $this->review(['body' => 'First go.']));
+
+        $review = RecipeComment::sole();
+        $this->confirm($review);
+
+        Mail::fake();
+
+        // Same address, second thoughts. Already proved it is theirs.
+        $this->post($this->url(), $this->review(['body' => 'Second go.']));
+
+        Mail::assertNothingSent();
+        $this->assertNotNull(RecipeComment::sole()->confirmed_at);
+        $this->assertSame(CommentStatus::Pending, RecipeComment::sole()->status);
+    }
+
+    public function test_the_page_tells_somebody_their_review_is_unconfirmed(): void
+    {
+        $response = $this->post($this->url(), $this->review(['stars' => 4]));
+
+        $cookie = $response->getCookie(Visitor::COOKIE)?->getValue();
+
+        $this->withCookie(Visitor::COOKIE, $cookie)
+            ->get(route('recipes.show', $this->recipe->slug))
+            ->assertInertia(fn ($page) => $page
+                ->where('feedback.yours.stars', 4)
+                ->where('feedback.yours.state', 'unconfirmed'));
+    }
+
+    public function test_approving_by_hand_vouches_for_an_unanswered_address(): void
+    {
+        $this->post($this->url(), $this->review(['stars' => 5]));
+
+        $review = RecipeComment::sole();
+        $this->assertNull($review->confirmed_at);
+
+        $this->actingAs(User::factory()->create())
+            ->put(route('admin.comments.update', $review), [
+                'status' => CommentStatus::Approved->value,
+            ]);
+
+        // Otherwise it would be approved into a state nothing reads from.
+        $this->assertNotNull($review->fresh()->confirmed_at);
+
+        $this->get(route('recipes.show', $this->recipe->slug))
+            ->assertInertia(fn ($page) => $page->has('feedback.comments', 1));
+    }
+
+    public function test_a_site_with_no_mailer_can_turn_confirmation_off(): void
+    {
+        config(['feedback.comments.confirm' => false]);
+
+        $this->post($this->url(), $this->review());
+
+        Mail::assertNothingSent();
+        $this->assertNotNull(RecipeComment::sole()->confirmed_at);
+    }
+
     public function test_the_queue_is_not_open_to_the_public(): void
     {
         $this->post($this->url(), $this->review());
@@ -572,6 +766,8 @@ class RecipeFeedbackTest extends TestCase
         $this->actingAs(User::factory()->create());
 
         $this->post($this->url(), $this->review(['stars' => 3, 'body' => 'Waiting to be read.']));
+
+        $this->confirm(RecipeComment::sole());
 
         $this->get(route('admin.comments.index'))
             ->assertOk()

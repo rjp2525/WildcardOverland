@@ -55,7 +55,10 @@ class HandleInertiaRequests extends Middleware
              * the count is not the public's business.
              */
             'moderation' => fn () => $request->user() === null ? null : [
+                // Only what is waiting on a decision. Reviews whose address
+                // nobody answered are waiting on somebody else.
                 'pending' => RecipeComment::query()
+                    ->confirmed()
                     ->where('status', CommentStatus::Pending)
                     ->count(),
             ],
